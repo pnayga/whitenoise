@@ -262,7 +262,7 @@ def plot_pdf(result, lag_index=None, ax=None, show=True) -> matplotlib.figure.Fi
     values = result.values
 
     if lag_index is None:
-        lag_index = max(0, len(lags) // 4)
+        lag_index = max(0, len(lags) // 10)
     lag_index = min(lag_index, len(lags) - 1)
     T = float(lags[lag_index])
     lag_int = max(1, int(round(T)))
@@ -296,9 +296,10 @@ def plot_pdf(result, lag_index=None, ax=None, show=True) -> matplotlib.figure.Fi
                 try:
                     sigma2 = float(msd_fn(T, *phys_vals)) * params.get('N', 1.0)
                     if np.isfinite(sigma2) and sigma2 > 0:
+                        mu_disp = float(np.mean(displacements))
                         dx_range = np.linspace(displacements.min(), displacements.max(), 500)
                         pdf_vals = (
-                            np.exp(-dx_range ** 2 / (2.0 * sigma2))
+                            np.exp(-(dx_range - mu_disp) ** 2 / (2.0 * sigma2))
                             / np.sqrt(2.0 * np.pi * sigma2)
                         )
                         ax.plot(
