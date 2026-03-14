@@ -454,8 +454,8 @@ result.summary()</pre>
   </tr>
   <tr>
     <td><code class="available">dna</code></td><td>&mdash;</td><td>a, b, c</td>
-    <td>Plateau model: MSD = a &middot; (1 &minus; e<sup>&minus;bT<sup>c</sup></sup>) &nbsp; [saturation at a]</td>
-    <td>DNA/polymer mechanics extension</td>
+    <td>Plateau model: MSD(L) = a &minus; c &middot; e<sup>&minus;bL</sup> &nbsp; [rises from a&minus;c, saturates at a]</td>
+    <td>Violanda et al. 2019 &mdash; nucleotide separations in bacterial genomes</td>
   </tr>
   <tr>
     <td><code class="available">bessel_j0_cos</code></td><td>&mdash;</td><td>&mu;, &nu;</td>
@@ -490,7 +490,7 @@ result.summary()</pre>
   <tr><td><span class="param">&nu;</span></td><td>Characteristic frequency</td><td>cosine, sine, bessel_jmu_nu, bessel_j0_cos</td><td>Sets the oscillation period of the modulating function.</td></tr>
   <tr><td><span class="param">&beta;</span></td><td>Exponential decay rate</td><td>exponential</td><td>Controls how fast the memory decays with lag.</td></tr>
   <tr><td><span class="param">H</span></td><td>Hurst exponent</td><td>fbm</td><td>H &lt; 0.5 subdiffusive; H = 0.5 Brownian; H &gt; 0.5 superdiffusive.</td></tr>
-  <tr><td><span class="param">a, b, c</span></td><td>Plateau parameters</td><td>dna</td><td>a = plateau MSD; b = rate; c = shape exponent.</td></tr>
+  <tr><td><span class="param">a, b, c</span></td><td>Plateau parameters</td><td>dna</td><td>a = plateau height (MSD &rarr; a as L &rarr; &infin;); b = decay rate; c = exponential amplitude (must satisfy c &lt; a).</td></tr>
   <tr><td><span class="param">N</span></td><td>Normalization scalar</td><td>all models</td><td>Fitted alongside physical params; scales MSD amplitude without changing shape.</td></tr>
 </table>
 
