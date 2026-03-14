@@ -113,6 +113,29 @@
     tr:nth-child(even) td { background: #f9f9f9; }
     tr:hover td { background: #f0f4fa; }
 
+    /* ── Parameter table ── */
+    .param-table td:first-child {
+      width: 220px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      color: #1B3A6B;
+      font-weight: bold;
+    }
+
+    /* ── Function signature blocks ── */
+    .sig {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10pt;
+      background: #1B3A6B;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 4px;
+      display: block;
+      margin: 8px 0 10px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
     /* ── Pipeline diagram ── */
     .pipeline {
       display: flex;
@@ -169,9 +192,9 @@
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <div class="title-block">
   <h1>whitenoise &mdash; User Guide</h1>
-  <div class="subtitle">Stochastic White Noise Analysis (SWNA) &mdash; Hida&ndash;Bernido Framework</div>
+  <div class="subtitle">Stochastic White Noise Analysis with Memory (SWNA) &mdash; Hida&ndash;Bernido Framework</div>
   <div class="author-block">
-    Package version 0.1.0 &middot; Python &ge;3.9
+    Package version 0.2.0 &middot; Python &ge;3.9 &middot; March 14, 2026
   </div>
 </div>
 
@@ -181,36 +204,39 @@
 <h2>1. Overview</h2>
 
 <p>
-  <strong>whitenoise</strong> is a research package for analysing the memory and diffusion properties
-  of sequential observational data using the Stochastic White Noise Analysis (SWNA) with Memory
-  framework developed by Bernido &amp; Carpio-Bernido.
+  <strong>whitenoise</strong> is a research package implementing Stochastic White Noise Analysis
+  (SWNA) with Memory, based on the Hida white noise calculus framework developed by
+  Bernido &amp; Carpio-Bernido (University of San Carlos / CVIF, Philippines). The framework
+  models a fluctuating observable as a stochastic integral driven by white noise, where a
+  memory kernel encodes how past fluctuations influence future dynamics.
 </p>
 
 <p>
-  The central object of SWNA is the <em>Mean Square Displacement</em> (MSD), which characterises
-  how the spread of a fluctuating observable grows with lag time &Delta;:
+  The central quantity is the <em>Mean Square Displacement</em> (MSD), which characterises
+  how the spread of a fluctuating observable grows with lag &Delta;:
 </p>
 
-<pre>MSD(&Delta;) = (1 / (N&minus;&Delta;)) &middot; &sum;[x(i+&Delta;) &minus; x(i)]&sup2;    (summed over i = 0 &hellip; N&minus;&Delta;&minus;1)</pre>
+<pre>MSD(&Delta;) = (1 / (N &minus; &Delta;)) &middot; &sum;<sub>i=0</sub><sup>N&minus;&Delta;&minus;1</sup> [x(i+&Delta;) &minus; x(i)]&sup2;</pre>
 
 <p>
-  Fitting a theoretical model to the empirical MSD yields the <strong>memory parameter &mu;</strong>,
-  which quantifies how strongly the system&rsquo;s past fluctuations influence its future.
-  The table below summarises the four diffusion regimes:
+  Fitting a theoretical SWNA model to the empirical MSD yields the <strong>memory parameter
+  &mu;</strong>, which quantifies the strength and direction of memory in the system.
+  The four diffusion regimes are:
 </p>
 
 <table>
-  <tr><th>Regime</th><th>Criterion</th><th>Physical interpretation</th></tr>
-  <tr><td>Subdiffusive</td><td>&mu; &lt; 0.95</td><td>Past fluctuations resist future change &mdash; slow spreading</td></tr>
-  <tr><td>Near-Brownian</td><td>0.95 &le; &mu; &le; 1.05</td><td>Weak or no memory &mdash; ordinary random walk</td></tr>
-  <tr><td>Superdiffusive</td><td>1.05 &lt; &mu; &le; 2.0</td><td>Past fluctuations reinforce future ones &mdash; fast spreading</td></tr>
-  <tr><td>Hyperballistic</td><td>&mu; &gt; 2.0</td><td>Extreme persistence &mdash; strongly correlated dynamics</td></tr>
+  <tr><th>Regime</th><th>Criterion (non-fBm models)</th><th>fBm criterion (H)</th><th>Physical interpretation</th></tr>
+  <tr><td><strong>Subdiffusive</strong></td><td>&mu; &lt; 0.95</td><td>H &lt; 0.475</td><td>Past fluctuations resist change &mdash; slow spreading</td></tr>
+  <tr><td><strong>Near-Brownian</strong></td><td>0.95 &le; &mu; &le; 1.05</td><td>0.475 &le; H &le; 0.525</td><td>Weak or no memory &mdash; ordinary random walk</td></tr>
+  <tr><td><strong>Superdiffusive</strong></td><td>1.05 &lt; &mu; &le; 2.0</td><td>H &gt; 0.525</td><td>Past reinforces future &mdash; fast spreading</td></tr>
+  <tr><td><strong>Hyperballistic</strong></td><td>&mu; &gt; 2.0</td><td>&mdash;</td><td>Extreme persistence &mdash; strongly correlated dynamics</td></tr>
 </table>
 
 <div class="note">
-  <strong>Scope:</strong> The package accepts any sequential 1D observable, not just time series.
-  Column 1 is the independent variable (time, index, lag, distance &hellip;);
-  column 2 is the observable. The word &ldquo;time series&rdquo; is used loosely throughout.
+  <strong>Scope:</strong> The package accepts any sequential 1D observable &mdash; not just
+  time series. Column 1 is the independent variable (time, index, frequency, distance,
+  occurrence number, etc.); column 2 is the observable. The term &ldquo;time&rdquo; is used
+  loosely throughout this guide.
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -218,21 +244,63 @@
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <h2>2. Installation</h2>
 
-<pre>pip install -e .          # development install (editable, from the repo root)
-pip install whitenoise     # future: once published to PyPI</pre>
+<pre>pip install -e .            # development install (editable, from the repo root)
+pip install whitenoise-swna  # once published to PyPI</pre>
 
-<p><strong>Dependencies:</strong> numpy &ge;1.20, scipy &ge;1.7, matplotlib &ge;3.4, pandas &ge;1.3. Optional: openpyxl (for Excel export).</p>
+<p><strong>Required dependencies:</strong> numpy &ge;1.20, scipy &ge;1.7, matplotlib &ge;3.4, pandas &ge;1.3.</p>
+<p><strong>Optional:</strong> <code>openpyxl &ge;3.0</code> for Excel export (<code>pip install openpyxl</code>).</p>
 
-<pre>import whitenoise as wn   # standard import alias used throughout this guide</pre>
+<pre>import whitenoise as wn    # standard import alias used throughout this guide
+
+print(wn.__version__)      # '0.2.0'</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  3. INPUT FORMAT                                                        -->
+<!--  3. QUICKSTART                                                          -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>3. CSV Input Format</h2>
+<h2>3. Quickstart</h2>
+
+<pre>import whitenoise as wn
+
+# --- Analyze a single CSV ---
+result = wn.analyze('sunspot.csv', model='exponential')
+result.summary()           # prints formatted parameter table
+result.plot_all()          # three-panel figure: series, MSD, PDF
+
+# --- Inspect data before fitting ---
+time, values, meta = wn.read_csv('sunspot.csv')
+wn.plot_series(time, values, metadata=meta)      # raw series
+lags, msd = wn.compute_msd(values)
+wn.plot_msd_empirical(lags, msd, metadata=meta)  # MSD shape check
+
+# --- Optional detrending before analysis ---
+fluct = wn.detrend(values, method='moving_average', window=11)
+result = wn.analyze(fluct, model='cosine', label='Sunspot fluctuations')
+
+# --- Compare multiple datasets ---
+comparison = wn.compare({
+    'Sunspots':    'sunspot.csv',
+    'Earthquakes': 'earthquake_ph.csv',
+}, model='exponential')
+print(comparison.summary_df)
+wn.publish_comparison(comparison)
+
+# --- Batch process a folder ---
+batch = wn.batch_analyze('data/xray_binaries/', model='cosine')
+batch.to_csv('results.csv')
+
+# --- Try all models on one file ---
+search = wn.batch_model_search('sunspot.csv')
+print(search.summary_df[['model', 'r_squared']].to_string())</pre>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  4. CSV INPUT FORMAT                                                    -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>4. CSV Input Format</h2>
 
 <p>
-  The package reads <strong>2-column CSV files</strong> with a required header row.
-  The header encodes column names and physical units in the format <code>name [unit]</code>:
+  The package reads <strong>2-column CSV files</strong> (or multi-column for batch mode)
+  with a required header row. The header encodes column names and physical units in the
+  format <code>name [unit]</code>:
 </p>
 
 <pre>time [months], sunspot_number [count]
@@ -242,644 +310,1181 @@ pip install whitenoise     # future: once published to PyPI</pre>
 
 <table>
   <tr><th>Rule</th><th>Detail</th></tr>
-  <tr><td>Column 1</td><td>Independent variable (time, index, frequency, distance, &hellip;). Always.</td></tr>
+  <tr><td>Column 1</td><td>Independent variable (time, index, occurrence number, distance, &hellip;). Always.</td></tr>
   <tr><td>Column 2</td><td>Observable to analyse. Always.</td></tr>
   <tr><td>Header format</td><td><code>name [unit]</code> &mdash; space before bracket is optional: <code>co2[ppm]</code> also works.</td></tr>
-  <tr><td>Unitless column</td><td>Use empty brackets: <code>flux []</code> or <code>value [unitless]</code></td></tr>
+  <tr><td>Unitless column</td><td>Use empty brackets: <code>flux []</code> or <code>value [unitless]</code>.</td></tr>
   <tr><td>No brackets</td><td>Also accepted: <code>time, distance</code> &mdash; unit defaults to empty string.</td></tr>
-  <tr><td>Multi-column CSV</td><td>Column 1 = independent variable; all other columns = separate observables (batch mode).</td></tr>
+  <tr><td>Case</td><td>Column names are case-insensitive internally; preserved as written for display.</td></tr>
+  <tr><td>Multi-column</td><td><code>time [yr], co2 [ppm], temperature [&deg;C]</code> &mdash; use <code>read_csv_multi()</code> or <code>batch_analyze()</code>.</td></tr>
+</table>
+
+<h3>Unit-based axis labels</h3>
+<p>Units are used exclusively for automatic axis labelling. No manual labelling is ever needed.</p>
+<table>
+  <tr><th>Header</th><th>Axis label produced</th></tr>
+  <tr><td><code>sunspot_number [count]</code></td><td>sunspot_number (count)</td></tr>
+  <tr><td><code>flux []</code></td><td>flux</td></tr>
+  <tr><td><code>value [unitless]</code></td><td>value</td></tr>
+  <tr><td><code>time [months]</code></td><td>time (months)</td></tr>
 </table>
 
 <h3>Automatic validation warnings (non-fatal)</h3>
-<p>On read, the package checks for four conditions and prints a <code>&#9888;</code> warning if triggered. None of them halt execution.</p>
-
+<p>
+  On read, the package checks four conditions and prints a <code>&#9888;</code> warning if triggered.
+  Execution always continues &mdash; none of these stop the pipeline.
+</p>
 <table>
-  <tr><th>Code</th><th>Condition</th><th>Warning message fragment</th></tr>
-  <tr><td>V1</td><td>Column 1 values not strictly increasing</td><td>&ldquo;not strictly increasing&rdquo;</td></tr>
-  <tr><td>V2</td><td>Column 1 name is not a recognised independent-variable name (e.g., &lsquo;measurement&rsquo;)</td><td>&ldquo;Column 1 name&rdquo;</td></tr>
-  <tr><td>V3</td><td>Unit contains &lsquo;count&rsquo;/&lsquo;freq&rsquo; and observable has negative values</td><td>&ldquo;Value range&rdquo;</td></tr>
-  <tr><td>V4</td><td>Column 1 spread is enormous relative to mean (possible column swap)</td><td>&ldquo;Column order&rdquo;</td></tr>
+  <tr><th>Code</th><th>Condition</th><th>Warning message</th></tr>
+  <tr><td>V1</td><td>Time column not strictly increasing</td><td>&#9888; Time column is not strictly increasing. Check your data order.</td></tr>
+  <tr><td>V2</td><td>Column 1 name not in known index names (e.g. not &ldquo;time&rdquo;, &ldquo;index&rdquo;, &ldquo;step&rdquo;, &ldquo;lag&rdquo;, &ldquo;year&rdquo;, etc.)</td><td>&#9888; Column 1 name &lsquo;&hellip;&rsquo; is not a recognized index name. Check column order.</td></tr>
+  <tr><td>V3</td><td>Unit implies non-negative values (count, flux, probability, ppm, &hellip;) but negative values found</td><td>&#9888; Negative values found in &lsquo;&hellip;&rsquo; with unit &lsquo;&hellip;&rsquo;. Expected non-negative values.</td></tr>
+  <tr><td>V4</td><td>Std of column 1 &gt; 1000 &times; |mean| &mdash; possible column swap</td><td>&#9888; Column 1 values look unusually variable. Are the columns swapped?</td></tr>
 </table>
 
-<h3>Reading a CSV</h3>
+<h3>read_csv()</h3>
+<code class="sig">read_csv(path: str) -&gt; tuple[np.ndarray, np.ndarray, dict]</code>
+<p>Read a 2-column whitenoise-format CSV file.</p>
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>path</td><td>str</td><td><em>required</em></td><td>Path to the CSV file.</td></tr>
+</table>
+<p><strong>Returns:</strong> a 3-tuple <code>(time, values, metadata)</code></p>
+<ul>
+  <li><code>time</code> &mdash; ndarray shape (N,), column 1 values.</li>
+  <li><code>values</code> &mdash; ndarray shape (N,), column 2 values.</li>
+  <li><code>metadata</code> &mdash; dict with keys: <code>x_name</code>, <code>x_unit</code>, <code>x_label</code>, <code>y_name</code>, <code>y_unit</code>, <code>y_label</code>, <code>source_file</code>, <code>n_points</code>.</li>
+</ul>
+<p><strong>Raises:</strong> <code>FileNotFoundError</code> with message <code>&#10007; File not found: {path}</code>; <code>ValueError</code> for malformed format.</p>
+
 <pre>time, values, meta = wn.read_csv('sunspot.csv')
+print(meta['y_label'])   # 'sunspot_number (count)'
+print(meta['x_label'])   # 'time (months)'
+print(meta['n_points'])  # e.g. 300
+print(meta['y_name'])    # 'sunspot_number'
+print(meta['y_unit'])    # 'count'</pre>
 
-# meta keys:
-#   x_name, x_unit, x_label   &larr; column 1
-#   y_name, y_unit, y_label   &larr; column 2
-#   source_file, n_points
+<h3>read_csv_multi()</h3>
+<code class="sig">read_csv_multi(path: str) -&gt; list[tuple[np.ndarray, np.ndarray, dict]]</code>
+<p>
+  Read a multi-column CSV. Returns one <code>(time, values, metadata)</code> tuple per
+  non-time column. Used internally by <code>batch_analyze()</code> in multi-column mode.
+</p>
 
-print(meta['y_label'])    # e.g. 'sunspot_number (count)'
-print(meta['x_label'])    # e.g. 'time (months)'</pre>
-
-<h3>Reading a multi-column CSV</h3>
 <pre>results = wn.read_csv_multi('climate.csv')
-# Returns list of (time, values, meta) tuples &mdash; one per observable column.
-print(len(results))       # e.g. 3  (co2, temperature, sst)</pre>
+# CSV has: time [yr], co2 [ppm], temperature [&deg;C]
+len(results)                           # 2 (co2 and temperature)
+results[0][2]['y_name']                # 'co2'
+results[1][2]['y_name']                # 'temperature'</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  4. FULL PIPELINE                                                       -->
+<!--  5. THE FULL PIPELINE                                                   -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>4. The Full Pipeline</h2>
+<h2>5. The Full Pipeline</h2>
 
 <div class="pipeline">
-  <span class="pipe-box">CSV file</span>
-  <span class="pipe-arrow">&#8594;</span>
-  <span class="pipe-box">read_csv()</span>
-  <span class="pipe-arrow">&#8594;</span>
-  <span class="pipe-box optional">detrend() / normalize()</span>
-  <span class="pipe-arrow">&#8594;</span>
-  <span class="pipe-box">analyze()</span>
-  <span class="pipe-arrow">&#8594;</span>
-  <span class="pipe-box">AnalysisResult</span>
-  <span class="pipe-arrow">&#8594;</span>
-  <span class="pipe-box optional">.summary() / plot / export</span>
+  <div class="pipe-box">CSV</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">read_csv()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box optional">detrend() <em>(optional)</em></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box optional">normalize() <em>(optional)</em></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">compute_msd()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">fit_msd()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">AnalysisResult</div>
 </div>
 
-<h3>4.1 Quickstart &mdash; CSV path</h3>
-<pre>result = wn.analyze('sunspot.csv', model='exponential')
-result.summary()                # prints formatted parameter table
-wn.plot_diagnostics(result)     # 2&times;2 overview: time series, MSD, PDF, parameters</pre>
+<p>
+  The <code>analyze()</code> function runs the entire pipeline in one call. You can also call
+  each step individually for full control.
+</p>
 
-<h3>4.2 Quickstart &mdash; NumPy array</h3>
-<pre>import numpy as np
-data = np.loadtxt('raw_data.txt')
-result = wn.analyze(data, model='cosine', label='My System')
-result.summary()</pre>
+<table>
+  <tr><th>Step</th><th>Function</th><th>Purpose</th><th>Mandatory?</th></tr>
+  <tr><td>1. Load</td><td><code>read_csv(path)</code></td><td>Read CSV, parse headers, validate</td><td>Yes (or array input)</td></tr>
+  <tr><td>2. Detrend</td><td><code>detrend(values, method=&hellip;)</code></td><td>Remove trend to extract fluctuations</td><td>No (researcher decides)</td></tr>
+  <tr><td>3. Normalize</td><td><code>normalize(values, method=&hellip;)</code></td><td>Scale data (rarely needed; N param absorbs amplitude)</td><td>No</td></tr>
+  <tr><td>4. MSD</td><td><code>compute_msd(values)</code></td><td>Compute empirical MSD array</td><td>Yes</td></tr>
+  <tr><td>5. Fit</td><td><code>fit_msd(lags, msd, model=&hellip;)</code></td><td>Fit theoretical model, extract &mu; with 95% CIs</td><td>Yes</td></tr>
+  <tr><td>6. Result</td><td><code>AnalysisResult</code></td><td>Container: params, MSD, plots, export</td><td>Yes</td></tr>
+</table>
 
 <div class="note">
-  When passing an array, <code>label=</code> is required &mdash; it becomes the dataset name in all
-  outputs and plots. When passing a CSV path, the dataset name is taken from the filename
-  (e.g. <code>'sunspot.csv'</code> &rarr; <code>'sunspot'</code>).
+  <strong>Note on normalization:</strong> Pre-analysis normalization is <em>not standard</em> in
+  the Bernido group&rsquo;s published work. The normalization scalar <strong>N</strong> in the
+  fit (<em>N &middot; msd_model</em>) absorbs data amplitude and scale automatically &mdash;
+  the memory parameter &mu; is unaffected by amplitude. Normalization is only useful in
+  rare edge cases of extreme numerical scale differences.
 </div>
 
-<h3>4.3 analyze() parameters</h3>
-<table>
-  <tr><th>Parameter</th><th>Default</th><th>Description</th></tr>
-  <tr><td><code>source</code></td><td>&mdash;</td><td>CSV file path <em>or</em> 1D array-like.</td></tr>
-  <tr><td><code>model</code></td><td><code>'cosine'</code></td><td>Model name. See Section 6.</td></tr>
-  <tr><td><code>label</code></td><td><code>''</code></td><td>Dataset name (required for array input; auto-set from y_name for CSV).</td></tr>
-  <tr><td><code>detrend_method</code></td><td><code>None</code></td><td>Remove trend before fitting. <code>None</code> skips. Options: <code>'linear'</code>, <code>'polynomial'</code>, <code>'mean'</code>, <code>'moving_average'</code>.</td></tr>
-  <tr><td><code>normalize</code></td><td><code>False</code></td><td>Z-score normalise values before fitting.</td></tr>
-  <tr><td><code>max_lag_fraction</code></td><td><code>1.0</code></td><td>Fraction of lags used in fitting (1.0 = all N/2 lags).</td></tr>
-  <tr><td><code>verbose</code></td><td><code>True</code></td><td>Print &#10003; progress lines and final R&sup2; / regime summary.</td></tr>
-  <tr><td><code>fit_kwargs</code></td><td><code>{}</code></td><td>Extra keyword arguments forwarded to <code>fit_msd()</code>.</td></tr>
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  6. analyze() AND AnalysisResult                                        -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>6. analyze() and AnalysisResult</h2>
+
+<h3>analyze()</h3>
+<code class="sig">analyze(source, model='cosine', label='', time=None, detrend_method=None,
+        normalize=False, max_lag_fraction=1.0, fit_kwargs=None, verbose=True)
+        -&gt; AnalysisResult</code>
+
+<p>Run the full SWNA pipeline on a CSV file or a data array.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>source</td><td>str or array-like</td><td><em>required</em></td><td>CSV file path (str) or 1D data array. When str, labels and units are read automatically from the header.</td></tr>
+  <tr><td>model</td><td>str</td><td><code>'cosine'</code></td><td>SWNA model name. Run <code>wn.list_models()</code> for options.</td></tr>
+  <tr><td>label</td><td>str</td><td><code>''</code></td><td>Dataset name. Auto-set from CSV <code>y_name</code> when source is a CSV. Required when source is an array.</td></tr>
+  <tr><td>time</td><td>array-like or None</td><td><code>None</code></td><td>Time axis. Only used when source is an array; ignored for CSV input (time comes from the file).</td></tr>
+  <tr><td>detrend_method</td><td>str or None</td><td><code>None</code></td><td>If not None, calls <code>detrend(values, method=detrend_method)</code> before MSD. Choices: <code>'linear'</code>, <code>'polynomial'</code>, <code>'mean'</code>, <code>'moving_average'</code>.</td></tr>
+  <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>If True, z-score normalizes values after detrending and before MSD.</td></tr>
+  <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags [0, 1] to use in fitting. Default 1.0 uses all N//2 lags.</td></tr>
+  <tr><td>fit_kwargs</td><td>dict or None</td><td><code>None</code></td><td>Extra keyword arguments forwarded to <code>fit_msd()</code>, e.g. <code>{'p0': [1.5, 0.01], 'bounds': &hellip;}</code>.</td></tr>
+  <tr><td>verbose</td><td>bool</td><td><code>True</code></td><td>If True, print &#10003; progress lines and final regime/R&sup2; summary. Fitting quality warnings are always printed regardless.</td></tr>
 </table>
 
-<h3>4.4 AnalysisResult fields</h3>
-<table>
-  <tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>.dataset_name</code></td><td>str</td><td>Filename stem or label.</td></tr>
-  <tr><td><code>.model</code></td><td>str</td><td>Model name used.</td></tr>
-  <tr><td><code>.fit</code></td><td>FitResult or None</td><td><code>None</code> if fitting failed (e.g. all-zero MSD).</td></tr>
-  <tr><td><code>.lags</code></td><td>ndarray</td><td>Lag array (integer steps).</td></tr>
-  <tr><td><code>.msd_empirical</code></td><td>ndarray</td><td>Empirical MSD values.</td></tr>
-  <tr><td><code>.values</code></td><td>ndarray</td><td>Preprocessed observable (after detrend/normalize if applied).</td></tr>
-  <tr><td><code>.time</code></td><td>ndarray</td><td>Independent variable array.</td></tr>
-  <tr><td><code>.metadata</code></td><td>dict</td><td>Keys: x_name, x_unit, x_label, y_name, y_unit, y_label, source_file, n_points.</td></tr>
-  <tr><td><code>.regime</code></td><td>str (property)</td><td><code>'subdiffusive'</code> / <code>'near-Brownian'</code> / <code>'superdiffusive'</code> / <code>'hyperballistic'</code></td></tr>
-  <tr><td><code>.mu</code></td><td>float (property)</td><td>Memory parameter &mu; (or H for fBm model).</td></tr>
-</table>
+<p><strong>Returns:</strong> <code>AnalysisResult</code></p>
+<p><strong>Raises:</strong> <code>ValueError</code> if model name is not in the MODELS registry (message lists valid names); <code>ValueError</code> if source is an array but label is not provided.</p>
 
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  5. PREPROCESSING                                                       -->
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>5. Optional Preprocessing</h2>
+<pre># From CSV (recommended for research)
+result = wn.analyze('sunspot.csv', model='exponential')
+result.summary()
 
-<p>
-  Preprocessing functions are <strong>never called automatically</strong> by <code>analyze()</code>.
-  The researcher applies them manually before analysis when scientifically appropriate.
-</p>
+# From array (after manual detrending)
+fluct = wn.detrend(values, method='moving_average', window=11)
+result = wn.analyze(fluct, model='cosine', label='Sunspot fluctuations')
 
-<div class="warn">
-  <strong>When to detrend:</strong> Only if the data has a deterministic trend that is not part of
-  the stochastic dynamics you want to study (e.g. a linear warming trend in temperature data).
-  Detrending changes the data; use <code>detrend_method=None</code> (the default) when in doubt.
+# Suppress all progress output
+result = wn.analyze('data.csv', model='cosine', verbose=False)
+
+# Pass custom initial guess to fitting
+result = wn.analyze('data.csv', model='cosine',
+                    fit_kwargs={'p0': [2.0, 0.005]})</pre>
+
+<div class="tip">
+  <strong>Tip:</strong> When <code>analyze()</code> is called with a CSV path, the
+  <code>dataset_name</code> field of the result is set to the filename stem (e.g.
+  <code>'sunspot'</code> for <code>sunspot.csv</code>). The <code>label</code> property
+  (used in plot titles) is set to the CSV <code>y_name</code> unless you override it.
 </div>
 
-<h3>5.1 detrend()</h3>
-<table>
-  <tr><th>Method</th><th>Description</th></tr>
-  <tr><td><code>'linear'</code></td><td>Subtract best-fit straight line (degree-1 polynomial).</td></tr>
-  <tr><td><code>'polynomial'</code></td><td>Subtract degree-<em>n</em> polynomial fit. Set <code>poly_order=n</code>.</td></tr>
-  <tr><td><code>'mean'</code></td><td>Subtract global mean only.</td></tr>
-  <tr><td><code>'moving_average'</code></td><td>Subtract a moving-average trend. Set <code>window=k</code>.</td></tr>
-  <tr><td><code>'psd'</code></td><td>Bernido detrending &sect;3.3 &mdash; power spectral density subtraction.</td></tr>
-  <tr><td><code>'fingerprint'</code></td><td>Bernido detrending &sect;3.4 &mdash; stochastic fingerprint method.</td></tr>
+<h3>AnalysisResult fields</h3>
+<table class="param-table">
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td>dataset_name</td><td>str</td><td>CSV filename stem, or the label you supplied for array input.</td></tr>
+  <tr><td>model</td><td>str</td><td>SWNA model name used for fitting.</td></tr>
+  <tr><td>fit</td><td>FitResult or None</td><td>Full fitting results. None if fitting failed.</td></tr>
+  <tr><td>lags</td><td>ndarray</td><td>Lag array from <code>compute_msd()</code>, integers 1&hellip;N//2.</td></tr>
+  <tr><td>msd_empirical</td><td>ndarray</td><td>Empirical MSD values at each lag.</td></tr>
+  <tr><td>values</td><td>ndarray</td><td>Preprocessed observable (after detrend/normalize if applied).</td></tr>
+  <tr><td>time</td><td>ndarray</td><td>Independent variable array (from CSV col 1, or supplied time=).</td></tr>
+  <tr><td>metadata</td><td>dict</td><td>Keys: <code>x_name</code>, <code>x_unit</code>, <code>x_label</code>, <code>y_name</code>, <code>y_unit</code>, <code>y_label</code>, <code>source_file</code>, <code>n_points</code>.</td></tr>
 </table>
 
-<pre>fluct = wn.detrend(values, method='linear')
-fluct = wn.detrend(values, method='polynomial', poly_order=2)
-fluct = wn.detrend(values, method='moving_average', window=11)</pre>
-
-<h3>5.2 normalize()</h3>
-<table>
-  <tr><th>Method</th><th>Output range</th><th>Use case</th></tr>
-  <tr><td><code>'zscore'</code></td><td>mean=0, std=1</td><td>Standard normalisation before fitting.</td></tr>
-  <tr><td><code>'minmax'</code></td><td>[0, 1]</td><td>Bounded positive data.</td></tr>
-  <tr><td><code>'mean'</code></td><td>mean=1</td><td>Preserve scale, center around 1.</td></tr>
-  <tr><td><code>'maxabs'</code></td><td>[&minus;1, 1]</td><td>Oscillating data; preserves zero and sign.</td></tr>
+<h3>AnalysisResult properties</h3>
+<table class="param-table">
+  <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+  <tr><td>.regime</td><td>str</td><td>Diffusion regime: <code>'subdiffusive'</code>, <code>'near-Brownian'</code>, <code>'superdiffusive'</code>, <code>'hyperballistic'</code>, or <code>'plateau (DNA)'</code> for the dna model. Returns <code>'N/A'</code> if fit is None.</td></tr>
+  <tr><td>.mu</td><td>float</td><td>The primary memory parameter: &mu; for most models, H for fbm, a for dna. Convenience shortcut into <code>fit.params</code>.</td></tr>
 </table>
 
-<pre>normed = wn.normalize(values, method='zscore')
-normed = wn.normalize(values, method='maxabs')   # good for oscillating data</pre>
+<h3>AnalysisResult methods</h3>
 
-<h3>5.3 smooth()</h3>
-<pre>smoothed = wn.smooth(values, window=7, method='moving_average')
-smoothed = wn.smooth(values, window=7, method='gaussian')</pre>
+<p><strong>.summary()</strong> &mdash; Prints a formatted analysis summary block to stdout:</p>
+<pre>&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
+ SWNA Analysis Summary
+&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
+ Dataset   : sunspot_data
+ Model     : exponential
+ Points    : 300
+ Lags used : 150
+&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+ Parameters:
+   &#956;      = 1.1500  &#177;  0.0082
+   &#946;      = 0.1000  &#177;  0.0030
+   N      = 2.4312  &#177;  0.0441
+ R&#178;        = 0.9823
+ Regime    : superdiffusive
+&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+ Units     : x=time (months), y=sunspot_number (count)
+&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;</pre>
 
-<h3>5.4 Full preprocessing workflow example</h3>
-<pre>time, values, meta = wn.read_csv('co2_keeling.csv')
+<p><strong>.to_dict()</strong> &mdash; Returns a flat dict with all results (label, model, mu, r_squared, regime, n_points, all parameter values, standard errors, and confidence interval bounds). Useful for aggregating results manually.</p>
 
-# Inspect raw data first
-wn.plot_series(time, values, metadata=meta)
+<p><strong>.to_csv(path)</strong> &mdash; Writes <code>to_dict()</code> as a single-row CSV with header. Prints <code>&#10003; Saved to {path}</code>.</p>
 
-# Remove quadratic trend (CO2 has a nonlinear growth trend)
-fluct = wn.detrend(values, method='polynomial', poly_order=2)
-wn.plot_series(time, fluct, metadata=meta, title='CO2 fluctuations')
+<pre>result.to_csv('/tmp/my_result.csv')
 
-# Analyse the residuals
-result = wn.analyze(fluct, model='cosine', label='CO2 fluctuations')
-result.summary()</pre>
+import pandas as pd
+df = pd.read_csv('/tmp/my_result.csv')
+print(df[['mu', 'r_squared', 'regime']])</pre>
+
+<h3>Shortcut plot methods on AnalysisResult</h3>
+<p>These delegate to the viz functions described in Section 10.</p>
+<pre>result.plot_all(show=True)    # three-panel: series | MSD | PDF  (from viz/publish.py)
+result.plot_msd(show=True)    # MSD scatter + fitted curve overlay
+result.plot_pdf(show=True)    # displacement histogram + theoretical PDF</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  6. MODELS                                                              -->
+<!--  7. PREPROCESSING                                                       -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2 class="page-break">6. Models</h2>
+<h2>7. Preprocessing (Optional)</h2>
 
 <p>
-  Run <code>wn.list_models()</code> to print a full table at any time.
-  The researcher <strong>always selects the model manually</strong> &mdash; the package
-  never auto-selects. If R&sup2; &lt; 0.5 after fitting, the package prints a suggestion
-  to try other models.
+  These helpers are <em>optional</em>. Call them manually before <code>analyze()</code>
+  if your data has a non-stationary trend or needs smoothing. The pipeline never calls them
+  automatically unless you pass <code>detrend_method=</code> to <code>analyze()</code>.
 </p>
 
-<h3>6.1 Available models</h3>
+<div class="note">
+  <strong>When to detrend:</strong> The SWNA framework assumes the observable represents
+  <em>fluctuations</em> around some baseline. If your data has a clear long-term trend
+  (e.g. a rising CO&sub2; baseline, a linear drift), remove it first. If the data is already
+  fluctuating around zero, no detrending is needed.
+</div>
+
+<h3>detrend()</h3>
+<code class="sig">detrend(values, method='linear', poly_order=1, window=7) -&gt; np.ndarray</code>
+
+<p>Remove a trend from a time series to extract fluctuations.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Input time series.</td></tr>
+  <tr><td>method</td><td>str</td><td><code>'linear'</code></td><td>Detrending method (see table below).</td></tr>
+  <tr><td>poly_order</td><td>int</td><td><code>1</code></td><td>Polynomial degree. Used only when <code>method='polynomial'</code>. Ignored otherwise.</td></tr>
+  <tr><td>window</td><td>int</td><td><code>7</code></td><td>Moving average window size. Used only when <code>method='moving_average'</code>. Must be odd; even values are silently incremented by 1.</td></tr>
+</table>
+
 <table>
-  <tr><th>Name</th><th>Row</th><th>Parameters</th><th>MSD formula (schematic)</th><th>Reference</th></tr>
+  <tr><th>method=</th><th>What it does</th><th>When to use</th></tr>
+  <tr><td><code>'linear'</code></td><td>Fits a degree-1 polynomial and subtracts it.</td><td>Long-term linear drift (e.g. population growth).</td></tr>
+  <tr><td><code>'polynomial'</code></td><td>Fits a degree-<code>poly_order</code> polynomial and subtracts it.</td><td>Smooth nonlinear trend (e.g. CO&sub2; seasonal + secular).</td></tr>
+  <tr><td><code>'mean'</code></td><td>Subtracts the global mean only.</td><td>Data already stationary; just removes DC offset.</td></tr>
+  <tr><td><code>'moving_average'</code></td><td>Subtracts a uniform moving average of width <code>window</code>.</td><td>Slowly varying baseline (e.g. sunspot cycle &mdash; Bernido et al. &sect;3.2).</td></tr>
+</table>
+
+<p><strong>Returns:</strong> ndarray same length as input (fluctuations around removed trend).</p>
+<p><strong>Raises:</strong> <code>ValueError</code> with <code>&#10007;</code> prefix for unknown method.</p>
+
+<pre># Sunspot detrending (as in Bernido et al. &sect;3.2)
+time, values, meta = wn.read_csv('sunspot.csv')
+fluct = wn.detrend(values, method='moving_average', window=11)
+result = wn.analyze(fluct, model='exponential', label='Sunspot fluctuations')
+
+# CO2 polynomial detrend
+time, co2, meta = wn.read_csv('co2.csv')
+fluct = wn.detrend(co2, method='polynomial', poly_order=2)
+result = wn.analyze(fluct, model='cosine', label='CO2 fluctuations')</pre>
+
+<p>There are also two advanced detrending functions not exposed in the standard pipeline but available in <code>utils/preprocess.py</code>:</p>
+<ul>
+  <li><code>detrend_psd(values, threshold=0.5)</code> &mdash; Removes dominant periodic components via Power Spectral Density analysis (PSD filtering). Useful for algae-type predator&ndash;prey data with strong deterministic cycles (Bernido et al. &sect;3.3).</li>
+  <li><code>detrend_fingerprint(values, cycle_length=None, trough_indices=None)</code> &mdash; Cycle averaging (&ldquo;fingerprinting&rdquo;) detrending: aligns repeated cycles at their maxima, averages them, then subtracts. Useful when cycles have similar shapes but vary in timing (Bernido et al. &sect;3.4).</li>
+</ul>
+
+<h3>normalize()</h3>
+<code class="sig">normalize(values, method='zscore') -&gt; np.ndarray</code>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Input time series.</td></tr>
+  <tr><td>method</td><td>str</td><td><code>'zscore'</code></td><td>Normalization method (see table below).</td></tr>
+</table>
+
+<table>
+  <tr><th>method=</th><th>Formula</th><th>Result range</th><th>Notes</th></tr>
+  <tr><td><code>'zscore'</code></td><td>(x &minus; mean) / std</td><td>mean=0, std=1</td><td>Standard z-score.</td></tr>
+  <tr><td><code>'minmax'</code></td><td>(x &minus; min) / (max &minus; min)</td><td>[0, 1]</td><td>Shifts and scales to unit interval.</td></tr>
+  <tr><td><code>'mean'</code></td><td>x / mean(x)</td><td>mean=1</td><td>Preserves shape; mean normalized to 1.</td></tr>
+  <tr><td><code>'maxabs'</code></td><td>x / max(|x|)</td><td>[&minus;1, 1]</td><td>Preserves zero and sign. Best for oscillating or detrended data where zero has physical meaning.</td></tr>
+</table>
+
+<p><strong>Raises:</strong> <code>ValueError</code> with <code>&#10007;</code> prefix for unknown method; also for <code>'maxabs'</code> when all values are zero.</p>
+
+<h3>smooth()</h3>
+<code class="sig">smooth(values, window=5, method='moving_average') -&gt; np.ndarray</code>
+
+<p>Smooth a time series. Output is always the same length as input.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Input time series.</td></tr>
+  <tr><td>window</td><td>int</td><td><code>5</code></td><td>Kernel width (moving_average) or sigma=window/4 (gaussian). Odd recommended; even silently incremented.</td></tr>
+  <tr><td>method</td><td>str</td><td><code>'moving_average'</code></td><td><code>'moving_average'</code> (uniform box filter) or <code>'gaussian'</code> (Gaussian kernel via scipy.ndimage).</td></tr>
+</table>
+
+<p><strong>Returns:</strong> ndarray same length as input.</p>
+<p><strong>Raises:</strong> <code>ValueError</code> with <code>&#10007;</code> prefix for unknown method. Prints <code>&#9888;</code> if even window given.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  8. CORE FUNCTIONS                                                      -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>8. Core Functions</h2>
+
+<h3>compute_msd()</h3>
+<code class="sig">compute_msd(x, max_lag=None, normalize=False) -&gt; tuple[np.ndarray, np.ndarray]</code>
+
+<p>Compute the empirical Mean Square Displacement of a 1D time series.</p>
+<p>Formula: <code>MSD(&Delta;) = (1 / (N&minus;&Delta;)) &middot; &sum;<sub>i</sub> [x(i+&Delta;) &minus; x(i)]&sup2;</code></p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>x</td><td>array-like (1D)</td><td><em>required</em></td><td>Fluctuating observable. Accepts ndarray, pd.Series, list. Isolated NaN values are replaced by linear interpolation before computation.</td></tr>
+  <tr><td>max_lag</td><td>int or None</td><td><code>None</code></td><td>Maximum lag. Defaults to N//2. Hard-capped at N//2 (beyond N/2, each MSD estimate uses fewer than N/2 data pairs and becomes unreliable).</td></tr>
+  <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>If True, divide all MSD values by MSD[0] (lag=1). Preserves the scaling exponent &mu; while setting the initial value to 1.</td></tr>
+</table>
+
+<p><strong>Returns:</strong> <code>(lags, msd)</code> &mdash; both shape (max_lag,). <code>lags</code> are integer steps 1&hellip;max_lag.</p>
+<p><strong>Raises:</strong> <code>ValueError</code> if input is not 1D (message: <code>&#10007; Input must be 1D. Got shape &hellip;</code>); if fewer than 10 points (message: <code>&#10007; Need at least 10 data points. Got &hellip;</code>); if more than 50% NaN (message: <code>&#10007; Too many missing values (&hellip;% NaN). Check your data.</code>).</p>
+
+<pre>time, values, meta = wn.read_csv('sunspot.csv')
+lags, msd = wn.compute_msd(values)
+print(lags.shape)   # (N//2,) e.g. (150,) for 300 points
+
+# Inspect shape before fitting
+wn.plot_msd_empirical(lags, msd, metadata=meta)</pre>
+
+<h3>fit_msd()</h3>
+<code class="sig">fit_msd(lags, msd_empirical, model='cosine', p0=None, bounds=None,
+        max_lag_fraction=1.0) -&gt; FitResult | None</code>
+
+<p>
+  Fit <code>N &middot; msd_theory(T, *params)</code> to empirical MSD using
+  Levenberg&ndash;Marquardt (scipy.optimize.curve_fit). <code>N</code> is a normalization
+  scalar always included alongside the physical parameters.
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>lags</td><td>ndarray</td><td><em>required</em></td><td>Lag values from <code>compute_msd()</code>.</td></tr>
+  <tr><td>msd_empirical</td><td>ndarray</td><td><em>required</em></td><td>MSD values from <code>compute_msd()</code>.</td></tr>
+  <tr><td>model</td><td>str</td><td><code>'cosine'</code></td><td>SWNA model name.</td></tr>
+  <tr><td>p0</td><td>list or None</td><td><code>None</code></td><td>Initial guess for physical parameters only (N=1.0 appended internally). If None, uses built-in defaults per model.</td></tr>
+  <tr><td>bounds</td><td>tuple or None</td><td><code>None</code></td><td>Bounds as (lower_list, upper_list) for physical params only. N bounds [0.01, inf] appended automatically. If None, uses built-in defaults.</td></tr>
+  <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags [0, 1] to use in fitting. E.g. 0.5 uses only the first half of lags.</td></tr>
+</table>
+
+<p><strong>Returns:</strong> <code>FitResult</code>, or <code>None</code> (never raises &mdash; prints <code>&#10007;</code> on failure).</p>
+<p>On R&sup2; &lt; 0.5 after a successful fit, prints <code>&#9888; Low R&sup2; (&hellip;). Consider trying other models: &hellip;</code></p>
+
+<p><strong>Default p0 and bounds per model</strong> (physical params only; N is appended as [0.01, &infin;] always):</p>
+<table>
+  <tr><th>Model</th><th>Default p0</th><th>Lower bounds</th><th>Upper bounds</th></tr>
+  <tr><td>cosine</td><td>[1.2, 0.01]</td><td>[0.01, 1e-9]</td><td>[5.0, 10.0]</td></tr>
+  <tr><td>exponential</td><td>[1.2, 0.1]</td><td>[0.01, 1e-9]</td><td>[5.0, 100.0]</td></tr>
+  <tr><td>sine</td><td>[1.2, 0.01]</td><td>[0.01, 1e-9]</td><td>[5.0, 10.0]</td></tr>
+  <tr><td>fbm</td><td>[0.6]</td><td>[0.01]</td><td>[2.0]</td></tr>
+  <tr><td>dna</td><td>[5.0, 0.01, 3.0]</td><td>[0.01, 1e-9, 0.01]</td><td>[1000, 100, 1000]</td></tr>
+  <tr><td>inc_gamma</td><td>[1.5, 0.1]</td><td>[0.01, 1e-9]</td><td>[10.0, 100.0]</td></tr>
+  <tr><td>bessel_jmu_nu</td><td>[1.0, 0.5]</td><td>[0.01, &minus;0.99]</td><td>[10.0, 10.0]</td></tr>
+</table>
+
+<pre># Standard use (most common — done automatically inside analyze())
+lags, msd = wn.compute_msd(values)
+result = wn.fit_msd(lags, msd, model='exponential')
+
+if result is not None:
+    print(result.params['mu'])    # e.g. 1.15
+    print(result.r_squared)       # e.g. 0.982
+
+# Custom initial guess
+result = wn.fit_msd(lags, msd, model='cosine',
+                    p0=[2.0, 0.005])
+
+# Use only first 60% of lags in fitting
+result = wn.fit_msd(lags, msd, model='cosine',
+                    max_lag_fraction=0.6)</pre>
+
+<h3>FitResult (dataclass)</h3>
+<p>Returned by <code>fit_msd()</code>. All fields are always present when fit succeeds.</p>
+
+<table class="param-table">
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td>params</td><td>dict</td><td>Fitted parameter values. Keys depend on model, e.g. <code>{'mu': 1.15, 'beta': 0.08, 'N': 2.3}</code>.</td></tr>
+  <tr><td>std_errors</td><td>dict</td><td>Standard errors <code>sqrt(diag(pcov))</code>, same keys as params.</td></tr>
+  <tr><td>confidence_intervals</td><td>dict</td><td>95% CIs as (lo, hi) tuples. CI = param &pm; 1.96&times;SE, same keys as params.</td></tr>
+  <tr><td>r_squared</td><td>float</td><td>Coefficient of determination R&sup2; = 1 &minus; SS_res / SS_tot.</td></tr>
+  <tr><td>model</td><td>str</td><td>Name of the fitted model.</td></tr>
+  <tr><td>lags_used</td><td>ndarray</td><td>Lag values after <code>max_lag_fraction</code> truncation.</td></tr>
+  <tr><td>msd_fitted</td><td>ndarray</td><td>Theoretical curve <code>N &middot; msd_theory(lags_used, *physical_params)</code>.</td></tr>
+</table>
+
+<p><strong>.summary()</strong> &mdash; Returns a formatted box-drawing string showing all params, SEs, CIs, and R&sup2;:</p>
+<pre>print(result.fit.summary())
+# &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+# &#9474;  Fit Summary                            &#9474;
+# &#9474;  Model  : cosine          R&#178; = 0.9823  &#9474;
+# &#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+# &#9474;  &#956;    = 1.2341 &#177; 0.0082                &#9474;
+# &#9474;         95% CI: (1.218, 1.250)          &#9474;
+# &#9474;  &#957;    = 0.0082 &#177; 0.0003                 &#9474;
+# &#9474;         95% CI: (0.008, 0.009)          &#9474;
+# &#9474;  N    = 2.4312 &#177; 0.0441                 &#9474;
+# &#9474;         95% CI: (2.345, 2.518)          &#9474;
+# &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</pre>
+
+<p>Parameter order in <code>FitResult.params</code>:</p>
+<ul>
+  <li><strong>cosine, sine:</strong> mu, nu, N</li>
+  <li><strong>exponential:</strong> mu, beta, N</li>
+  <li><strong>fbm:</strong> H, N</li>
+  <li><strong>dna:</strong> a, b, c, N</li>
+  <li><strong>inc_gamma:</strong> nu, mu, N</li>
+  <li><strong>bessel_jmu_nu:</strong> mu, nu, N</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  9. MODELS                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>9. Models</h2>
+
+<p>
+  The MODELS registry contains 19 models (18 from Table 2.1 of the Bernido &amp;
+  Carpio-Bernido non-Markovian book, plus the DNA plateau model from Violanda et al. 2019).
+  Model selection is always <em>manual</em> &mdash; the researcher specifies <code>model=</code>.
+  The package never auto-selects. Run <code>wn.list_models()</code> to see all models and
+  their current status.
+</p>
+
+<h3>Available models (fully implemented)</h3>
+<table>
+  <tr><th>Name</th><th>Row</th><th>Params</th><th>MSD Formula</th><th>Published application</th></tr>
   <tr>
-    <td><code class="available">cosine</code></td><td>10</td><td>&mu;, &nu;</td>
-    <td>&radic;&pi; &middot; &Gamma;(&mu;) &middot; cos(&nu;T/2) &middot; J<sub>&mu;&minus;1/2</sub>(&nu;T/2) / (T/&nu;)<sup>1/2&minus;&mu;</sup></td>
-    <td>Table 2.1 row 10</td>
+    <td><code>fbm</code></td><td>1</td><td>H</td>
+    <td>T<sup>2H</sup></td>
+    <td>Benchmark; H=0.5 is Brownian</td>
   </tr>
   <tr>
-    <td><code class="available">exponential</code></td><td>4</td><td>&mu;, &beta;</td>
-    <td>&Gamma;(&mu;) &middot; &beta;<sup>&minus;&mu;</sup> &middot; T<sup>&mu;&minus;1</sup> &middot; e<sup>&minus;&beta;/T</sup></td>
-    <td>Table 2.1 row 4</td>
-  </tr>
-  <tr>
-    <td><code class="available">sine</code></td><td>9</td><td>&mu;, &nu;</td>
-    <td>Same structure as cosine but with sin(&nu;T/2)</td>
-    <td>Table 2.1 row 9</td>
-  </tr>
-  <tr>
-    <td><code class="available">fbm</code></td><td>1</td><td>H</td>
-    <td>T<sup>2H</sup> &nbsp; (H = 0.5 &rarr; Brownian)</td>
-    <td>Table 2.1 row 1</td>
-  </tr>
-  <tr>
-    <td><code class="available">sin_half</code></td><td>2</td><td>(none)</td>
+    <td><code>sin_half</code></td><td>2</td><td>&mdash;</td>
     <td>1 &minus; cos(T)</td>
-    <td>Table 2.1 row 2</td>
+    <td>No parameters; oscillatory</td>
   </tr>
   <tr>
-    <td><code class="available">cos_half</code></td><td>3</td><td>(none)</td>
-    <td>1 &minus; J<sub>0</sub>(T)</td>
-    <td>Table 2.1 row 3</td>
+    <td><code>cos_half</code></td><td>3</td><td>&mdash;</td>
+    <td>sin(T)</td>
+    <td>No parameters; oscillatory</td>
   </tr>
   <tr>
-    <td><code class="available">inc_gamma</code></td><td>14</td><td>&nu;, &mu;</td>
-    <td>Incomplete gamma function form</td>
-    <td>Table 2.1 row 14</td>
+    <td><code>exponential</code></td><td>4</td><td>&mu;, &beta;</td>
+    <td>&Gamma;(&mu;) &middot; &beta;<sup>&minus;&mu;</sup> &middot; T<sup>&mu;&minus;1</sup> &middot; e<sup>&minus;&beta;/T</sup></td>
+    <td>Earthquakes (Roque et al. 2024, &mu;&asymp;1.00&ndash;1.19); Sunspots (Toledo et al. 2024, &mu;&asymp;1.15)</td>
   </tr>
   <tr>
-    <td><code class="available">dna</code></td><td>&mdash;</td><td>a, b, c</td>
-    <td>Plateau model: MSD(L) = a &minus; c &middot; e<sup>&minus;bL</sup> &nbsp; [rises from a&minus;c, saturates at a]</td>
-    <td>Violanda et al. 2019 &mdash; nucleotide separations in bacterial genomes</td>
+    <td><code>sine</code></td><td>9</td><td>&mu;, &nu;</td>
+    <td>&radic;&pi; &middot; &Gamma;(&mu;) &middot; sin(&nu;T/2) &middot; J<sub>&mu;&minus;1/2</sub>(&nu;T/2) &middot; (T/&nu;)<sup>&mu;&minus;1/2</sup></td>
+    <td>Planktonic predator&ndash;prey (Tun&#771;aco et al., unpublished)</td>
   </tr>
   <tr>
-    <td><code class="available">bessel_j0_cos</code></td><td>&mdash;</td><td>&mu;, &nu;</td>
-    <td>Bessel J<sub>0</sub> &times; cosine modulation</td>
-    <td>Extension</td>
+    <td><code>cosine</code></td><td>10</td><td>&mu;, &nu;</td>
+    <td>&radic;&pi; &middot; &Gamma;(&mu;) &middot; cos(&nu;T/2) &middot; J<sub>&mu;&minus;1/2</sub>(&nu;T/2) &middot; (T/&nu;)<sup>&mu;&minus;1/2</sup></td>
+    <td>GBR coral (Elnar et al. 2021, &mu;&asymp;4.64); CO&sub2; (Elnar et al. 2024, &mu;&asymp;0.91&ndash;0.97); X-ray binaries (Calotes 2024)</td>
   </tr>
   <tr>
-    <td><code class="available">bessel_jmu_nu</code></td><td>&mdash;</td><td>&mu;, &nu;</td>
-    <td>Power-law Bessel modulation</td>
-    <td>Extension</td>
+    <td><code>inc_gamma</code></td><td>14</td><td>&nu;, &mu;</td>
+    <td>&Gamma;(&nu;) &middot; P(&nu;, &mu;T) / &mu;<sup>&nu;</sup></td>
+    <td>Restricted diffusion (plateau shape)</td>
+  </tr>
+  <tr>
+    <td><code>bessel_j0_cos</code></td><td>17</td><td>&mdash;</td>
+    <td>J<sub>0</sub>(T) &minus; cos(T)</td>
+    <td>No parameters; Bessel convolution identity</td>
+  </tr>
+  <tr>
+    <td><code>bessel_jmu_nu</code></td><td>18</td><td>&mu;, &nu;</td>
+    <td>J<sub>&mu;+&nu;</sub>(T) / &mu;</td>
+    <td>Oscillatory Bessel model</td>
+  </tr>
+  <tr>
+    <td><code>dna</code></td><td>&mdash;</td><td>a, b, c</td>
+    <td>a &minus; c &middot; e<sup>&minus;bL</sup></td>
+    <td>DNA nucleotide separation (Violanda et al. 2019, Phys. Scr. 94, 125006)</td>
   </tr>
 </table>
 
-<h3>6.2 Stub models (not yet implemented)</h3>
-<p>The following are registered but raise <code>NotImplementedError</code> when called:</p>
-<p>
-  <code class="stub">exp_whittaker</code> &middot;
-  <code class="stub">bessel_K</code> &middot;
-  <code class="stub">hypergeom_F1</code> &middot;
-  <code class="stub">bessel_I</code> &middot;
-  <code class="stub">hypergeom_3F2</code> &middot;
-  <code class="stub">csc_power</code> &middot;
-  <code class="stub">cot_power</code> &middot;
-  <code class="stub">bessel_pair</code> &middot;
-  <code class="stub">bessel_pair2</code>
-</p>
-
-<h3>6.3 Parameters reference</h3>
+<h3>Stub models (not yet implemented)</h3>
+<p>These are registered in the MODELS registry but raise <code>NotImplementedError</code> when called.</p>
 <table>
-  <tr><th>Symbol</th><th>Name</th><th>Models</th><th>Interpretation</th></tr>
-  <tr><td><span class="param">&mu;</span></td><td>Memory parameter</td><td>cosine, exponential, sine, and most others</td><td>Controls diffusion regime; see Section 1.</td></tr>
-  <tr><td><span class="param">&nu;</span></td><td>Characteristic frequency</td><td>cosine, sine, bessel_jmu_nu, bessel_j0_cos</td><td>Sets the oscillation period of the modulating function.</td></tr>
-  <tr><td><span class="param">&beta;</span></td><td>Exponential decay rate</td><td>exponential</td><td>Controls how fast the memory decays with lag.</td></tr>
-  <tr><td><span class="param">H</span></td><td>Hurst exponent</td><td>fbm</td><td>H &lt; 0.5 subdiffusive; H = 0.5 Brownian; H &gt; 0.5 superdiffusive.</td></tr>
-  <tr><td><span class="param">a, b, c</span></td><td>Plateau parameters</td><td>dna</td><td>a = plateau height (MSD &rarr; a as L &rarr; &infin;); b = decay rate; c = exponential amplitude (must satisfy c &lt; a).</td></tr>
-  <tr><td><span class="param">N</span></td><td>Normalization scalar</td><td>all models</td><td>Fitted alongside physical params; scales MSD amplitude without changing shape.</td></tr>
+  <tr><th>Name</th><th>Row</th><th>Params</th><th>Description</th></tr>
+  <tr><td><code>exp_whittaker</code></td><td>5</td><td>&mu;, &beta;, &nu;</td><td>Power-law memory with Whittaker W function</td></tr>
+  <tr><td><code>bessel_K</code></td><td>6</td><td>&mu;, &beta;</td><td>Power-law memory with modified Bessel K</td></tr>
+  <tr><td><code>hypergeom_F1</code></td><td>7</td><td>&mu;, &beta;, &nu;</td><td>Power-law memory with Appell hypergeometric F1</td></tr>
+  <tr><td><code>bessel_I</code></td><td>8</td><td>&mu;, &beta;</td><td>Power-law memory with modified Bessel I</td></tr>
+  <tr><td><code>hypergeom_3F2</code></td><td>11</td><td>&mu;, &beta;, &lambda;</td><td>Power-law with generalized hypergeometric &#8323;F&#8322;</td></tr>
+  <tr><td><code>csc_power</code></td><td>12</td><td>&nu;, c</td><td>Cosecant power-law modulation</td></tr>
+  <tr><td><code>cot_power</code></td><td>13</td><td>&nu;, c</td><td>Cotangent power-law modulation</td></tr>
+  <tr><td><code>bessel_pair</code></td><td>15</td><td>&nu;</td><td>Bessel function pair (no memory parameter)</td></tr>
+  <tr><td><code>bessel_pair2</code></td><td>16</td><td>&nu;, &mu;</td><td>Bessel function pair with memory parameter</td></tr>
 </table>
 
-<h3>6.4 Model selection guidance</h3>
+<h3>Parameter reference</h3>
 <table>
-  <tr><th>Data type</th><th>Suggested starting model</th></tr>
-  <tr><td>Astronomical / geophysical time series</td><td><code>cosine</code> or <code>exponential</code></td></tr>
-  <tr><td>Earthquake / seismic data</td><td><code>exponential</code></td></tr>
-  <tr><td>X-ray binary / stellar flux</td><td><code>cosine</code></td></tr>
-  <tr><td>CO&sub2; / climate data</td><td><code>cosine</code></td></tr>
-  <tr><td>Brownian-like diffusion</td><td><code>fbm</code> (H &asymp; 0.5)</td></tr>
-  <tr><td>DNA / polymer conformation data</td><td><code>dna</code></td></tr>
-  <tr><td>Unknown / exploratory</td><td>Use <code>wn.batch_model_search()</code> to try all available models</td></tr>
+  <tr><th>Symbol</th><th>Name</th><th>Models</th><th>Physical meaning</th></tr>
+  <tr><td>&mu;</td><td>mu</td><td>cosine, sine, exponential, bessel_jmu_nu</td><td>Memory parameter. &mu;&lt;1 subdiffusive, &mu;=1 Brownian, &mu;&gt;1 superdiffusive, &mu;&gt;2 hyperballistic.</td></tr>
+  <tr><td>&nu;</td><td>nu</td><td>cosine, sine, bessel_jmu_nu</td><td>Characteristic frequency (rad per time unit). Controls oscillation period.</td></tr>
+  <tr><td>&beta;</td><td>beta</td><td>exponential</td><td>Exponential decay rate (inverse time unit). Controls MSD shape at small lags.</td></tr>
+  <tr><td>H</td><td>H</td><td>fbm</td><td>Hurst exponent. H=0.5 &rarr; Brownian, H&lt;0.5 subdiffusive, H&gt;0.5 superdiffusive. Range: (0, 1].</td></tr>
+  <tr><td>a, b, c</td><td>&mdash;</td><td>dna</td><td>a = plateau MSD value; b = saturation rate; c = initial depression (a&gt;c required). Regime is &ldquo;plateau (DNA)&rdquo;.</td></tr>
+  <tr><td>N</td><td>N</td><td>all models</td><td>Normalization scalar. Always fitted alongside physical params. Absorbs data amplitude. Does not affect &mu;.</td></tr>
 </table>
+
+<h3>Model selection guidance</h3>
+<div class="note">
+  <strong>One model per run:</strong> <code>analyze()</code> fits exactly one model. Selecting
+  the right model is the researcher&rsquo;s responsibility. If unsure, start with
+  <code>model='exponential'</code> (most commonly used in published Bernido-group work). If
+  your data shows clear oscillatory structure, try <code>model='cosine'</code>.
+  Use <code>wn.batch_model_search('mydata.csv')</code> to run all available models and
+  compare R&sup2; values side by side.
+</div>
+
+<table>
+  <tr><th>R&sup2; range</th><th>Interpretation</th><th>Action</th></tr>
+  <tr><td>&ge; 0.8</td><td>Good fit</td><td>Report &mu; with 95% CI. Results are reliable.</td></tr>
+  <tr><td>0.5 &ndash; 0.8</td><td>Moderate fit</td><td>Caution. Report but note uncertainty. Consider another model.</td></tr>
+  <tr><td>&lt; 0.5</td><td>Poor fit</td><td>Model is likely wrong. The package prints a &#9888; warning and suggests alternatives. Try <code>batch_model_search()</code>.</td></tr>
+</table>
+
+<h3>list_models() and get_model()</h3>
+<code class="sig">list_models() -&gt; None
+get_model(name: str) -&gt; dict</code>
+
+<pre>wn.list_models()   # prints formatted table of all 19 models and their status
+
+info = wn.get_model('cosine')
+info['msd']        # callable: msd_cosine(T, mu, nu)
+info['params']     # ['mu', 'nu']
+info['status']     # 'available'
+info['n_params']   # 2</pre>
+
+<p><code>get_model()</code> raises <code>ValueError</code> if the name is unknown; raises <code>NotImplementedError</code> if the model status is <code>'not_implemented'</code>.</p>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  7. FitResult                                                           -->
+<!--  10. PLOTTING                                                           -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>7. FitResult &mdash; Fit Output</h2>
+<h2>10. Plotting</h2>
 
 <p>
-  <code>result.fit</code> is a <code>FitResult</code> dataclass, or <code>None</code> if fitting failed.
-  All fits use Levenberg&ndash;Marquardt via <code>scipy.optimize.curve_fit</code>.
-  95% confidence intervals are always included.
+  The package provides two sets of plotting functions. <strong>Exploratory plots</strong>
+  (<code>viz/explore.py</code>) are fast and annotated &mdash; designed for interactive
+  inspection. <strong>Publication plots</strong> (<code>viz/publish.py</code>) apply strict
+  rcParams styling (serif font, inward ticks, dpi=150) suitable for papers and reports.
 </p>
-
-<table>
-  <tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>.params</code></td><td>dict</td><td>Point estimates, e.g. <code>{'mu': 1.15, 'beta': 0.08, 'N': 2.3}</code></td></tr>
-  <tr><td><code>.std_errors</code></td><td>dict</td><td>Standard errors (sqrt of pcov diagonal)</td></tr>
-  <tr><td><code>.confidence_intervals</code></td><td>dict</td><td>95% CI as <code>(lo, hi)</code> tuples; CI = param &plusmn; 1.96 &times; SE</td></tr>
-  <tr><td><code>.r_squared</code></td><td>float</td><td>R&sup2; = 1 &minus; SS_res / SS_tot. Closer to 1 is better.</td></tr>
-  <tr><td><code>.lags_used</code></td><td>ndarray</td><td>Lags actually used in fitting (after max_lag_fraction truncation)</td></tr>
-  <tr><td><code>.msd_fitted</code></td><td>ndarray</td><td>N &middot; msd_model(T) evaluated at lags_used</td></tr>
-  <tr><td><code>.model</code></td><td>str</td><td>Model name</td></tr>
-</table>
-
-<pre>result.fit.params           # {'mu': 1.15, 'beta': 0.08, 'N': 2.3}
-result.fit.r_squared        # 0.9823
-result.fit.confidence_intervals['mu']   # (1.11, 1.19)
-print(result.fit.summary()) # formatted text block</pre>
 
 <div class="note">
-  <strong>R&sup2; interpretation:</strong> &ge;0.8 = good fit; 0.5&ndash;0.8 = moderate; &lt;0.5 = poor
-  (the package will suggest alternative models automatically).
+  <strong>Headless server note:</strong> <code>import whitenoise as wn</code> does <em>not</em>
+  import matplotlib at package level. Viz functions import matplotlib lazily on first call.
+  On headless servers (no display), set the backend before calling any viz function:
+  <code>import matplotlib; matplotlib.use("Agg")</code>
 </div>
 
-<div class="warn">
-  <strong>Fitting method &mdash; OLS, not WLS:</strong>
-  The fitting uses ordinary least squares (OLS) via <code>scipy.optimize.curve_fit</code>,
-  which minimises the unweighted sum of squared residuals (SSR).
-  This treats all lag points equally, but MSD estimates at large lags are computed
-  from fewer data pairs and are therefore noisier and less reliable than short-lag estimates.
-  A weighted least squares (WLS) approach &mdash; down-weighting large lags in proportion to
-  their variance &mdash; is not currently implemented.
-  <br><br>
-  <strong>Practical consequence:</strong> If the large-lag end of the empirical MSD is erratic,
-  it can pull the fitted curve away from the well-sampled short-lag region, inflating or
-  deflating R&sup2; in a misleading way. Use <code>max_lag_fraction=0.5</code> to restrict
-  fitting to the first half of lags (the most statistically reliable region) when this occurs.
-</div>
+<h3>Exploratory plots &mdash; viz/explore.py</h3>
+<p>All exploratory functions return a <code>matplotlib.figure.Figure</code>. All accept <code>ax=None</code> (create new figure) and <code>show=True</code> (call <code>plt.show()</code>).</p>
 
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  8. PLOTTING                                                            -->
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2 class="page-break">8. Plotting</h2>
+<h3>plot_series()</h3>
+<code class="sig">plot_series(x, values, metadata=None, title='', ax=None, show=True) -&gt; Figure</code>
+
+<p>Plot raw sequential data directly from <code>read_csv()</code>. Use this for a quick visual inspection before <code>analyze()</code>. No analysis needed.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>x</td><td>array-like (1D)</td><td><em>required</em></td><td>Independent variable (time, index, etc.).</td></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Observable values.</td></tr>
+  <tr><td>metadata</td><td>dict or None</td><td><code>None</code></td><td>The metadata dict from <code>read_csv()</code>. When provided, axis labels are set automatically from <code>x_label</code> and <code>y_label</code>.</td></tr>
+  <tr><td>title</td><td>str</td><td><code>''</code></td><td>Custom plot title. If empty, uses <code>metadata['y_name']</code> if available.</td></tr>
+  <tr><td>ax</td><td>Axes or None</td><td><code>None</code></td><td>Axes to draw on. Creates new figure (10&times;3.5) if None.</td></tr>
+  <tr><td>show</td><td>bool</td><td><code>True</code></td><td>If True, call plt.show() after drawing.</td></tr>
+</table>
+
+<pre>time, values, meta = wn.read_csv('sunspot.csv')
+fig = wn.plot_series(time, values, metadata=meta)
+
+# After detrending
+fluct = wn.detrend(values, method='moving_average', window=11)
+fig = wn.plot_series(time, fluct, metadata=meta, title='Sunspot fluctuations')</pre>
+
+<h3>plot_msd_empirical()</h3>
+<code class="sig">plot_msd_empirical(lags, msd, metadata=None, title='', ax=None, show=True) -&gt; Figure</code>
+
+<p>Plot empirical MSD scatter from <code>compute_msd()</code>. Use this to inspect the MSD shape before fitting &mdash; useful for deciding which model to try. figsize (7&times;4.5) when ax=None.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>lags</td><td>array-like</td><td><em>required</em></td><td>Lag array from <code>compute_msd()</code>.</td></tr>
+  <tr><td>msd</td><td>array-like</td><td><em>required</em></td><td>MSD values from <code>compute_msd()</code>.</td></tr>
+  <tr><td>metadata</td><td>dict or None</td><td><code>None</code></td><td>From <code>read_csv()</code>. Provides lag unit for x-axis label automatically.</td></tr>
+  <tr><td>title</td><td>str</td><td><code>''</code></td><td>Custom plot title.</td></tr>
+  <tr><td>ax, show</td><td></td><td></td><td>Standard ax/show parameters.</td></tr>
+</table>
+
+<pre>lags, msd = wn.compute_msd(values)
+fig = wn.plot_msd_empirical(lags, msd, metadata=meta)</pre>
+
+<h3>plot_msd()</h3>
+<code class="sig">plot_msd(result, ax=None, show=True) -&gt; Figure</code>
 
 <p>
-  Two plotting modules are provided. Both return a <code>matplotlib.figure.Figure</code>
-  and accept <code>show=True</code> (default) and <code>ax=None</code> (for embedding into existing figures).
+  Plot empirical MSD scatter and fitted theoretical MSD curve overlay, with R&sup2; in the
+  legend label. Requires an <code>AnalysisResult</code> with a successful fit. figsize (7&times;4.5) when ax=None.
 </p>
 
-<h3>8.1 explore.py &mdash; Exploratory / interactive</h3>
-<p>Use these at any stage of the pipeline to quickly inspect data.</p>
+<pre>result = wn.analyze('sunspot.csv', model='exponential')
+fig = wn.plot_msd(result)</pre>
 
-<table>
-  <tr><th>Function</th><th>When to use</th><th>Inputs</th></tr>
-  <tr>
-    <td><code>wn.plot_series(x, values, metadata=meta)</code></td>
-    <td>After <code>read_csv()</code> &mdash; inspect raw or detrended data</td>
-    <td>x array, values array, optional metadata dict</td>
-  </tr>
-  <tr>
-    <td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td>
-    <td>After <code>compute_msd()</code> &mdash; inspect MSD shape before fitting</td>
-    <td>lags and msd arrays from <code>compute_msd()</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.plot_msd(result)</code></td>
-    <td>After <code>analyze()</code> &mdash; empirical scatter + fitted curve</td>
-    <td>AnalysisResult</td>
-  </tr>
-  <tr>
-    <td><code>wn.plot_pdf(result)</code></td>
-    <td>After <code>analyze()</code> &mdash; displacement histogram + Gaussian PDF</td>
-    <td>AnalysisResult; optional <code>lag_index=</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.plot_timeseries(result)</code></td>
-    <td>After <code>analyze()</code> &mdash; preprocessed observable</td>
-    <td>AnalysisResult</td>
-  </tr>
-  <tr>
-    <td><code>wn.plot_diagnostics(result)</code></td>
-    <td>Full 2&times;2 overview: time series, MSD, PDF, parameter box</td>
-    <td>AnalysisResult</td>
-  </tr>
+<h3>plot_pdf()</h3>
+<code class="sig">plot_pdf(result, lag_index=None, ax=None, show=True) -&gt; Figure</code>
+
+<p>Plot empirical displacement histogram versus theoretical Gaussian PDF at a chosen lag. figsize (6&times;4.5) when ax=None.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>result</td><td>AnalysisResult</td><td><em>required</em></td><td>Output of <code>analyze()</code>.</td></tr>
+  <tr><td>lag_index</td><td>int or None</td><td><code>None</code></td><td>Index into <code>result.lags</code> selecting the lag T at which PDF is evaluated. Defaults to <code>len(result.lags) // 10</code>.</td></tr>
+  <tr><td>ax, show</td><td></td><td></td><td>Standard parameters.</td></tr>
 </table>
 
-<h3>8.2 publish.py &mdash; Publication-quality</h3>
-<p>Serif font, inward ticks, dpi=150, no emoji, clean styling. Use for figures in papers.</p>
+<h3>plot_timeseries()</h3>
+<code class="sig">plot_timeseries(result, ax=None, show=True) -&gt; Figure</code>
 
-<table>
-  <tr><th>Function</th><th>Output</th></tr>
-  <tr><td><code>wn.publish_msd(result, palette='default', save_path='fig.pdf')</code></td><td>MSD plot: empirical scatter + fitted line, R&sup2; in legend</td></tr>
-  <tr><td><code>wn.publish_pdf(result, lag_index=None, save_path='fig.pdf')</code></td><td>Displacement PDF at a selected lag</td></tr>
-  <tr><td><code>wn.publish_comparison(cr, save_path='fig.pdf')</code></td><td>Horizontal bar chart of &mu; values with 95% CI error bars</td></tr>
+<p>Plot <code>result.values</code> vs <code>result.time</code> &mdash; the preprocessed observable stored in the result. figsize (9&times;3.5) when ax=None.</p>
+
+<h3>plot_diagnostics()</h3>
+<code class="sig">plot_diagnostics(result, show=True) -&gt; Figure</code>
+
+<p>Two-by-two diagnostic figure: [time series | MSD] [PDF | parameter text box]. Returns Figure. figsize (12&times;8).</p>
+
+<pre>fig = wn.plot_diagnostics(result, show=False)
+fig.savefig('diagnostics.png', dpi=150, bbox_inches='tight')</pre>
+
+<h3>Publication plots &mdash; viz/publish.py</h3>
+<p>
+  Publication-quality plots apply strict rcParams: serif font, inward ticks on all sides,
+  dpi=150. All functions return a <code>matplotlib.figure.Figure</code>. All accept
+  <code>show=True</code>.
+</p>
+
+<div class="tip">
+  <strong>Saving publication figures:</strong> Use <code>save_path=</code> in all publish
+  functions. The format is inferred from the extension: .pdf, .png, .svg, .eps, or .jpg.
+  The directory is created automatically if it does not exist.
+</div>
+
+<h3>publish_msd()</h3>
+<code class="sig">publish_msd(result, palette='default', figsize=(5, 4), save_path=None, show=True) -&gt; Figure</code>
+
+<p>Publication-quality MSD plot: empirical scatter + fitted curve.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>result</td><td>AnalysisResult</td><td><em>required</em></td><td>Output of <code>analyze()</code>.</td></tr>
+  <tr><td>palette</td><td>str</td><td><code>'default'</code></td><td><code>'default'</code> (dark navy/red) or <code>'colorblind'</code> (blue/orange).</td></tr>
+  <tr><td>figsize</td><td>tuple</td><td><code>(5, 4)</code></td><td>Figure size in inches.</td></tr>
+  <tr><td>save_path</td><td>str or None</td><td><code>None</code></td><td>If provided, saves figure. Format inferred from extension.</td></tr>
+  <tr><td>show</td><td>bool</td><td><code>True</code></td><td>If True, call plt.show().</td></tr>
 </table>
 
-<pre># Save a publication-quality MSD figure as PNG
-wn.publish_msd(result, save_path='figures/msd_sunspot.png')
+<pre>fig = wn.publish_msd(result, palette='default', save_path='msd_plot.pdf')</pre>
 
-# Save a comparison chart
-wn.publish_comparison(cr, save_path='figures/comparison.pdf')
+<h3>publish_pdf()</h3>
+<code class="sig">publish_pdf(result, lag_index=None, palette='default', figsize=(5, 4), save_path=None, show=True) -&gt; Figure</code>
 
-# Colorblind-friendly palette
-wn.publish_msd(result, palette='colorblind', save_path='fig.pdf')</pre>
+<p>Publication-quality displacement PDF plot. Lag selection works identically to <code>plot_pdf()</code>. <code>lag_index</code> defaults to <code>len(lags) // 10</code>.</p>
 
-<p>Supported save formats: <code>pdf</code>, <code>png</code>, <code>svg</code>, <code>eps</code>, <code>jpg</code>. Format inferred from the file extension.</p>
+<pre>fig = wn.publish_pdf(result, save_path='pdf_plot.svg')</pre>
 
-<h3>8.3 Plotting at every pipeline stage &mdash; example</h3>
-<pre>time, values, meta = wn.read_csv('earthquake_ph.csv')
+<h3>publish_comparison()</h3>
+<code class="sig">publish_comparison(cr, palette='default', figsize=None, save_path=None, show=True) -&gt; Figure</code>
 
-# Stage 1: raw data
-wn.plot_series(time, values, metadata=meta)
+<p>Publication-quality &mu; comparison bar chart with 95% CI error bars. One bar per system; auto-sized figure if <code>figsize=None</code>.</p>
 
-# Stage 2: after detrending
-fluct = wn.detrend(values, method='linear')
-wn.plot_series(time, fluct, metadata=meta, title='Residuals')
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>cr</td><td>ComparisonResult</td><td><em>required</em></td><td>Output of <code>compare()</code> or <code>batch_analyze()</code>.</td></tr>
+  <tr><td>palette</td><td>str</td><td><code>'default'</code></td><td><code>'default'</code> or <code>'colorblind'</code>.</td></tr>
+  <tr><td>figsize</td><td>tuple or None</td><td><code>None</code></td><td>Figure size. Auto-sized based on number of systems if None.</td></tr>
+  <tr><td>save_path</td><td>str or None</td><td><code>None</code></td><td>Save path. Format inferred from extension.</td></tr>
+</table>
 
-# Stage 3: empirical MSD before fitting
-lags, msd = wn.compute_msd(fluct)
-wn.plot_msd_empirical(lags, msd, metadata=meta)
+<pre>comp = wn.compare({'A': 'a.csv', 'B': 'b.csv'}, model='cosine')
+fig = wn.publish_comparison(comp, save_path='comparison.pdf')</pre>
 
-# Stage 4: full analysis with fitted MSD
-result = wn.analyze(fluct, model='exponential', label='Earthquake PH')
-wn.plot_msd(result)          # empirical + fitted
-wn.plot_diagnostics(result)  # full overview</pre>
+<h3>plot_all() (on AnalysisResult or via wn.plot_all)</h3>
+<p>The <code>result.plot_all()</code> shortcut calls <code>wn.plot_all(result)</code> from <code>viz/publish.py</code>:</p>
+<code class="sig">plot_all(result, show=True) -&gt; Figure</code>
+
+<p>Three-panel figure (15&times;4.5): [time series | MSD fit | PDF]. Supertitle includes dataset name, model, &mu;, and regime. Returns Figure.</p>
+
+<pre>fig = result.plot_all(show=False)
+fig.savefig('full_result.png', dpi=150, bbox_inches='tight')</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  9. COMPARE & BATCH                                                     -->
+<!--  11. MULTI-DATASET ANALYSIS                                             -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2 class="page-break">9. Comparing Multiple Datasets</h2>
+<div class="page-break"></div>
+<h2>11. Multi-Dataset Analysis</h2>
 
-<h3>9.1 compare() &mdash; same model, multiple datasets</h3>
-<pre># Dict input &mdash; custom labels, mix of CSV paths and arrays
-cr = wn.compare({
+<h3>compare()</h3>
+<code class="sig">compare(datasets, model='cosine', detrend_method=None, normalize=False,
+        max_lag_fraction=1.0, fit_kwargs=None) -&gt; ComparisonResult</code>
+
+<p>Analyze multiple datasets with the same model and collect results for comparison.</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>datasets</td><td>list or dict</td><td><em>required</em></td><td>
+    <strong>list[str]:</strong> CSV file paths; labels auto-set from filenames (stem).<br>
+    <strong>dict:</strong> keys = labels (str), values = CSV paths (str) or 1D arrays.
+  </td></tr>
+  <tr><td>model</td><td>str</td><td><code>'cosine'</code></td><td>SWNA model applied to all datasets.</td></tr>
+  <tr><td>detrend_method</td><td>str or None</td><td><code>None</code></td><td>Detrending method for all datasets.</td></tr>
+  <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>Whether to z-score normalize before fitting.</td></tr>
+  <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags used in fitting.</td></tr>
+  <tr><td>fit_kwargs</td><td>dict or None</td><td><code>None</code></td><td>Extra kwargs for <code>fit_msd()</code>.</td></tr>
+</table>
+
+<pre># Dict of CSV paths
+comp = wn.compare({
     'Earthquakes': 'earthquake_ph.csv',
     'Sunspots':    'sunspot.csv',
-    'CO2 Keeling': co2_array,
+    'Coral':       'coral_gbr.csv',
 }, model='exponential')
 
-# List input &mdash; labels auto-set from filenames
-cr = wn.compare(['chile.csv', 'japan.csv', 'ph.csv'], model='cosine')
+# Dict mixing paths and arrays
+comp = wn.compare({
+    'System A': 'data_a.csv',
+    'System B': my_array,
+}, model='cosine')
 
-# Per-dataset models
-cr = wn.compare({'A': 'a.csv', 'B': 'b.csv'},
-                model={'A': 'cosine', 'B': 'exponential'})</pre>
+# List of CSV paths (labels from filenames)
+comp = wn.compare(['a.csv', 'b.csv', 'c.csv'], model='cosine')
 
-<p><code>cr</code> is a <code>ComparisonResult</code>:</p>
-<pre>cr.summary_df           # pandas DataFrame with one row per dataset
-cr.results              # list of AnalysisResult objects
-wn.print_comparison(cr) # print ASCII table to terminal
-wn.publish_comparison(cr, save_path='comparison.pdf')</pre>
+print(comp.summary_df)
+wn.publish_comparison(comp)</pre>
 
-<h3>9.2 batch_analyze() &mdash; three input modes</h3>
+<p>
+  Each dataset is analyzed with <code>verbose=False</code> internally (progress lines are
+  suppressed). <code>compare()</code> prints a one-line summary per dataset:
+  <code>[i/n] label &rarr; R&sup2;=&hellip;, regime=&hellip;</code>
+</p>
+
+<h3>batch_analyze()</h3>
+<code class="sig">batch_analyze(source, model='cosine', pattern='*.csv', detrend_method=None,
+              normalize=False, max_lag_fraction=1.0, fit_kwargs=None, n_jobs=1)
+              -&gt; ComparisonResult</code>
+
+<p>Batch SWNA on multiple CSV files. Three input modes:</p>
+
 <table>
-  <tr><th>Mode</th><th>source argument</th><th>Example</th></tr>
-  <tr><td>A &mdash; Folder</td><td>Folder path string</td><td><code>wn.batch_analyze('data/xray_binaries/')</code></td></tr>
-  <tr><td>B &mdash; List</td><td>List of CSV paths</td><td><code>wn.batch_analyze(['a.csv', 'b.csv'])</code></td></tr>
-  <tr><td>C &mdash; Multi-column CSV</td><td>CSV path with multiple observables</td><td><code>wn.batch_analyze('climate.csv')</code></td></tr>
+  <tr><th>Mode</th><th>source type</th><th>What happens</th></tr>
+  <tr><td>A &mdash; Folder</td><td>str (directory path, or str not ending in .csv)</td><td>Reads all files matching <code>pattern</code> (default <code>'*.csv'</code>) in the folder. Labels from filenames.</td></tr>
+  <tr><td>B &mdash; List of CSV paths</td><td>list[str]</td><td>Reads each CSV explicitly. Labels from filenames.</td></tr>
+  <tr><td>C &mdash; Multi-column CSV</td><td>str ending in .csv</td><td>Each non-time column is analyzed as a separate system via <code>read_csv_multi()</code>. Labels from <code>y_name</code>.</td></tr>
 </table>
 
-<pre>cr = wn.batch_analyze('data/xray_binaries/', model='cosine', n_jobs=4)
-cr.summary_df       # one row per dataset
-wn.export_summary(cr, 'results/batch_summary.csv')</pre>
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>source</td><td>str or list[str]</td><td><em>required</em></td><td>Folder path, multi-column CSV path, or list of CSV file paths.</td></tr>
+  <tr><td>model</td><td>str</td><td><code>'cosine'</code></td><td>SWNA model applied to all datasets.</td></tr>
+  <tr><td>pattern</td><td>str</td><td><code>'*.csv'</code></td><td>Glob pattern for folder mode (Mode A only).</td></tr>
+  <tr><td>detrend_method</td><td>str or None</td><td><code>None</code></td><td>Detrending method for all datasets.</td></tr>
+  <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>Whether to z-score normalize before fitting.</td></tr>
+  <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags used in fitting.</td></tr>
+  <tr><td>fit_kwargs</td><td>dict or None</td><td><code>None</code></td><td>Extra kwargs for <code>fit_msd()</code>.</td></tr>
+  <tr><td>n_jobs</td><td>int</td><td><code>1</code></td><td>Number of parallel worker threads. n_jobs=1 is serial. n_jobs&gt;1 uses ThreadPoolExecutor. Parallel mode requires CSV file paths as input (not arrays).</td></tr>
+</table>
 
-<div class="note">
-  <strong>Parallel mode:</strong> <code>n_jobs &gt; 1</code> uses <code>ThreadPoolExecutor</code>.
-  Works for CSV-path inputs only. For in-memory arrays, use <code>n_jobs=1</code>.
-</div>
+<pre># Mode A: folder
+batch = wn.batch_analyze('data/xray_binaries/', model='cosine')
 
-<h3>9.3 batch_model_search() &mdash; find the best model</h3>
-<pre>cr = wn.batch_model_search(
-    'sunspot.csv',
-    models=['cosine', 'exponential', 'sine', 'fbm'],  # None = all available
+# Mode A: with glob pattern
+batch = wn.batch_analyze('data/', model='exponential', pattern='*earthquake*.csv')
+
+# Mode B: explicit list
+batch = wn.batch_analyze(
+    ['chile.csv', 'japan.csv', 'ph.csv'],
+    model='exponential'
 )
-# Prints R&sup2; for each model and reports the best one.
-cr.summary_df.sort_values('r_squared', ascending=False)</pre>
 
-<h3>9.4 ComparisonResult fields</h3>
-<table>
-  <tr><th>Attribute</th><th>Description</th></tr>
-  <tr><td><code>.summary_df</code></td><td>DataFrame with columns: dataset_name, model, mu, mu_ci, nu_or_beta, nu_or_beta_ci, N, r_squared, regime.</td></tr>
-  <tr><td><code>.results</code></td><td>List of AnalysisResult objects (only successful fits).</td></tr>
-  <tr><td><code>.models_used</code></td><td>List of model names used.</td></tr>
+# Mode C: multi-column CSV
+batch = wn.batch_analyze('climate.csv', model='cosine')
+# Climate CSV has: time [yr], co2 [ppm], temperature [&deg;C], sst [&deg;C]
+# Result has 3 systems: co2, temperature, sst
+
+# Parallel (n_jobs > 1 requires CSV paths as input)
+batch = wn.batch_analyze('data/', model='cosine', n_jobs=4)
+
+print(batch.summary_df)
+batch.to_csv('batch_results.csv')</pre>
+
+<h3>batch_model_search()</h3>
+<code class="sig">batch_model_search(path, models=None, detrend_method=None, normalize=False,
+                   max_lag_fraction=1.0, fit_kwargs=None) -&gt; ComparisonResult</code>
+
+<p>
+  Fit every available model to a single CSV file. Stub models are silently skipped.
+  Returns a <code>ComparisonResult</code> sorted by R&sup2; descending.
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>path</td><td>str</td><td><em>required</em></td><td>Path to a whitenoise-format CSV file.</td></tr>
+  <tr><td>models</td><td>list[str] or None</td><td><code>None</code></td><td>Models to try. None &rarr; all available models from the MODELS registry.</td></tr>
+  <tr><td>detrend_method</td><td>str or None</td><td><code>None</code></td><td>Detrending method.</td></tr>
+  <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>Whether to z-score normalize before fitting.</td></tr>
+  <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags used in fitting.</td></tr>
+  <tr><td>fit_kwargs</td><td>dict or None</td><td><code>None</code></td><td>Extra kwargs for <code>fit_msd()</code>.</td></tr>
 </table>
 
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  10. EXPORT                                                             -->
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>10. Exporting Results</h2>
+<pre>search = wn.batch_model_search('sunspot.csv')
+# Prints: cosine &rarr; R&sup2;=0.982, exponential &rarr; R&sup2;=0.961, fbm &rarr; R&sup2;=0.834, ...
 
-<table>
-  <tr><th>Function</th><th>Exports</th></tr>
-  <tr><td><code>wn.export_csv(result, 'out.csv')</code></td><td>Single AnalysisResult &rarr; one-row CSV with all parameters.</td></tr>
-  <tr><td><code>wn.export_summary(cr, 'out.csv')</code></td><td>ComparisonResult.summary_df &rarr; multi-row CSV.</td></tr>
-</table>
+print(search.summary_df[['model', 'mu', 'r_squared']].to_string())
+# Best model is in the first row (sorted by R&sup2; descending)
+best_model = search.summary_df.iloc[0]['model']
+print(f'Best model: {best_model}')</pre>
 
-<pre>result = wn.analyze('sunspot.csv', model='exponential')
-wn.export_csv(result, 'results/sunspot_fit.csv')
-
-cr = wn.compare(['a.csv', 'b.csv'], model='cosine')
-wn.export_summary(cr, 'results/comparison.csv')</pre>
-
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  11. ADVANCED                                                           -->
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>11. Advanced Usage</h2>
-
-<h3>11.1 Direct MSD computation</h3>
-<pre>lags, msd = wn.compute_msd(values)
-lags, msd = wn.compute_msd(values, max_lag=100)        # cap at 100 lags
-lags, msd = wn.compute_msd(values, normalize=True)     # divide by msd[0]</pre>
-
-<div class="note">
-  The maximum lag is always capped at N/2 (where N is the number of data points).
-  Beyond N/2, each MSD estimate uses fewer than N/2 pairs and becomes statistically unreliable.
+<div class="tip">
+  <strong>Tip:</strong> Use <code>batch_model_search()</code> as your starting point when
+  you are unfamiliar with which SWNA model applies to your data. Then re-run
+  <code>analyze()</code> with the best model explicitly for the final result and plots.
 </div>
 
-<h3>11.2 Direct fitting</h3>
-<pre>fit = wn.fit_msd(lags, msd_empirical, model='cosine')
-fit = wn.fit_msd(lags, msd_empirical, model='cosine',
-                 p0=[1.2, 0.01],          # initial guess [mu, nu]
-                 bounds=([0.01, 1e-9], [5.0, 10.0]),
-                 max_lag_fraction=0.5)    # fit only first half of lags</pre>
+<h3>ComparisonResult</h3>
+<table class="param-table">
+  <tr><th>Field / Method</th><th>Type</th><th>Description</th></tr>
+  <tr><td>results</td><td>list[AnalysisResult]</td><td>Successfully analyzed results (failed runs are excluded from this list but appear as NaN rows in summary_df).</td></tr>
+  <tr><td>models_used</td><td>list[str]</td><td>Distinct model names used across all runs.</td></tr>
+  <tr><td>summary_df</td><td>pd.DataFrame</td><td>One row per dataset/model. Columns: <code>dataset_name</code>, <code>model</code>, <code>mu</code>, <code>mu_ci</code>, <code>nu_or_beta</code>, <code>nu_or_beta_ci</code>, <code>N</code>, <code>r_squared</code>, <code>regime</code>.</td></tr>
+  <tr><td>.to_csv(path)</td><td>method</td><td>Save <code>summary_df</code> to CSV. Prints &#10003;.</td></tr>
+  <tr><td>.to_excel(path)</td><td>method</td><td>Save <code>summary_df</code> to Excel. Prints &#9888; if openpyxl not installed.</td></tr>
+</table>
 
-<h3>11.3 Model registry</h3>
-<pre>wn.list_models()             # print all 19 models and their status
-info = wn.get_model('cosine')
-print(info['params'])        # ['mu', 'nu']
-print(info['status'])        # 'available'
-msd_val = info['msd'](10.0, 1.2, 0.05)   # call MSD function directly</pre>
+<div class="note">
+  <strong>Note on summary_df columns:</strong> The <code>mu</code> column holds &mu; for
+  cosine/sine/exponential, H for fbm, and <code>a</code> for the dna model.
+  The <code>nu_or_beta</code> column holds &nu; for cosine/sine, &beta; for exponential,
+  and NaN for fbm, dna, and parameter-free models.
+</div>
 
-<h3>11.4 Headless / server environments</h3>
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  12. EXPORT                                                             -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>12. Export</h2>
+
+<h3>export_csv()</h3>
+<code class="sig">export_csv(result, path: str) -&gt; None</code>
+
+<p>
+  Save an <code>AnalysisResult</code> or <code>ComparisonResult</code> to CSV.
+  <code>AnalysisResult</code> &rarr; single-row CSV from <code>result.to_dict()</code>.
+  <code>ComparisonResult</code> &rarr; multi-row CSV from <code>result.summary_df</code>.
+  Prints <code>&#10003; Saved to {path}</code>.
+</p>
+
+<pre>wn.export_csv(result, 'sunspot_result.csv')
+wn.export_csv(comparison, 'all_results.csv')</pre>
+
+<h3>export_summary()</h3>
+<code class="sig">export_summary(cr, path: str) -&gt; None</code>
+
+<p>Save <code>ComparisonResult.summary_df</code> to CSV. Equivalent to <code>cr.to_csv(path)</code>.</p>
+
+<pre>wn.export_summary(comparison, 'summary.csv')</pre>
+
+<h3>Saving plots</h3>
+<pre># From publish functions
+wn.publish_msd(result, save_path='figure1.pdf')
+
+# From any matplotlib Figure
+fig = wn.plot_all(result, show=False)
+fig.savefig('figure2.png', dpi=300, bbox_inches='tight')</pre>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  13. ADVANCED USAGE                                                     -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>13. Advanced Usage</h2>
+
+<h3>Running the pipeline step by step</h3>
+<p>For full control, call each step individually:</p>
+<pre>import whitenoise as wn
+import numpy as np
+
+# Step 1: Load
+time, values, meta = wn.read_csv('sunspot.csv')
+
+# Step 2: Inspect
+fig = wn.plot_series(time, values, metadata=meta, show=False)
+
+# Step 3: Detrend (manual decision)
+fluct = wn.detrend(values, method='moving_average', window=11)
+
+# Step 4: Compute MSD
+lags, msd = wn.compute_msd(fluct)
+
+# Step 5: Inspect MSD shape
+wn.plot_msd_empirical(lags, msd, metadata=meta)
+
+# Step 6: Fit with custom initial guess
+fit = wn.fit_msd(lags, msd, model='exponential',
+                 p0=[1.5, 0.05],
+                 max_lag_fraction=0.8)
+
+if fit is not None:
+    print(fit.summary())
+    print(f'mu = {fit.params[\"mu\"]:.4f}')
+    lo, hi = fit.confidence_intervals['mu']
+    print(f'95% CI: ({lo:.4f}, {hi:.4f})')</pre>
+
+<h3>Custom p0 and bounds</h3>
+<p>
+  If the default initial guesses fail (fit returns None or R&sup2; is low), supply
+  <code>p0</code> and/or <code>bounds</code> based on domain knowledge. Remember:
+  <strong>N is always appended internally</strong> &mdash; do not include it in p0 or bounds.
+</p>
+<pre># Custom p0 for cosine model (physical params mu, nu only; N appended internally)
+result = wn.analyze('coral.csv', model='cosine',
+                    fit_kwargs={'p0': [4.5, 0.003]})
+
+# Custom p0 and bounds
+result = wn.analyze('coral.csv', model='cosine',
+                    fit_kwargs={
+                        'p0':    [4.5, 0.003],
+                        'bounds': ([0.5, 1e-9], [10.0, 1.0]),
+                    })</pre>
+
+<h3>Accessing the model registry directly</h3>
+<pre>from whitenoise.core.models import MODELS, msd_cosine, pdf_cosine
+import numpy as np
+
+T = np.linspace(1, 100, 200)
+msd_vals = msd_cosine(T, mu=1.3, nu=0.008)
+
+info = wn.get_model('exponential')
+msd_fn = info['msd']
+msd_vals = msd_fn(T, 1.15, 0.1)   # msd_exponential(T, mu, beta)</pre>
+
+<h3>Headless server (no display)</h3>
 <pre>import matplotlib
-matplotlib.use('Agg')   # set BEFORE importing whitenoise
+matplotlib.use('Agg')   # must be set BEFORE importing whitenoise viz functions
 import whitenoise as wn
 
-# Now all plot functions work without a display; use save_path= to write files
-wn.publish_msd(result, save_path='msd.png', show=False)</pre>
+result = wn.analyze('sunspot.csv', model='exponential')
+fig = result.plot_all(show=False)
+fig.savefig('output.png', dpi=150, bbox_inches='tight')</pre>
+
+<h3>Building a summary DataFrame manually</h3>
+<pre>import whitenoise as wn
+import pandas as pd
+
+systems = {
+    'Earthquakes': 'earthquake_ph.csv',
+    'Sunspots':    'sunspot.csv',
+}
+results = []
+for label, path in systems.items():
+    r = wn.analyze(path, model='exponential', verbose=False)
+    d = r.to_dict()
+    d['label'] = label
+    results.append(d)
+
+df = pd.DataFrame(results)
+print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
+
+<h3>Methodological note: fitting method</h3>
+<div class="warn">
+  <strong>Current fitting uses unweighted SSR (ordinary least squares)</strong>, consistent
+  with the Bernido group&rsquo;s prior published results. A more statistically rigorous
+  alternative would be <strong>Weighted Least Squares (WLS)</strong> with weights
+  w<sub>&Delta;</sub> = N &minus; &Delta; (large-lag MSD estimates are noisier, computed
+  from fewer data pairs). WLS is not yet implemented but references for the approach include:
+  Michalet (2010) and Vestergaard et al. (2014).
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  12. FULL API REFERENCE                                                 -->
+<!--  14. API QUICK REFERENCE                                                -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2 class="page-break">12. Full API Quick Reference</h2>
+<div class="page-break"></div>
+<h2>14. Full API Quick Reference</h2>
 
 <h3>I/O</h3>
 <table>
-  <tr><th>Function</th><th>Returns</th></tr>
-  <tr><td><code>wn.read_csv(path)</code></td><td><code>(time, values, metadata)</code></td></tr>
-  <tr><td><code>wn.read_csv_multi(path)</code></td><td><code>list of (time, values, metadata)</code></td></tr>
-  <tr><td><code>wn.export_csv(result, path)</code></td><td>Writes one-row CSV</td></tr>
-  <tr><td><code>wn.export_summary(cr, path)</code></td><td>Writes multi-row CSV from ComparisonResult</td></tr>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>read_csv</code></td><td><code>read_csv(path) </code></td><td><code>tuple[ndarray, ndarray, dict]</code></td></tr>
+  <tr><td><code>read_csv_multi</code></td><td><code>read_csv_multi(path)</code></td><td><code>list[tuple[ndarray, ndarray, dict]]</code></td></tr>
+  <tr><td><code>export_csv</code></td><td><code>export_csv(result, path)</code></td><td><code>None</code></td></tr>
+  <tr><td><code>export_summary</code></td><td><code>export_summary(cr, path)</code></td><td><code>None</code></td></tr>
+</table>
+
+<h3>Preprocessing (optional)</h3>
+<table>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>detrend</code></td><td><code>detrend(values, method='linear', poly_order=1, window=7)</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>normalize</code></td><td><code>normalize(values, method='zscore')</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>smooth</code></td><td><code>smooth(values, window=5, method='moving_average')</code></td><td><code>ndarray</code></td></tr>
 </table>
 
 <h3>Core</h3>
 <table>
-  <tr><th>Function</th><th>Returns</th></tr>
-  <tr><td><code>wn.compute_msd(x)</code></td><td><code>(lags, msd)</code> arrays</td></tr>
-  <tr><td><code>wn.fit_msd(lags, msd, model)</code></td><td><code>FitResult</code> or <code>None</code></td></tr>
-  <tr><td><code>wn.list_models()</code></td><td>Prints table (no return value)</td></tr>
-  <tr><td><code>wn.get_model(name)</code></td><td>Registry dict with <code>'msd'</code>, <code>'pdf'</code>, <code>'params'</code>, <code>'status'</code></td></tr>
-</table>
-
-<h3>Preprocessing</h3>
-<table>
-  <tr><th>Function</th><th>Returns</th></tr>
-  <tr><td><code>wn.detrend(values, method='linear')</code></td><td>1D ndarray (residuals)</td></tr>
-  <tr><td><code>wn.normalize(values, method='zscore')</code></td><td>1D ndarray</td></tr>
-  <tr><td><code>wn.smooth(values, window=5, method='moving_average')</code></td><td>1D ndarray (same length)</td></tr>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>compute_msd</code></td><td><code>compute_msd(x, max_lag=None, normalize=False)</code></td><td><code>tuple[ndarray, ndarray]</code></td></tr>
+  <tr><td><code>fit_msd</code></td><td><code>fit_msd(lags, msd_empirical, model='cosine', p0=None, bounds=None, max_lag_fraction=1.0)</code></td><td><code>FitResult | None</code></td></tr>
+  <tr><td><code>list_models</code></td><td><code>list_models()</code></td><td><code>None</code> (prints table)</td></tr>
+  <tr><td><code>get_model</code></td><td><code>get_model(name)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>FitResult</code></td><td>dataclass</td><td>params, std_errors, confidence_intervals, r_squared, model, lags_used, msd_fitted; method .summary()</td></tr>
 </table>
 
 <h3>Analysis</h3>
 <table>
-  <tr><th>Function</th><th>Returns</th></tr>
-  <tr><td><code>wn.analyze(source, model='cosine')</code></td><td><code>AnalysisResult</code></td></tr>
-  <tr><td><code>wn.compare(datasets, model='cosine')</code></td><td><code>ComparisonResult</code></td></tr>
-  <tr><td><code>wn.print_comparison(cr)</code></td><td>Prints ASCII table</td></tr>
-  <tr><td><code>wn.batch_analyze(source, model='cosine')</code></td><td><code>ComparisonResult</code></td></tr>
-  <tr><td><code>wn.batch_model_search(path, models=None)</code></td><td><code>ComparisonResult</code></td></tr>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>analyze</code></td><td><code>analyze(source, model='cosine', label='', time=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, verbose=True)</code></td><td><code>AnalysisResult</code></td></tr>
+  <tr><td><code>AnalysisResult</code></td><td>dataclass</td><td>dataset_name, model, fit, lags, msd_empirical, values, time, metadata; .regime, .mu, .summary(), .to_dict(), .to_csv()</td></tr>
+  <tr><td><code>compare</code></td><td><code>compare(datasets, model='cosine', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
+  <tr><td><code>batch_analyze</code></td><td><code>batch_analyze(source, model='cosine', pattern='*.csv', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, n_jobs=1)</code></td><td><code>ComparisonResult</code></td></tr>
+  <tr><td><code>batch_model_search</code></td><td><code>batch_model_search(path, models=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
+  <tr><td><code>ComparisonResult</code></td><td>class</td><td>results, models_used, summary_df; .to_csv(), .to_excel()</td></tr>
 </table>
 
-<h3>Exploratory plots (viz/explore.py)</h3>
+<h3>Exploratory Plots (viz/explore.py)</h3>
 <table>
-  <tr><th>Function</th><th>Description</th></tr>
-  <tr><td><code>wn.plot_series(x, values, metadata=meta)</code></td><td>Raw or preprocessed sequential data</td></tr>
-  <tr><td><code>wn.plot_msd_empirical(lags, msd)</code></td><td>Empirical MSD before fitting</td></tr>
-  <tr><td><code>wn.plot_msd(result)</code></td><td>Empirical scatter + fitted line</td></tr>
-  <tr><td><code>wn.plot_pdf(result)</code></td><td>Displacement histogram + Gaussian PDF</td></tr>
-  <tr><td><code>wn.plot_timeseries(result)</code></td><td>Preprocessed observable</td></tr>
-  <tr><td><code>wn.plot_diagnostics(result)</code></td><td>2&times;2 overview figure</td></tr>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>plot_series</code></td><td><code>plot_series(x, values, metadata=None, title='', ax=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_msd_empirical</code></td><td><code>plot_msd_empirical(lags, msd, metadata=None, title='', ax=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_msd</code></td><td><code>plot_msd(result, ax=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_pdf</code></td><td><code>plot_pdf(result, lag_index=None, ax=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_timeseries</code></td><td><code>plot_timeseries(result, ax=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_diagnostics</code></td><td><code>plot_diagnostics(result, show=True)</code></td><td><code>Figure</code></td></tr>
 </table>
 
-<h3>Publication plots (viz/publish.py)</h3>
+<h3>Publication Plots (viz/publish.py)</h3>
 <table>
-  <tr><th>Function</th><th>Description</th></tr>
-  <tr><td><code>wn.publish_msd(result, palette, save_path)</code></td><td>High-quality MSD plot (serif, dpi=150)</td></tr>
-  <tr><td><code>wn.publish_pdf(result, lag_index, save_path)</code></td><td>High-quality displacement PDF</td></tr>
-  <tr><td><code>wn.publish_comparison(cr, save_path)</code></td><td>Horizontal &mu; bar chart with 95% CI</td></tr>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>publish_msd</code></td><td><code>publish_msd(result, palette='default', figsize=(5,4), save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>publish_pdf</code></td><td><code>publish_pdf(result, lag_index=None, palette='default', figsize=(5,4), save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>publish_comparison</code></td><td><code>publish_comparison(cr, palette='default', figsize=None, save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>plot_all</code></td><td><code>plot_all(result, show=True)</code></td><td><code>Figure</code> (three-panel)</td></tr>
 </table>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  13. VALIDATED BENCHMARKS                                               -->
+<!--  15. VALIDATED BENCHMARKS                                               -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>13. Validated Benchmarks</h2>
+<h2>15. Validated Benchmarks</h2>
 
-<p>These values serve as reference checks when testing with published datasets:</p>
+<p>The following published results serve as benchmarks for validating your analysis setup.</p>
 
 <table>
-  <tr><th>Dataset</th><th>Model</th><th>Expected &mu;</th><th>Reference</th></tr>
-  <tr><td>Philippine earthquakes</td><td>exponential</td><td>1.00 &ndash; 1.19</td><td>Roque et al. (2024)</td></tr>
-  <tr><td>Solar sunspot number</td><td>exponential</td><td>&asymp; 1.15</td><td>Toledo et al. (2024)</td></tr>
-  <tr><td>GBR coral bleaching</td><td>cosine</td><td>&asymp; 4.64</td><td>Elnar et al. (2021)</td></tr>
-  <tr><td>CO&sub2; Keeling curve</td><td>cosine</td><td>0.91 &ndash; 0.97</td><td>Elnar et al. (2024)</td></tr>
-  <tr><td>X-ray binaries</td><td>cosine</td><td>[0.50, 1.39]</td><td>Calotes thesis (2024)</td></tr>
+  <tr><th>System</th><th>Model</th><th>&mu; (published)</th><th>Regime</th><th>Reference</th></tr>
+  <tr>
+    <td>Philippine earthquakes (inter-event times)</td>
+    <td>exponential</td>
+    <td>&mu; &asymp; 1.00&ndash;1.19</td>
+    <td>near-Brownian to superdiffusive</td>
+    <td>Roque et al. (2024)</td>
+  </tr>
+  <tr>
+    <td>Solar sunspot number</td>
+    <td>exponential</td>
+    <td>&mu; &asymp; 1.15</td>
+    <td>superdiffusive</td>
+    <td>Toledo et al. (2024)</td>
+  </tr>
+  <tr>
+    <td>Great Barrier Reef coral bleaching</td>
+    <td>cosine</td>
+    <td>&mu; &asymp; 4.64</td>
+    <td>hyperballistic</td>
+    <td>Elnar et al. (2021)</td>
+  </tr>
+  <tr>
+    <td>CO&sub2; Keeling curve (Mauna Loa)</td>
+    <td>cosine</td>
+    <td>&mu; &asymp; 0.91&ndash;0.97</td>
+    <td>subdiffusive</td>
+    <td>Elnar et al. (2024)</td>
+  </tr>
+  <tr>
+    <td>X-ray binary light curves</td>
+    <td>cosine</td>
+    <td>&mu; &isin; [0.50, 1.39]</td>
+    <td>subdiffusive to superdiffusive</td>
+    <td>Calotes thesis (2024)</td>
+  </tr>
+  <tr>
+    <td>DNA nucleotide separation (bacterial genomes)</td>
+    <td>dna</td>
+    <td>a &asymp; 5.21, b &asymp; 0.0024, c &asymp; 3.81</td>
+    <td>plateau (DNA)</td>
+    <td>Violanda et al. (2019)</td>
+  </tr>
 </table>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  14. KNOWN LIMITATIONS                                                  -->
+<!--  16. KNOWN LIMITATIONS                                                  -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>14. Known Limitations</h2>
+<h2>16. Known Limitations</h2>
 
-<ul>
-  <li><strong>9 stub models</strong>: <code>exp_whittaker</code>, <code>bessel_K</code>, <code>hypergeom_F1</code>,
-      <code>bessel_I</code>, <code>hypergeom_3F2</code>, <code>csc_power</code>, <code>cot_power</code>,
-      <code>bessel_pair</code>, <code>bessel_pair2</code> raise <code>NotImplementedError</code>.</li>
-  <li><strong>Parallel batch with arrays</strong>: <code>n_jobs &gt; 1</code> only works with CSV file paths.
-      Pass <code>n_jobs=1</code> when sources are in-memory arrays.</li>
-  <li><strong>Headless display</strong>: On servers without a display, set <code>matplotlib.use('Agg')</code>
-      before importing whitenoise, then use <code>show=False</code> and <code>save_path=</code> arguments.</li>
-  <li><strong>MSD reliability</strong>: Only lags up to N/2 are computed. Large-lag estimates
-      (near N/2) have fewer averaging pairs and are noisier &mdash; consider using
-      <code>max_lag_fraction=0.5</code> for fitting if the far end of the MSD is erratic.</li>
-  <li><strong>Unweighted fitting (OLS, not WLS)</strong>: The fitter minimises the unweighted
-      sum of squared residuals. All lags receive equal weight regardless of how many data pairs
-      contributed to each MSD estimate. Noisy large-lag points can therefore bias the fit and
-      distort R&sup2;. Weighted least squares (WLS) is not currently implemented &mdash;
-      use <code>max_lag_fraction</code> to exclude unreliable large-lag values as a workaround.</li>
-</ul>
+<div class="warn">
+  <strong>1. Stub models.</strong> Nine models in the MODELS registry raise
+  <code>NotImplementedError</code> when called: <code>exp_whittaker</code>,
+  <code>bessel_K</code>, <code>hypergeom_F1</code>, <code>bessel_I</code>,
+  <code>hypergeom_3F2</code>, <code>csc_power</code>, <code>cot_power</code>,
+  <code>bessel_pair</code>, <code>bessel_pair2</code>. Use <code>wn.list_models()</code>
+  to see current status.
+</div>
+
+<div class="warn">
+  <strong>2. Unweighted fitting.</strong> The current fitting uses ordinary least squares
+  (unweighted SSR). Statistically, WLS with weights w<sub>&Delta;</sub> = N &minus; &Delta;
+  would be more rigorous (large-lag MSD estimates are noisier). Not implemented, but kept
+  consistent with prior published results from the Bernido group.
+</div>
+
+<div class="warn">
+  <strong>3. Parallel n_jobs &gt; 1 requires CSV paths.</strong> When <code>n_jobs &gt; 1</code>
+  is specified in <code>batch_analyze()</code>, all jobs must use CSV file paths. In-memory
+  arrays cannot be reliably passed to parallel worker threads.
+</div>
+
+<div class="warn">
+  <strong>4. Oscillatory model NaN regions.</strong> The cosine and sine models return
+  <code>nan</code> where <code>cos(&nu;T/2) &le; 0</code> or <code>sin(&nu;T/2) &le; 0</code>
+  respectively (the formula produces a non-positive MSD there, which has no physical meaning).
+  If your MSD plot shows gaps, this is expected. Consider using a smaller lag range with
+  <code>max_lag_fraction</code>, or try a different model.
+</div>
+
+<div class="warn">
+  <strong>5. Minimum data length.</strong> <code>compute_msd()</code> requires at least
+  10 data points. Fewer than ~50 points will produce very noisy MSD estimates and
+  unreliable fits. Published results typically use N &ge; 200 points.
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  15. CITATION                                                           -->
+<!--  17. CITATION                                                           -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>15. Citation</h2>
+<h2>17. Citation</h2>
 
-<p>If you use this package in published research, please cite:</p>
+<p>If you use this package in published work, please cite:</p>
 
 <pre>Bernido, C. C., &amp; Carpio-Bernido, M. V. (2015).
-<em>White Noise Analysis and Quantum Field Theory.</em>
-AIP Conference Proceedings, 1618.
+White noise analysis: Some applications in complex systems, biophysics and quantum mechanics.
+International Journal of Modern Physics B, 26, 1230014.
+https://doi.org/10.1142/S0217979212300149
 
-Bernido, C. C., &amp; Carpio-Bernido, M. V. (2015).
-<em>Modified diffusion processes with memory &mdash; Table 3.1.</em>
-Stochastic and Infinite Dimensional Analysis, Springer.</pre>
+Violanda, R. R., Bernido, C. C., &amp; Carpio-Bernido, M. V. (2019).
+White noise functional integral for exponentially decaying memory:
+nucleotide distribution in bacterial genomes.
+Physica Scripta, 94, 125006.
+https://doi.org/10.1088/1402-4896/ab3342</pre>
 
-<p>For the whitenoise software package:</p>
+<p>For specific models or applications, also cite the primary application papers listed in Section 15.</p>
 
-<pre>Bernido Group. (2025). whitenoise: Stochastic White Noise Analysis (SWNA).
-University of San Carlos, Philippines.
-Version 0.1.0.</pre>
-
-<!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  FOOTER                                                                 -->
-<!-- ══════════════════════════════════════════════════════════════════════ -->
 <div class="footer">
-  whitenoise v0.1.0 &nbsp;&middot;&nbsp;
-  Bernido Group, University of San Carlos &nbsp;&middot;&nbsp;
-  Generated 2026-03-14
+  whitenoise v0.2.0 &middot; Bernido Group, University of San Carlos / CVIF, Philippines
+  &middot; March 14, 2026
 </div>
 
 </body>
