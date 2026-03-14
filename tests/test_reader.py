@@ -61,11 +61,11 @@ def test_01_standard_format():
         t, v, m = read_csv(path)
         assert list(t) == [1.0, 2.0, 3.0],          f"time wrong: {list(t)}"
         assert list(v) == [12.4, 15.1, 14.8],        f"values wrong: {list(v)}"
-        assert m['time_unit'] == 'months',            f"time_unit={m['time_unit']!r}"
-        assert m['value_unit'] == 'count',            f"value_unit={m['value_unit']!r}"
-        assert m['time_label'] == 'time (months)',    f"time_label={m['time_label']!r}"
-        assert m['value_label'] == 'sunspot_number (count)', \
-                                                      f"value_label={m['value_label']!r}"
+        assert m['x_unit'] == 'months',            f"time_unit={m['x_unit']!r}"
+        assert m['y_unit'] == 'count',            f"value_unit={m['y_unit']!r}"
+        assert m['x_label'] == 'time (months)',    f"time_label={m['x_label']!r}"
+        assert m['y_label'] == 'sunspot_number (count)', \
+                                                      f"value_label={m['y_label']!r}"
         assert m['n_points'] == 3,                    f"n_points={m['n_points']}"
     finally:
         os.unlink(path)
@@ -76,9 +76,9 @@ def test_02_no_space_before_bracket():
     path = _write_tmp("time[yr], co2[ppm]\n1958,315.2\n1959,315.9")
     try:
         _, _, m = read_csv(path)
-        assert m['time_unit'] == 'yr',       f"time_unit={m['time_unit']!r}"
-        assert m['value_unit'] == 'ppm',     f"value_unit={m['value_unit']!r}"
-        assert m['value_label'] == 'co2 (ppm)', f"value_label={m['value_label']!r}"
+        assert m['x_unit'] == 'yr',       f"time_unit={m['x_unit']!r}"
+        assert m['y_unit'] == 'ppm',     f"value_unit={m['y_unit']!r}"
+        assert m['y_label'] == 'co2 (ppm)', f"value_label={m['y_label']!r}"
     finally:
         os.unlink(path)
 
@@ -91,11 +91,11 @@ def test_03_capitalized_headers():
     )
     try:
         _, _, m = read_csv(path)
-        assert m['time_name'] == 'time',         f"time_name={m['time_name']!r}"
-        assert m['value_name'] == 'sunspot_number', \
-                                                 f"value_name={m['value_name']!r}"
-        assert m['time_unit'] == 'months',       f"time_unit={m['time_unit']!r}"
-        assert m['value_unit'] == 'count',       f"value_unit={m['value_unit']!r}"
+        assert m['x_name'] == 'time',         f"time_name={m['x_name']!r}"
+        assert m['y_name'] == 'sunspot_number', \
+                                                 f"value_name={m['y_name']!r}"
+        assert m['x_unit'] == 'months',       f"time_unit={m['x_unit']!r}"
+        assert m['y_unit'] == 'count',       f"value_unit={m['y_unit']!r}"
     finally:
         os.unlink(path)
 
@@ -105,9 +105,9 @@ def test_04_capitalized_no_space():
     path = _write_tmp("TIME[YR], CO2[PPM]\n1958,315.2\n1959,315.9")
     try:
         _, _, m = read_csv(path)
-        assert m['time_name'] == 'time',      f"time_name={m['time_name']!r}"
-        assert m['time_unit'] == 'yr',        f"time_unit={m['time_unit']!r}"
-        assert m['value_label'] == 'co2 (ppm)', f"value_label={m['value_label']!r}"
+        assert m['x_name'] == 'time',      f"time_name={m['x_name']!r}"
+        assert m['x_unit'] == 'yr',        f"time_unit={m['x_unit']!r}"
+        assert m['y_label'] == 'co2 (ppm)', f"value_label={m['y_label']!r}"
     finally:
         os.unlink(path)
 
@@ -117,8 +117,8 @@ def test_05_unitless_empty_brackets():
     path = _write_tmp("time [days], normalized_flux []\n0,0.9987\n1,1.0023")
     try:
         _, _, m = read_csv(path)
-        assert m['value_unit'] == '',                  f"value_unit={m['value_unit']!r}"
-        assert m['value_label'] == 'normalized_flux',  f"value_label={m['value_label']!r}"
+        assert m['y_unit'] == '',                  f"value_unit={m['y_unit']!r}"
+        assert m['y_label'] == 'normalized_flux',  f"value_label={m['y_label']!r}"
     finally:
         os.unlink(path)
 
@@ -128,8 +128,8 @@ def test_06_unitless_whitespace_inside_brackets():
     path = _write_tmp("time [days], flux [  ]\n0,1.0\n1,2.0")
     try:
         _, _, m = read_csv(path)
-        assert m['value_unit'] == '',  f"value_unit={m['value_unit']!r}"
-        assert m['value_label'] == 'flux', f"value_label={m['value_label']!r}"
+        assert m['y_unit'] == '',  f"value_unit={m['y_unit']!r}"
+        assert m['y_label'] == 'flux', f"value_label={m['y_label']!r}"
     finally:
         os.unlink(path)
 
@@ -139,10 +139,10 @@ def test_07_no_brackets_at_all():
     path = _write_tmp("time, distance\n1,100.0\n2,200.0")
     try:
         _, _, m = read_csv(path)
-        assert m['time_unit'] == '',    f"time_unit={m['time_unit']!r}"
-        assert m['value_unit'] == '',   f"value_unit={m['value_unit']!r}"
-        assert m['time_label'] == 'time',      f"time_label={m['time_label']!r}"
-        assert m['value_label'] == 'distance', f"value_label={m['value_label']!r}"
+        assert m['x_unit'] == '',    f"time_unit={m['x_unit']!r}"
+        assert m['y_unit'] == '',   f"value_unit={m['y_unit']!r}"
+        assert m['x_label'] == 'time',      f"time_label={m['x_label']!r}"
+        assert m['y_label'] == 'distance', f"value_label={m['y_label']!r}"
     finally:
         os.unlink(path)
 
@@ -157,12 +157,12 @@ def test_08_read_csv_multi():
     try:
         result = read_csv_multi(path)
         assert len(result) == 2, f"Expected 2 tuples, got {len(result)}"
-        assert result[0][2]['value_name'] == 'co2',         \
-                                            f"name0={result[0][2]['value_name']!r}"
-        assert result[1][2]['value_name'] == 'temperature', \
-                                            f"name1={result[1][2]['value_name']!r}"
-        assert result[0][2]['value_unit'] == 'ppm',         \
-                                            f"unit0={result[0][2]['value_unit']!r}"
+        assert result[0][2]['y_name'] == 'co2',         \
+                                            f"name0={result[0][2]['y_name']!r}"
+        assert result[1][2]['y_name'] == 'temperature', \
+                                            f"name1={result[1][2]['y_name']!r}"
+        assert result[0][2]['y_unit'] == 'ppm',         \
+                                            f"unit0={result[0][2]['y_unit']!r}"
         # Both share the same time array
         import numpy as np
         assert list(result[0][0]) == [1958.0, 1959.0], f"time0 wrong"
@@ -231,7 +231,7 @@ def test_12_v2_and_v3_warnings():
             t2, v2, m2 = read_csv(path_v2)
         out2 = buf_v2.getvalue()
         assert '⚠' in out2,                  f"V2: no ⚠ in stdout: {out2!r}"
-        assert 'Time column name' in out2,    f"V2: 'Time column name' missing: {out2!r}"
+        assert 'Column 1 name' in out2,       f"V2: 'Column 1 name' missing: {out2!r}"
         assert len(t2) == 2,                  f"V2: data not loaded, got {len(t2)} rows"
     finally:
         os.unlink(path_v2)

@@ -7,7 +7,9 @@ Handles the standard whitenoise CSV format::
     1, 12.4
     2, 15.1
 
-Column 1 is always time/index. Column 2 (and beyond) are observables.
+Column 1 is always the independent variable (x). Column 2 (and beyond) are
+the dependent observables (y). Column 1 does not have to be time — it can be
+any independent variable (distance, frequency, voltage, etc.).
 Header format:  name [unit]   — space before bracket is optional.
 """
 
@@ -20,13 +22,18 @@ import numpy as np
 
 # ── Validation constants ──────────────────────────────────────────────────────
 
-_KNOWN_TIME_NAMES: set[str] = {
+# Common independent-variable (x-axis) column names used to detect possible
+# column swaps (V2 check). Non-standard names are still accepted — this list
+# only triggers a warning, never an error.
+_KNOWN_INDEX_NAMES: set[str] = {
     'time', 't', 'index', 'idx', 'step', 'steps', 'sample',
     'samples', 'observation', 'observations', 'date', 'datetime',
     'timestamp', 'epoch', 'frame', 'lag', 'year', 'month', 'day',
     'hour', 'minute', 'second', 'yr', 'mo', 'hr', 'min', 'sec',
 }
 
+# Units that physically imply non-negative values, used to warn if negatives appear (V3 check).
+# Non-standard or unlisted units are still accepted — this list only triggers a warning, never an error.
 _NON_NEGATIVE_UNITS: set[str] = {
     'count', 'counts', 'number', 'numbers', 'freq', 'frequency',
     'intensity', 'flux', 'brightness', 'magnitude', 'population',
@@ -106,7 +113,7 @@ def _make_axis_label(name: str, unit: str) -> str:
     return f'{name} ({unit})'
 
 
-def _validate(time: np.ndarray, values: np.ndarray, metadata: dict) -> None:
+def _validate(x: np.ndarray, y: np.ndarray, metadata: dict) -> None:
     """
     Run 3 non-fatal validation checks and print ⚠ warnings to stdout.
 
@@ -114,42 +121,48 @@ def _validate(time: np.ndarray, values: np.ndarray, metadata: dict) -> None:
 
     Parameters
     ----------
-    time : np.ndarray
-    values : np.ndarray
+    x : np.ndarray
+        Column 1 (independent variable) values.
+    y : np.ndarray
+        Column 2 (dependent/observable) values.
     metadata : dict
-        Must contain 'time_name', 'value_name', 'value_unit'.
+        Must contain 'x_name', 'y_name', 'y_unit'.
     """
-    # V1: Columns possibly swapped (time column has huge spread)
-    if len(time) > 1:
-        std_t = float(np.std(time))
-        mean_t = float(np.mean(time))
-        if std_t > 100.0 * (abs(mean_t) + 1e-10):
+    # V1: Columns possibly swapped (column 1 has huge spread relative to its mean)
+    if len(x) > 1:
+        std_x = float(np.std(x))
+        mean_x = float(np.mean(x))
+        if std_x > 100.0 * (abs(mean_x) + 1e-10):
             print(
-                f"⚠  Column order warning: the time column "
-                f"('{metadata['time_name']}') has unusually large spread "
-                f"(std={std_t:.2f}, mean={mean_t:.2f}).\n"
-                f"   If your columns are swapped, re-save the CSV with time "
-                f"in column 1 and your observable in column 2."
+                f"⚠  Column order warning: column 1 "
+                f"('{metadata['x_name']}') has unusually large spread "
+                f"(std={std_x:.2f}, mean={mean_x:.2f}).\n"
+                f"   If your columns are swapped, re-save the CSV with the "
+                f"independent variable in column 1 and the observable in column 2."
             )
 
-    # V2: Time column name doesn't look like a time axis
-    if metadata['time_name'].lower() not in _KNOWN_TIME_NAMES:
+    # V2: Column 1 name doesn't match common time/index names.
+    # Column 1 is not required to be time — it can be any independent variable
+    # (e.g. distance [km], frequency [Hz], voltage [V]). This warning only fires
+    # if the name is unfamiliar, to catch accidental column swaps.
+    if metadata['x_name'].lower() not in _KNOWN_INDEX_NAMES:
         print(
-            f"⚠  Time column name warning: '{metadata['time_name']}' is not "
-            f"a recognized time/index column name. Expected names like: "
-            f"time, index, step, year, month, day, etc.\n"
-            f"   If '{metadata['time_name']}' is not your time axis, check "
-            f"column order."
+            f"⚠  Column 1 name warning: '{metadata['x_name']}' is not a "
+            f"commonly recognized time or index name.\n"
+            f"   If column 1 is a non-time independent variable (e.g. distance, "
+            f"frequency, voltage), this warning is expected — ignore it.\n"
+            f"   If your columns are accidentally swapped, re-save the CSV with "
+            f"the independent variable in column 1 and the observable in column 2."
         )
 
     # V3: Negative values in a unit that implies non-negative data
-    value_unit = metadata['value_unit'].lower()
-    if value_unit in _NON_NEGATIVE_UNITS and np.any(values < 0):
-        n_neg = int(np.sum(values < 0))
-        min_val = float(np.min(values))
+    y_unit = metadata['y_unit'].lower()
+    if y_unit in _NON_NEGATIVE_UNITS and np.any(y < 0):
+        n_neg = int(np.sum(y < 0))
+        min_val = float(np.min(y))
         print(
-            f"⚠  Value range warning: column '{metadata['value_name']}' has "
-            f"unit '{metadata['value_unit']}' which typically implies "
+            f"⚠  Value range warning: column '{metadata['y_name']}' has "
+            f"unit '{metadata['y_unit']}' which typically implies "
             f"non-negative values, but {n_neg} negative value(s) were found "
             f"(min = {min_val:.4f}).\n"
             f"   If your data is already detrended, this is expected — ignore "
@@ -158,21 +171,21 @@ def _validate(time: np.ndarray, values: np.ndarray, metadata: dict) -> None:
 
 
 def _build_metadata(
-    time_name: str,
-    time_unit: str,
-    value_name: str,
-    value_unit: str,
+    x_name: str,
+    x_unit: str,
+    y_name: str,
+    y_unit: str,
     source_file: str,
     n_points: int,
 ) -> dict:
     """Assemble the standard metadata dict returned by read functions."""
     return {
-        'time_name':   time_name,
-        'time_unit':   time_unit,
-        'value_name':  value_name,
-        'value_unit':  value_unit,
-        'time_label':  _make_axis_label(time_name, time_unit),
-        'value_label': _make_axis_label(value_name, value_unit),
+        'x_name':      x_name,
+        'x_unit':      x_unit,
+        'y_name':      y_name,
+        'y_unit':      y_unit,
+        'x_label':     _make_axis_label(x_name, x_unit),
+        'y_label':     _make_axis_label(y_name, y_unit),
         'source_file': source_file,
         'n_points':    n_points,
     }
@@ -199,7 +212,7 @@ def _parse_header_line(header_line: str, min_cols: int = 2) -> list[tuple[str, s
     if len(cols) < min_cols:
         raise ValueError(
             f'✗ CSV must have at least {min_cols} columns '
-            f'(time and observable). '
+            f'(independent variable and observable). '
             f'Found {len(cols)} column(s) in header: "{header_line}"'
         )
     return [_parse_header_column(c) for c in cols]
@@ -260,7 +273,9 @@ def read_csv(path: str) -> tuple[np.ndarray, np.ndarray, dict]:
         2, 15.1
         3, 14.8
 
-    Column 1 is always time/index. Column 2 is always the observable.
+    Column 1 is always the independent variable (x-axis). Column 2 is always
+    the observable (y-axis). Column 1 does not have to be time — any
+    independent variable is accepted (distance, frequency, voltage, etc.).
     Header strings follow the ``name [unit]`` convention; the space before
     ``[`` is optional and capitalisation is ignored.
 
@@ -271,19 +286,19 @@ def read_csv(path: str) -> tuple[np.ndarray, np.ndarray, dict]:
 
     Returns
     -------
-    time : np.ndarray
-        1-D float array of time/index values.
-    values : np.ndarray
-        1-D float array of observable values.
+    x : np.ndarray
+        1-D float array of independent variable values (column 1).
+    y : np.ndarray
+        1-D float array of observable values (column 2).
     metadata : dict
         Keys:
 
-        * ``'time_name'``   — column 1 name, lowercased (e.g. ``'time'``)
-        * ``'time_unit'``   — column 1 unit, lowercased (``''`` if absent)
-        * ``'value_name'``  — column 2 name, lowercased (e.g. ``'sunspot_number'``)
-        * ``'value_unit'``  — column 2 unit, lowercased (``''`` if absent)
-        * ``'time_label'``  — axis-ready string (e.g. ``'time (months)'``)
-        * ``'value_label'`` — axis-ready string (e.g. ``'sunspot_number (count)'``)
+        * ``'x_name'``      — column 1 name, lowercased (e.g. ``'time'``)
+        * ``'x_unit'``      — column 1 unit, lowercased (``''`` if absent)
+        * ``'y_name'``      — column 2 name, lowercased (e.g. ``'sunspot_number'``)
+        * ``'y_unit'``      — column 2 unit, lowercased (``''`` if absent)
+        * ``'x_label'``     — axis-ready string (e.g. ``'time (months)'``)
+        * ``'y_label'``     — axis-ready string (e.g. ``'sunspot_number (count)'``)
         * ``'source_file'`` — the ``path`` argument as given
         * ``'n_points'``    — number of data rows read
 
@@ -297,16 +312,16 @@ def read_csv(path: str) -> tuple[np.ndarray, np.ndarray, dict]:
 
     Examples
     --------
-    >>> time, values, meta = wn.read_csv('sunspot.csv')
-    >>> meta['value_label']
+    >>> x, y, meta = wn.read_csv('sunspot.csv')
+    >>> meta['y_label']
     'sunspot_number (count)'
-    >>> meta['time_label']
+    >>> meta['x_label']
     'time (months)'
     """
     lines = _read_raw_lines(path)
     parsed_headers = _parse_header_line(lines[0], min_cols=2)
-    time_name, time_unit = parsed_headers[0]
-    value_name, value_unit = parsed_headers[1]
+    x_name, x_unit = parsed_headers[0]
+    y_name, y_unit = parsed_headers[1]
 
     data_lines = lines[1:]
     if not data_lines:
@@ -314,25 +329,23 @@ def read_csv(path: str) -> tuple[np.ndarray, np.ndarray, dict]:
 
     columns = _parse_data_rows(data_lines, n_cols=len(parsed_headers), col_indices=[0, 1])
 
-    time_arr = np.array(columns[0], dtype=float)
-    values_arr = np.array(columns[1], dtype=float)
+    x_arr = np.array(columns[0], dtype=float)
+    y_arr = np.array(columns[1], dtype=float)
 
-    metadata = _build_metadata(
-        time_name, time_unit, value_name, value_unit, path, len(time_arr)
-    )
-    _validate(time_arr, values_arr, metadata)
+    metadata = _build_metadata(x_name, x_unit, y_name, y_unit, path, len(x_arr))
+    _validate(x_arr, y_arr, metadata)
 
-    return time_arr, values_arr, metadata
+    return x_arr, y_arr, metadata
 
 
 def read_csv_multi(path: str) -> list[tuple[np.ndarray, np.ndarray, dict]]:
     """
     Read a multi-column whitenoise-format CSV file.
 
-    Column 1 is the shared time axis. Every additional column is treated as
-    a separate observable and returned as its own ``(time, values, metadata)``
-    tuple. Used internally by ``batch_analyze()`` and available for advanced
-    users who want to process multi-system CSVs manually.
+    Column 1 is the shared independent variable (x-axis). Every additional
+    column is treated as a separate observable (y) and returned as its own
+    ``(x, y, metadata)`` tuple. Used internally by ``batch_analyze()`` and
+    available for advanced users who want to process multi-system CSVs manually.
 
     The expected format is::
 
@@ -347,9 +360,9 @@ def read_csv_multi(path: str) -> list[tuple[np.ndarray, np.ndarray, dict]]:
 
     Returns
     -------
-    list of (time, values, metadata) tuples
+    list of (x, y, metadata) tuples
         One tuple per observable column (i.e. ``n_columns - 1`` tuples).
-        Each ``time`` array is the same shared time axis.
+        Each ``x`` array is the same shared independent variable.
 
     Raises
     ------
@@ -361,14 +374,14 @@ def read_csv_multi(path: str) -> list[tuple[np.ndarray, np.ndarray, dict]]:
     Examples
     --------
     >>> datasets = wn.read_csv_multi('climate.csv')
-    >>> len(datasets)      # 2 if CSV has time + 2 observable columns
+    >>> len(datasets)      # 2 if CSV has x + 2 observable columns
     2
-    >>> datasets[0][2]['value_name']
+    >>> datasets[0][2]['y_name']
     'co2'
     """
     lines = _read_raw_lines(path)
     parsed_headers = _parse_header_line(lines[0], min_cols=2)
-    time_name, time_unit = parsed_headers[0]
+    x_name, x_unit = parsed_headers[0]
     n_cols = len(parsed_headers)
 
     data_lines = lines[1:]
@@ -378,17 +391,15 @@ def read_csv_multi(path: str) -> list[tuple[np.ndarray, np.ndarray, dict]]:
     all_col_indices = list(range(n_cols))
     columns = _parse_data_rows(data_lines, n_cols=n_cols, col_indices=all_col_indices)
 
-    time_arr = np.array(columns[0], dtype=float)
-    n_points = len(time_arr)
+    x_arr = np.array(columns[0], dtype=float)
+    n_points = len(x_arr)
 
     results: list[tuple[np.ndarray, np.ndarray, dict]] = []
     for j in range(1, n_cols):
-        val_name, val_unit = parsed_headers[j]
-        val_arr = np.array(columns[j], dtype=float)
-        meta = _build_metadata(
-            time_name, time_unit, val_name, val_unit, path, n_points
-        )
-        _validate(time_arr, val_arr, meta)
-        results.append((time_arr, val_arr, meta))
+        y_name, y_unit = parsed_headers[j]
+        y_arr = np.array(columns[j], dtype=float)
+        meta = _build_metadata(x_name, x_unit, y_name, y_unit, path, n_points)
+        _validate(x_arr, y_arr, meta)
+        results.append((x_arr, y_arr, meta))
 
     return results

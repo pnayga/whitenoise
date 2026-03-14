@@ -33,24 +33,23 @@ def export_csv(result, path: str) -> None:
     path : str
         Destination file path (e.g. ``'results/msd.csv'``).
     """
-    lags        = np.asarray(result.lags, dtype=float)
-    msd_emp     = np.asarray(result.msd_empirical, dtype=float)
-    n_lags      = len(lags)
-
-    # Build fitted-MSD column aligned to the full lags array
-    msd_fitted_full = np.full(n_lags, np.nan, dtype=float)
     if result.fit is not None:
-        lags_used  = np.asarray(result.fit.lags_used, dtype=float)
+        # Trim both empirical and fitted to the fitting window so every row
+        # has a value in both columns — no NaN padding needed.
+        n_use      = len(result.fit.lags_used)
+        lags       = np.asarray(result.lags[:n_use], dtype=float)
+        msd_emp    = np.asarray(result.msd_empirical[:n_use], dtype=float)
         msd_fitted = np.asarray(result.fit.msd_fitted, dtype=float)
-        n_use = len(lags_used)
-        # lags_used is always lags[:n_use] (a prefix), so align directly
-        n_copy = min(n_use, n_lags)
-        msd_fitted_full[:n_copy] = msd_fitted[:n_copy]
+    else:
+        # No fit available — export empirical only, fitted column is all NaN.
+        lags       = np.asarray(result.lags, dtype=float)
+        msd_emp    = np.asarray(result.msd_empirical, dtype=float)
+        msd_fitted = np.full(len(lags), np.nan, dtype=float)
 
     df = pd.DataFrame({
-        'lag':          lags,
+        'lag':           lags,
         'msd_empirical': msd_emp,
-        'msd_fitted':    msd_fitted_full,
+        'msd_fitted':    msd_fitted,
     })
     df.to_csv(path, index=False)
     print(f'\U0001f4be Saved to {path}')

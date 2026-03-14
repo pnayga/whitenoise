@@ -24,7 +24,7 @@ def _fd_bins(data: np.ndarray) -> int:
     if iqr == 0:
         return max(10, int(np.sqrt(n)))
     h = 2.0 * iqr * n ** (-1.0 / 3.0)
-    data_range = np.ptp(data)
+    data_range = np.max(data) - np.min(data)
     if h == 0 or data_range == 0:
         return 10
     return max(5, int(np.ceil(data_range / h)))
@@ -45,9 +45,134 @@ def _get_axes(ax, figsize=(7, 4.5)):
     return ax.get_figure(), ax
 
 
+# ── plot_series ───────────────────────────────────────────────────────────────
+
+def plot_series(x, values, metadata=None, title='', ax=None, show=True) -> matplotlib.figure.Figure:
+    """
+    Plot raw sequential data directly from :func:`~whitenoise.io.reader.read_csv`.
+
+    Use this for a quick visual inspection of your data *before* running
+    :func:`~whitenoise.analysis.pipeline.analyze`.  No analysis needed.
+
+    Parameters
+    ----------
+    x : array-like (1D)
+        Independent variable (time, index, frequency, etc.).
+    values : array-like (1D)
+        Observable values.
+    metadata : dict, optional
+        The ``metadata`` dict returned by :func:`~whitenoise.io.reader.read_csv`.
+        When provided, axis labels and title are set automatically from
+        ``x_label`` and ``y_label``.
+    title : str, optional
+        Custom plot title.  Overrides the auto-title from metadata.
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw on.  Creates a new figure if ``None``.
+    show : bool, default ``True``
+        If ``True``, call ``plt.show()`` after drawing.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+
+    Examples
+    --------
+    >>> time, values, meta = wn.read_csv('sunspot.csv')
+    >>> wn.plot_series(time, values, metadata=meta)
+
+    >>> # After manual detrending — still works the same way
+    >>> fluct = wn.detrend(values, method='moving_average', window=11)
+    >>> wn.plot_series(time, fluct, metadata=meta, title='Sunspot fluctuations')
+    """
+    fig, ax = _get_axes(ax, figsize=(10, 3.5))
+
+    x      = np.asarray(x,      dtype=float)
+    values = np.asarray(values, dtype=float)
+
+    # Auto-labels from metadata (x_label / y_label set by reader.py)
+    if metadata is not None:
+        xlabel = metadata.get('x_label', metadata.get('x_name', 'x'))
+        ylabel = metadata.get('y_label', metadata.get('y_name', 'value'))
+        auto_title = metadata.get('y_name', '')
+    else:
+        xlabel, ylabel, auto_title = 'x', 'value', ''
+
+    ax.plot(x, values, color='#1B6CA8', linewidth=0.8, alpha=0.9)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title if title else auto_title)
+
+    fig.tight_layout()
+    if show:
+        plt.show()
+    return fig
+
+
+# ── plot_msd_empirical ────────────────────────────────────────────────────────
+
+def plot_msd_empirical(lags, msd, metadata=None, title='', ax=None, show=True) -> matplotlib.figure.Figure:
+    """
+    Plot empirical MSD scatter directly from :func:`~whitenoise.core.msd.compute_msd`.
+
+    Use this to inspect the shape of the MSD *before* fitting — useful for
+    deciding which model to try or checking that the MSD looks reasonable.
+
+    Parameters
+    ----------
+    lags : array-like (1D)
+        Lag array returned by :func:`~whitenoise.core.msd.compute_msd`.
+    msd : array-like (1D)
+        MSD values returned by :func:`~whitenoise.core.msd.compute_msd`.
+    metadata : dict, optional
+        The ``metadata`` dict from :func:`~whitenoise.io.reader.read_csv`.
+        Used to label the x-axis with the correct unit (e.g. 'Lag (months)').
+    title : str, optional
+        Custom plot title.
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw on.  Creates a new figure if ``None``.
+    show : bool, default ``True``
+        If ``True``, call ``plt.show()`` after drawing.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+
+    Examples
+    --------
+    >>> time, values, meta = wn.read_csv('sunspot.csv')
+    >>> lags, msd = wn.compute_msd(values)
+    >>> wn.plot_msd_empirical(lags, msd, metadata=meta)
+    """
+    fig, ax = _get_axes(ax, figsize=(7, 4.5))
+
+    lags = np.asarray(lags, dtype=float)
+    msd  = np.asarray(msd,  dtype=float)
+
+    # x-axis label — use lag unit from metadata if available
+    if metadata is not None:
+        x_unit = metadata.get('x_unit', '')
+        xlabel = f'Lag ({x_unit})' if x_unit else 'Lag'
+    else:
+        xlabel = 'Lag'
+
+    finite = np.isfinite(msd)
+    ax.scatter(lags[finite], msd[finite], s=12, color='#888888', alpha=0.7,
+               label='Empirical MSD', zorder=3)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('MSD')
+    ax.set_title(title if title else 'Empirical MSD')
+    ax.legend(loc='lower right', fontsize=9)
+
+    fig.tight_layout()
+    if show:
+        plt.show()
+    return fig
+
+
 # ── plot_msd ──────────────────────────────────────────────────────────────────
 
-def plot_msd(result, ax=None) -> matplotlib.figure.Figure:
+def plot_msd(result, ax=None, show=True) -> matplotlib.figure.Figure:
     """
     Plot empirical MSD (scatter) and fitted theoretical MSD (line).
 
@@ -65,11 +190,11 @@ def plot_msd(result, ax=None) -> matplotlib.figure.Figure:
     fig, ax = _get_axes(ax, figsize=(7, 4.5))
 
     meta      = result.metadata
-    time_unit = meta.get('time_unit', '')
-    obs_unit  = meta.get('value_unit', '')
+    x_unit    = meta.get('x_unit', '')
+    obs_unit  = meta.get('y_unit', '')
     dname     = result.dataset_name
 
-    xlabel = f'Lag ({time_unit})' if time_unit else 'Lag'
+    xlabel = f'Lag ({x_unit})' if x_unit else 'Lag'
     ylabel = f'MSD ({obs_unit}\u00b2)' if obs_unit else 'MSD'
 
     # Empirical scatter
@@ -102,12 +227,14 @@ def plot_msd(result, ax=None) -> matplotlib.figure.Figure:
     ax.legend(loc='lower right', fontsize=9)
 
     fig.tight_layout()
+    if show:
+        plt.show()
     return fig
 
 
 # ── plot_pdf ──────────────────────────────────────────────────────────────────
 
-def plot_pdf(result, lag_index=None, ax=None) -> matplotlib.figure.Figure:
+def plot_pdf(result, lag_index=None, ax=None, show=True) -> matplotlib.figure.Figure:
     """
     Plot empirical displacement histogram vs theoretical Gaussian PDF.
 
@@ -128,7 +255,7 @@ def plot_pdf(result, lag_index=None, ax=None) -> matplotlib.figure.Figure:
     fig, ax = _get_axes(ax, figsize=(6, 4.5))
 
     meta     = result.metadata
-    obs_unit = meta.get('value_unit', '')
+    obs_unit = meta.get('y_unit', '')
     dname    = result.dataset_name
 
     lags   = result.lags
@@ -192,12 +319,14 @@ def plot_pdf(result, lag_index=None, ax=None) -> matplotlib.figure.Figure:
     ax.set_title(f'{dname} \u2014 PDF at lag T={T:.3f}')
 
     fig.tight_layout()
+    if show:
+        plt.show()
     return fig
 
 
 # ── plot_timeseries ───────────────────────────────────────────────────────────
 
-def plot_timeseries(result, ax=None) -> matplotlib.figure.Figure:
+def plot_timeseries(result, ax=None, show=True) -> matplotlib.figure.Figure:
     """
     Plot the preprocessed observable time series.
 
@@ -213,12 +342,12 @@ def plot_timeseries(result, ax=None) -> matplotlib.figure.Figure:
     fig, ax = _get_axes(ax, figsize=(9, 3.5))
 
     meta      = result.metadata
-    time_unit = meta.get('time_unit', '')
-    obs_unit  = meta.get('value_unit', '')
-    obs_name  = meta.get('value_name', 'value')
+    x_unit    = meta.get('x_unit', '')
+    obs_unit  = meta.get('y_unit', '')
+    obs_name  = meta.get('y_name', 'value')
     dname     = result.dataset_name
 
-    xlabel = f'Time ({time_unit})' if time_unit else 'Time'
+    xlabel = f'{meta.get("x_name", "x")} ({x_unit})' if x_unit else meta.get('x_name', 'x')
     ylabel = _unit_label(obs_name, obs_unit)
 
     ax.plot(result.time, result.values, color='#1B6CA8', linewidth=0.8)
@@ -227,12 +356,14 @@ def plot_timeseries(result, ax=None) -> matplotlib.figure.Figure:
     ax.set_title(f'{dname} \u2014 Time Series')
 
     fig.tight_layout()
+    if show:
+        plt.show()
     return fig
 
 
 # ── plot_diagnostics ──────────────────────────────────────────────────────────
 
-def plot_diagnostics(result) -> matplotlib.figure.Figure:
+def plot_diagnostics(result, show=True) -> matplotlib.figure.Figure:
     """
     2×2 diagnostic figure: time series, MSD, PDF, and parameter summary.
 
@@ -248,13 +379,13 @@ def plot_diagnostics(result) -> matplotlib.figure.Figure:
     ax_ts, ax_msd, ax_pdf, ax_txt = axes.flat
 
     # Top-left: time series
-    plot_timeseries(result, ax=ax_ts)
+    plot_timeseries(result, ax=ax_ts, show=False)
 
     # Top-right: MSD
-    plot_msd(result, ax=ax_msd)
+    plot_msd(result, ax=ax_msd, show=False)
 
     # Bottom-left: PDF
-    plot_pdf(result, ax=ax_pdf)
+    plot_pdf(result, ax=ax_pdf, show=False)
 
     # Bottom-right: parameter summary text box
     ax_txt.axis('off')
@@ -289,4 +420,6 @@ def plot_diagnostics(result) -> matplotlib.figure.Figure:
         fontsize=13, fontweight='bold',
     )
     fig.tight_layout()
+    if show:
+        plt.show()
     return fig

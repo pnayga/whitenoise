@@ -106,24 +106,10 @@ def test_04_batch_and_export(tmp_path):
         _write_csv(p, seed=i + 10)
         paths.append(p)
 
-    batch_results = _silent(wn.batch_analyze, paths, model='cosine', n_jobs=1)
+    cr = _silent(wn.batch_analyze, paths, model='cosine', n_jobs=1)
 
-    # Build a ComparisonResult from the successful batch results
-    from whitenoise.analysis.compare import ComparisonResult, _result_row, _nan_row, _DF_COLS
-    rows = []
-    successes = []
-    for path, ar in zip(paths, batch_results):
-        if ar is not None:
-            rows.append(_result_row(ar))
-            successes.append(ar)
-        else:
-            name = os.path.splitext(os.path.basename(path))[0]
-            rows.append(_nan_row(name, 'cosine'))
-    cr = ComparisonResult(
-        results=successes,
-        models_used=['cosine'],
-        summary_df=pd.DataFrame(rows, columns=_DF_COLS),
-    )
+    assert isinstance(cr, wn.ComparisonResult), \
+        f'Expected ComparisonResult, got {type(cr)}'
 
     out_csv = str(tmp_path / 'batch_summary.csv')
     with contextlib.redirect_stdout(io.StringIO()):

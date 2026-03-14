@@ -55,6 +55,17 @@ DEFAULTS: dict[str, dict] = {
         'p0':     [5.0, 0.01, 3.0],
         'bounds': ([0.01, 1e-9, 0.01], [1000.0, 100.0, 1000.0]),
     },
+    # inc_gamma: nu = shape (gamma order), mu = rate (saturation scale)
+    'inc_gamma': {
+        'p0':     [1.5, 0.1],
+        'bounds': ([0.01, 1e-9], [10.0, 100.0]),
+    },
+    # bessel_jmu_nu: mu = memory param (denominator), nu = secondary order
+    # Constraint: mu + nu > -1 for J_{mu+nu} to be regular
+    'bessel_jmu_nu': {
+        'p0':     [1.0, 0.5],
+        'bounds': ([0.01, -0.99], [10.0, 10.0]),
+    },
 }
 
 

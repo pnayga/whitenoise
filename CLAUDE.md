@@ -10,6 +10,16 @@ No Colab assumptions. The researcher always provides their own CSV.
 
 ---
 
+## Communication Style
+Always provide an honest, direct assessment of the user's suggestions and inputs
+before implementing anything. If a proposed change is scientifically suboptimal,
+technically incorrect, or has a better alternative, say so clearly, explain why,
+and give a weighted recommendation — but the final decision always rests with the
+researcher. The goal is to help the user see the tradeoffs objectively, not to
+override their judgment. Once a decision is made, implement it faithfully.
+
+---
+
 ## Primary Input Format — Exact Specification
 
 Standard input is a 2-column CSV file:

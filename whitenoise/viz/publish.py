@@ -67,7 +67,10 @@ def _save(fig: matplotlib.figure.Figure, save_path: str | None) -> None:
     dirn = os.path.dirname(save_path)
     if dirn:
         os.makedirs(dirn, exist_ok=True)
-    fig.savefig(save_path, format='pdf', bbox_inches='tight')
+    # Infer format from extension; fall back to PDF for publication default
+    ext = os.path.splitext(save_path)[1].lstrip('.').lower()
+    fmt = ext if ext in {'pdf', 'png', 'svg', 'eps', 'jpg', 'jpeg'} else 'pdf'
+    fig.savefig(save_path, format=fmt, bbox_inches='tight')
     print(f'\u2713 Saved to {save_path}')
 
 
@@ -86,7 +89,7 @@ def _fd_bins(data: np.ndarray) -> int:
     if iqr == 0:
         return max(10, int(np.sqrt(n)))
     h = 2.0 * iqr * n ** (-1.0 / 3.0)
-    data_range = np.ptp(data)
+    data_range = np.max(data) - np.min(data)
     if h == 0 or data_range == 0:
         return 10
     return max(5, int(np.ceil(data_range / h)))
@@ -99,6 +102,7 @@ def publish_msd(
     palette:   str = 'default',
     figsize:   tuple = (5, 4),
     save_path: str | None = None,
+    show:      bool = True,
 ) -> matplotlib.figure.Figure:
     """
     Publication-quality MSD plot: empirical scatter + fitted curve.
@@ -118,11 +122,11 @@ def publish_msd(
     """
     colors = _resolve_palette(palette)
     meta      = result.metadata
-    time_unit = meta.get('time_unit', '')
-    obs_unit  = meta.get('value_unit', '')
+    x_unit    = meta.get('x_unit', '')
+    obs_unit  = meta.get('y_unit', '')
     dname     = result.dataset_name
 
-    xlabel = f'Lag ({time_unit})' if time_unit else 'Lag'
+    xlabel = f'Lag ({x_unit})' if x_unit else 'Lag'
     ylabel = f'MSD ({obs_unit}\u00b2)' if obs_unit else 'MSD'
 
     with _style_ctx():
@@ -157,6 +161,8 @@ def publish_msd(
         fig.tight_layout()
 
     _save(fig, save_path)
+    if show:
+        plt.show()
     return fig
 
 
@@ -168,6 +174,7 @@ def publish_pdf(
     palette:   str = 'default',
     figsize:   tuple = (5, 4),
     save_path: str | None = None,
+    show:      bool = True,
 ) -> matplotlib.figure.Figure:
     """
     Publication-quality displacement PDF plot.
@@ -187,7 +194,7 @@ def publish_pdf(
     """
     colors   = _resolve_palette(palette)
     meta     = result.metadata
-    obs_unit = meta.get('value_unit', '')
+    obs_unit = meta.get('y_unit', '')
     dname    = result.dataset_name
 
     lags   = result.lags
@@ -253,6 +260,8 @@ def publish_pdf(
         fig.tight_layout()
 
     _save(fig, save_path)
+    if show:
+        plt.show()
     return fig
 
 
@@ -261,8 +270,9 @@ def publish_pdf(
 def publish_comparison(
     cr,
     palette:   str = 'default',
-    figsize:   tuple = (7, 4),
+    figsize:   tuple | None = None,
     save_path: str | None = None,
+    show:      bool = True,
 ) -> matplotlib.figure.Figure:
     """
     Publication-quality μ comparison bar chart with 95 % CI error bars.
@@ -278,42 +288,50 @@ def publish_comparison(
     -------
     matplotlib.figure.Figure
     """
-    colors = _resolve_palette(palette)
-    df = cr.summary_df.dropna(subset=['mu'])
+    colors  = _resolve_palette(palette)
+    df      = cr.summary_df.dropna(subset=['mu'])
+    n_sys   = len(df)
 
     labels  = list(df['dataset_name'])
     mu_vals = np.array(df['mu'], dtype=float)
 
     # Parse CI strings like "(1.100, 1.300)" → half-width error bars
-    yerr = np.zeros(len(df))
+    xerr = np.zeros(n_sys)
     for i, ci_str in enumerate(df['mu_ci']):
         try:
             lo_str, hi_str = str(ci_str).strip('()').split(',')
             lo, hi = float(lo_str), float(hi_str)
-            yerr[i] = (hi - lo) / 2.0
+            xerr[i] = (hi - lo) / 2.0
         except Exception:
-            yerr[i] = 0.0
+            xerr[i] = 0.0
+
+    # Auto-size figure height so bars don't crowd when there are many systems
+    if figsize is None:
+        figsize = (7, max(3, 0.5 * n_sys + 1.5))
 
     with _style_ctx():
         fig, ax = plt.subplots(figsize=figsize)
 
-        x = np.arange(len(labels))
-        ax.bar(x, mu_vals, color=colors['theory'], alpha=0.75, zorder=3)
+        y = np.arange(n_sys)
+        # Horizontal bars — dataset names on y-axis are readable without rotation
+        ax.barh(y, mu_vals, color=colors['theory'], alpha=0.75, zorder=3)
         ax.errorbar(
-            x, mu_vals, yerr=yerr,
+            mu_vals, y, xerr=xerr,
             fmt='none', color='black', linewidth=1.2, capsize=4, zorder=4,
         )
 
         # Brownian reference line at μ = 1.0
-        ax.axhline(1.0, color='#888888', linewidth=0.8, linestyle='--',
+        ax.axvline(1.0, color='#888888', linewidth=0.8, linestyle='--',
                    label='\u03bc = 1 (Brownian)')
 
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=45, ha='right')
-        ax.set_ylabel('Memory parameter \u03bc')
+        ax.set_yticks(y)
+        ax.set_yticklabels(labels)
+        ax.set_xlabel('Memory parameter \u03bc')
         ax.set_title('Memory Parameter Comparison')
         ax.legend()
         fig.tight_layout()
 
     _save(fig, save_path)
+    if show:
+        plt.show()
     return fig

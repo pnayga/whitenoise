@@ -128,28 +128,39 @@ class ComparisonResult:
 # ── compare ───────────────────────────────────────────────────────────────────
 
 def compare(
-    paths: list[str],
+    datasets: 'list[str] | dict',
     model: str = 'cosine',
-    detrend_method: str | None = 'linear',
+    detrend_method: str | None = None,
     normalize: bool = False,
-    max_lag_fraction: float = 0.5,
+    max_lag_fraction: float = 1.0,
     fit_kwargs: dict | None = None,
 ) -> ComparisonResult:
     """
-    Run the same SWNA model on multiple CSV files and collect results.
+    Run the same SWNA model on multiple datasets and collect results.
 
     Parameters
     ----------
-    paths : list[str]
-        Paths to whitenoise-format CSV files.
+    datasets : list[str] or dict
+        * ``list[str]`` — list of CSV file paths; labels auto-set from filenames.
+        * ``dict`` — keys are labels (str), values are CSV paths (str) or
+          array-like (1-D).  Example::
+
+              wn.compare({
+                  'Earthquakes': 'earthquake_ph.csv',
+                  'Sunspots':    'sunspot.csv',
+              }, model='exponential')
+
     model : str, default ``'cosine'``
         SWNA model name passed to :func:`~whitenoise.analysis.pipeline.analyze`.
-    detrend_method : str or None, default ``'linear'``
+    detrend_method : str or None, default ``None``
         Detrending method (see :func:`~whitenoise.utils.preprocess.detrend`).
+        ``None`` skips detrending — the raw values are used as-is.
+        Choices: ``'linear'``, ``'polynomial'``, ``'mean'``,
+        ``'moving_average'``.
     normalize : bool, default ``False``
         Whether to z-score normalize values before fitting.
-    max_lag_fraction : float, default 0.5
-        Fraction of lags used in fitting.
+    max_lag_fraction : float, default 1.0
+        Fraction of lags used in fitting. Default 1.0 uses all N//2 lags.
     fit_kwargs : dict, optional
         Extra keyword arguments forwarded to
         :func:`~whitenoise.core.fitting.fit_msd`.
@@ -161,19 +172,29 @@ def compare(
     if fit_kwargs is None:
         fit_kwargs = {}
 
-    n = len(paths)
-    print(f'\U0001f504 Comparing {n} dataset{"s" if n != 1 else ""}...')
+    # Normalize input into list of (label, source) pairs
+    if isinstance(datasets, dict):
+        items = list(datasets.items())   # [(label, source), ...]
+    else:
+        # list of CSV paths — derive label from filename
+        items = [
+            (os.path.splitext(os.path.basename(p))[0], p)
+            for p in datasets
+        ]
+
+    n = len(items)
+    print(f'\u2713 Comparing {n} dataset{"s" if n != 1 else ""}...')
 
     results: list[AnalysisResult] = []
     rows: list[dict] = []
 
-    for i, path in enumerate(paths):
-        name = os.path.splitext(os.path.basename(path))[0]
+    for i, (label, source) in enumerate(items):
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 ar = analyze(
-                    path,
+                    source,
                     model=model,
+                    label=label,
                     detrend_method=detrend_method,
                     normalize=normalize,
                     max_lag_fraction=max_lag_fraction,
@@ -182,15 +203,15 @@ def compare(
             results.append(ar)
             row = _result_row(ar)
             r2_str = f"{ar.fit.r_squared:.4f}" if ar.fit is not None else 'N/A'
-            print(f'  [{i + 1}/{n}] {name} \u2192 R\u00b2={r2_str}, regime={ar.regime}')
+            print(f'  [{i + 1}/{n}] {label} \u2192 R\u00b2={r2_str}, regime={ar.regime}')
         except Exception as exc:
-            print(f'  [{i + 1}/{n}] {name} \u2192 ERROR: {exc}')
-            row = _nan_row(name, model)
+            print(f'  [{i + 1}/{n}] {label} \u2192 ERROR: {exc}')
+            row = _nan_row(label, model)
 
         rows.append(row)
 
     summary_df = pd.DataFrame(rows, columns=_DF_COLS)
-    print('\u2705 Comparison complete.')
+    print('\u2713 Comparison complete.')
 
     return ComparisonResult(
         results=results,

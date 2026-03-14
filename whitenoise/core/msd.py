@@ -79,7 +79,7 @@ def _to_1d_array(x) -> np.ndarray:
 
 def compute_msd(
     x,
-    max_lag: int | None = None,
+    max_lag: int | None = None,  # defaults to N//2; hard-capped at N//2 (beyond N/2, estimates use too few pairs)
     normalize: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -92,12 +92,33 @@ def compute_msd(
         \\text{MSD}(\\Delta) = \\frac{1}{N - \\Delta}
             \\sum_{i=0}^{N-\\Delta-1} \\bigl[x(i+\\Delta) - x(i)\\bigr]^2
 
+    .. note::
+
+        The sum uses 0-based indexing (i = 0 … N−Δ−1) to match Python/NumPy
+        conventions. In textbook formulations the sum starts at i = 1 with
+        upper limit N−Δ — both yield the same N−Δ terms and identical results.
+
     Parameters
     ----------
     x : array-like (1D)
-        Fluctuating observable.  Accepts ``np.ndarray``, ``pd.Series``,
-        ``list``, or ``tuple``.  Converted internally to a 1-D float array.
+        Sequential values to analyze.  This can be any 1-D sequence of
+        equally spaced measurements — a physical observable, a time series,
+        a spatial profile, or any other uniformly sampled quantity.
+        Accepts ``np.ndarray``, ``pd.Series``, ``list``, or ``tuple``.
+        Converted internally to a 1-D float array.
         Must contain at least 10 finite points.
+
+        .. note::
+
+            The values are assumed to be **equally spaced** (uniform step
+            spacing). If the original data has gaps, represent missing
+            positions as ``NaN`` before passing — isolated NaN values are
+            filled by linear interpolation internally. If more than 50 % of
+            the values are NaN the function raises a ``ValueError``.
+
+            For 2-column CSV data (index + observable), use
+            ``wn.read_csv()`` first to extract the two columns, then pass
+            the observable column here.
     max_lag : int, optional
         Maximum lag to compute.  Defaults to ``len(x) // 2``.
         Capped at ``len(x) // 2`` — beyond N/2 the estimates use fewer
@@ -124,21 +145,40 @@ def compute_msd(
     >>> lags, msd = wn.compute_msd(values)
     >>> lags, msd = wn.compute_msd(values, max_lag=100, normalize=True)
     """
+    # Convert any array-like input to a clean 1-D float array.
+    # NaN interpolation and dimension/length checks happen inside here.
     arr = _to_1d_array(x)
     n = len(arr)
 
+    # Cap max_lag at N//2 (mentor rule):
+    # beyond N/2, each lag has fewer than N/2 pairs → statistically unreliable.
     if max_lag is None:
         max_lag = n // 2
     max_lag = min(int(max_lag), n // 2)
 
+    # Lag values: Δ = 1, 2, 3, …, max_lag (never 0 — since zero lag gives zero displacement).
     lags = np.arange(1, max_lag + 1, dtype=int)
+
+    # Pre-allocate the output array (one MSD value per lag).
     msd = np.empty(max_lag, dtype=float)
 
     for i, lag in enumerate(lags):
+        # Compute all displacements x(j+Δ) - x(j) for this lag Δ in one shot.
+        # arr[lag:]  = [x(Δ), x(Δ+1), …, x(N-1)]   ← "right" points
+        # arr[:-lag] = [x(0), x(1),   …, x(N-Δ-1)] ← "left"  points
+        # The subtraction pairs every j with j+Δ simultaneously (NumPy vectorization).
+        # Result: an array of (N-Δ) displacement values.
         diff = arr[lag:] - arr[:-lag]
+
+        # MSD(Δ) = (1 / (N-Δ)) · Σ [x(j+Δ) - x(j)]²
+        # np.mean automatically divides by len(diff) = N-Δ,
+        # so the unbiased denominator is handled without extra code.
         msd[i] = np.mean(diff * diff)
 
     if normalize:
+        # Divide all MSD values by MSD(Δ=1) so the first point equals 1.0.
+        # This removes amplitude differences between datasets while preserving
+        # the growth shape (scaling exponent μ is unchanged).
         msd = msd / msd[0]
 
     return lags, msd

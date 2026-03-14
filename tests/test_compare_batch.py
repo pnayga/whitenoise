@@ -142,12 +142,14 @@ def test_06_batch_analyze_serial_returns_correct_count(tmp_path):
         _write_csv(p, seed=i + 10)
         paths.append(p)
 
-    results = _silent(batch_analyze, paths, model='cosine', n_jobs=1)
+    cr = _silent(batch_analyze, paths, model='cosine', n_jobs=1)
 
-    assert len(results) == 3, \
-        f'Expected 3 results, got {len(results)}'
+    assert isinstance(cr, ComparisonResult), \
+        f'Expected ComparisonResult, got {type(cr)}'
+    assert len(cr.results) == 3, \
+        f'Expected 3 results, got {len(cr.results)}'
     # All should succeed with Brownian motion data
-    assert all(r is not None for r in results), \
+    assert all(r is not None for r in cr.results), \
         'Some results are None (unexpected failure)'
 
 
@@ -162,8 +164,8 @@ def test_07_batch_analyze_parallel_matches_serial_count(tmp_path):
     serial   = _silent(batch_analyze, paths, model='cosine', n_jobs=1)
     parallel = _silent(batch_analyze, paths, model='cosine', n_jobs=2)
 
-    assert len(parallel) == len(serial), \
-        f'Parallel count {len(parallel)} != serial count {len(serial)}'
+    assert len(parallel.results) == len(serial.results), \
+        f'Parallel count {len(parallel.results)} != serial count {len(serial.results)}'
 
 
 def test_08_batch_model_search_returns_one_row_per_model(tmp_path):
@@ -201,18 +203,18 @@ def test_10_stub_models_silently_skipped(tmp_path):
     p = str(tmp_path / 'data.csv')
     _write_csv(p)
 
-    # 'sin_half' is a stub model (status='not_implemented')
+    # 'exp_whittaker' is a stub model (status='not_implemented')
     cr = _silent(
         batch_model_search, p,
-        models=['cosine', 'sin_half'],
+        models=['cosine', 'exp_whittaker'],
     )
 
     assert isinstance(cr, ComparisonResult), \
         f'Expected ComparisonResult, got {type(cr)}'
 
-    # Only 'cosine' should appear — 'sin_half' is silently skipped
+    # Only 'cosine' should appear — 'exp_whittaker' is silently skipped
     models_in_df = list(cr.summary_df['model'])
-    assert 'sin_half' not in models_in_df, \
-        f"'sin_half' stub should be silently skipped, but found in summary_df"
+    assert 'exp_whittaker' not in models_in_df, \
+        f"'exp_whittaker' stub should be silently skipped, but found in summary_df"
     assert 'cosine' in models_in_df, \
         "'cosine' should appear in summary_df"
