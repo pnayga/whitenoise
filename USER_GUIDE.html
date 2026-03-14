@@ -192,7 +192,7 @@
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <div class="title-block">
   <h1>whitenoise &mdash; User Guide</h1>
-  <div class="subtitle">Stochastic White Noise Analysis with Memory (SWNA) &mdash; Hida&ndash;Bernido Framework</div>
+  <div class="subtitle">Stochastic White Noise Analysis with Memory (SWNA)</div>
   <div class="author-block">
     Package version 0.2.0 &middot; Python &ge;3.9 &middot; March 14, 2026
   </div>
@@ -205,10 +205,9 @@
 
 <p>
   <strong>whitenoise</strong> is a research package implementing Stochastic White Noise Analysis
-  (SWNA) with Memory, based on the Hida white noise calculus framework developed by
-  Bernido &amp; Carpio-Bernido (University of San Carlos / CVIF, Philippines). The framework
-  models a fluctuating observable as a stochastic integral driven by white noise, where a
-  memory kernel encodes how past fluctuations influence future dynamics.
+  (SWNA) with Memory. The framework models a fluctuating observable as a stochastic integral
+  driven by white noise, where a memory kernel encodes how past fluctuations influence future
+  dynamics.
 </p>
 
 <p>
@@ -415,7 +414,7 @@ results[1][2]['y_name']                # 'temperature'</pre>
 
 <div class="note">
   <strong>Note on normalization:</strong> Pre-analysis normalization is <em>not standard</em> in
-  the Bernido group&rsquo;s published work. The normalization scalar <strong>N</strong> in the
+  the published SWNA work. The normalization scalar <strong>N</strong> in the
   fit (<em>N &middot; msd_model</em>) absorbs data amplitude and scale automatically &mdash;
   the memory parameter &mu; is unaffected by amplitude. Normalization is only useful in
   rare edge cases of extreme numerical scale differences.
@@ -564,13 +563,13 @@ result.plot_pdf(show=True)    # displacement histogram + theoretical PDF</pre>
   <tr><td><code>'linear'</code></td><td>Fits a degree-1 polynomial and subtracts it.</td><td>Long-term linear drift (e.g. population growth).</td></tr>
   <tr><td><code>'polynomial'</code></td><td>Fits a degree-<code>poly_order</code> polynomial and subtracts it.</td><td>Smooth nonlinear trend (e.g. CO&sub2; seasonal + secular).</td></tr>
   <tr><td><code>'mean'</code></td><td>Subtracts the global mean only.</td><td>Data already stationary; just removes DC offset.</td></tr>
-  <tr><td><code>'moving_average'</code></td><td>Subtracts a uniform moving average of width <code>window</code>.</td><td>Slowly varying baseline (e.g. sunspot cycle &mdash; Bernido et al. &sect;3.2).</td></tr>
+  <tr><td><code>'moving_average'</code></td><td>Subtracts a uniform moving average of width <code>window</code>.</td><td>Slowly varying baseline (e.g. sunspot cycle).</td></tr>
 </table>
 
 <p><strong>Returns:</strong> ndarray same length as input (fluctuations around removed trend).</p>
 <p><strong>Raises:</strong> <code>ValueError</code> with <code>&#10007;</code> prefix for unknown method.</p>
 
-<pre># Sunspot detrending (as in Bernido et al. &sect;3.2)
+<pre># Sunspot detrending — remove slow baseline cycle
 time, values, meta = wn.read_csv('sunspot.csv')
 fluct = wn.detrend(values, method='moving_average', window=11)
 result = wn.analyze(fluct, model='exponential', label='Sunspot fluctuations')
@@ -582,8 +581,8 @@ result = wn.analyze(fluct, model='cosine', label='CO2 fluctuations')</pre>
 
 <p>There are also two advanced detrending functions not exposed in the standard pipeline but available in <code>utils/preprocess.py</code>:</p>
 <ul>
-  <li><code>detrend_psd(values, threshold=0.5)</code> &mdash; Removes dominant periodic components via Power Spectral Density analysis (PSD filtering). Useful for algae-type predator&ndash;prey data with strong deterministic cycles (Bernido et al. &sect;3.3).</li>
-  <li><code>detrend_fingerprint(values, cycle_length=None, trough_indices=None)</code> &mdash; Cycle averaging (&ldquo;fingerprinting&rdquo;) detrending: aligns repeated cycles at their maxima, averages them, then subtracts. Useful when cycles have similar shapes but vary in timing (Bernido et al. &sect;3.4).</li>
+  <li><code>detrend_psd(values, threshold=0.5)</code> &mdash; Removes dominant periodic components via Power Spectral Density analysis (PSD filtering). Useful for data with strong deterministic periodic cycles.</li>
+  <li><code>detrend_fingerprint(values, cycle_length=None, trough_indices=None)</code> &mdash; Cycle averaging (&ldquo;fingerprinting&rdquo;) detrending: aligns repeated cycles at their maxima, averages them, then subtracts. Useful when cycles have similar shapes but vary in timing.</li>
 </ul>
 
 <h3>normalize()</h3>
@@ -744,8 +743,8 @@ result = wn.fit_msd(lags, msd, model='cosine',
 <h2>9. Models</h2>
 
 <p>
-  The MODELS registry contains 19 models (18 from Table 2.1 of the Bernido &amp;
-  Carpio-Bernido non-Markovian book, plus the DNA plateau model from Violanda et al. 2019).
+  The MODELS registry contains 19 models (18 theoretical MSD formulas from the SWNA
+  reference literature, plus the DNA plateau model from Violanda et al. 2019).
   Model selection is always <em>manual</em> &mdash; the researcher specifies <code>model=</code>.
   The package never auto-selects. Run <code>wn.list_models()</code> to see all models and
   their current status.
@@ -836,7 +835,7 @@ result = wn.fit_msd(lags, msd, model='cosine',
 <div class="note">
   <strong>One model per run:</strong> <code>analyze()</code> fits exactly one model. Selecting
   the right model is the researcher&rsquo;s responsibility. If unsure, start with
-  <code>model='exponential'</code> (most commonly used in published Bernido-group work). If
+  <code>model='exponential'</code> (most commonly used in published SWNA studies). If
   your data shows clear oscillatory structure, try <code>model='cosine'</code>.
   Use <code>wn.batch_model_search('mydata.csv')</code> to run all available models and
   compare R&sup2; values side by side.
@@ -1297,7 +1296,7 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 <h3>Methodological note: fitting method</h3>
 <div class="warn">
   <strong>Current fitting uses unweighted SSR (ordinary least squares)</strong>, consistent
-  with the Bernido group&rsquo;s prior published results. A more statistically rigorous
+  with the published SWNA prior published results. A more statistically rigorous
   alternative would be <strong>Weighted Least Squares (WLS)</strong> with weights
   w<sub>&Delta;</sub> = N &minus; &Delta; (large-lag MSD estimates are noisier, computed
   from fewer data pairs). WLS is not yet implemented but references for the approach include:
@@ -1469,12 +1468,10 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 
 <p>If you use this package in published work, please cite:</p>
 
-<pre>Bernido, C. C., &amp; Carpio-Bernido, M. V. (2015).
-White noise analysis: Some applications in complex systems, biophysics and quantum mechanics.
+<pre>White noise analysis: Some applications in complex systems, biophysics and quantum mechanics.
 International Journal of Modern Physics B, 26, 1230014.
 https://doi.org/10.1142/S0217979212300149
 
-Violanda, R. R., Bernido, C. C., &amp; Carpio-Bernido, M. V. (2019).
 White noise functional integral for exponentially decaying memory:
 nucleotide distribution in bacterial genomes.
 Physica Scripta, 94, 125006.
@@ -1483,8 +1480,7 @@ https://doi.org/10.1088/1402-4896/ab3342</pre>
 <p>For specific models or applications, also cite the primary application papers listed in Section 15.</p>
 
 <div class="footer">
-  whitenoise v0.2.0 &middot; Bernido Group, University of San Carlos / CVIF, Philippines
-  &middot; March 14, 2026
+  whitenoise v0.2.0 &middot; March 14, 2026
 </div>
 
 </body>
