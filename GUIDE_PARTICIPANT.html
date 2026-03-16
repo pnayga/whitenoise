@@ -331,20 +331,58 @@ result = wn.analyze(fluct, model='cosine', label='Detrended data')</code></pre>
 <!-- Section 8: Bringing Your Own Data -->
 <h2>8. Analyzing Your Own Data</h2>
 
-<pre><code># Point analyze() at your CSV file
-result = wn.analyze('my_data.csv', model='exponential')
+<h3>Step 1 — Prepare your CSV file</h3>
+<p>Your file must follow the 2-column format from Section 2:</p>
+<pre><code>time [unit], variable_name [unit]
+1, 23.5
+2, 24.1
+...</code></pre>
+<ul>
+  <li>Header row required — format: <code>name [unit]</code></li>
+  <li>Column 1 = independent variable (time, index, position…)</li>
+  <li>Column 2 = your observable (what you measured)</li>
+  <li>No blank rows in the middle</li>
+</ul>
+<div class="note">
+  <strong>Blank rows in your file?</strong> Clean them first in a separate cell:<br>
+  <pre style="margin-top:6px"><code>import pandas as pd
+pd.read_csv('raw.csv', skip_blank_lines=True).dropna(how='all').to_csv('clean.csv', index=False)</code></pre>
+</div>
+
+<h3>Step 2 — Upload to Colab</h3>
+<p>Run this cell to open the file upload dialog:</p>
+<pre><code>from google.colab import files
+uploaded = files.upload()          # a dialog box will appear
+MY_FILE = list(uploaded.keys())[0] # gets the filename you uploaded
+print('Uploaded:', MY_FILE)</code></pre>
+<p>Click <strong>Choose Files</strong>, select your CSV, and wait for the upload to finish. The filename will be printed — use exactly that name in the next steps.</p>
+
+<div class="note">
+  <strong>File naming tip:</strong> Avoid spaces in your filename. Use underscores instead —
+  e.g. <code>my_data.csv</code> not <code>my data.csv</code>.
+</div>
+
+<h3>Step 3 — Call it in the code</h3>
+<p>Use <code>MY_FILE</code> (the variable from Step 2) wherever the code asks for a file path:</p>
+<pre><code># Load
+time, values, meta = wn.read_csv(MY_FILE)
+
+# Analyze
+result = wn.analyze(MY_FILE, model='exponential')
 result.summary()
 wn.plot_diagnostics(result)</code></pre>
 
-<p>Your CSV must have:</p>
-<ul>
-  <li>Exactly 2 columns (or more for batch analysis)</li>
-  <li>Header row with <code>name [unit]</code> format</li>
-  <li>No missing values in the middle of the series</li>
-</ul>
+<p>Or just pass the filename as a string directly if you already know the name:</p>
+<pre><code>result = wn.analyze('my_data.csv', model='exponential')</code></pre>
 
-<p>If your file is in a subfolder:</p>
-<pre><code>result = wn.analyze('dataexo/myfile.csv', model='exponential')</code></pre>
+<div class="note">
+  <strong>Uploaded files live in <code>/content/</code> in Colab.</strong>
+  You do not need to type the full path — just the filename is enough after uploading.
+  If you re-open the notebook later, you will need to re-upload the file (Colab does not keep uploads between sessions).
+</div>
+
+<h3>Step 4 — Work through each step</h3>
+<p>Use the hands-on section in the notebook (Steps A–I) with <code>MY_FILE</code> and <code>MY_MODEL</code>. Do not jump straight to <code>wn.analyze()</code> — walking through the steps helps you understand what the result means.</p>
 
 <!-- Section 9: Quick Reference Card -->
 <div class="page-break"></div>
