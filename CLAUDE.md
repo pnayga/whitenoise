@@ -339,6 +339,81 @@ All names below are importable directly from `whitenoise` (i.e. `wn.<name>`).
 
 ---
 
+## Workshop Materials — Current State (as of 2026-03-16)
+
+### GitHub repo
+  Remote: https://github.com/pnayga/whitenoise.git
+  Branch: main
+  Latest commit: c8e13eb
+
+### Files added to repo (not part of the core package)
+  workshop_notebook.ipynb     — Colab workshop notebook (hands-on session)
+  sample_data/                — sample CSVs for workshop demos
+    exponential_sunspot.csv
+    cosine_co2.csv
+    cosine_xray.csv
+    sample_series.csv
+    dna_nucleotide.csv        — OU+noise synthetic, n=2000, R²=0.9819
+  GUIDE_PARTICIPANT.html/pdf  — Step-by-step guide for workshop participants
+  GUIDE_FACILITATOR.html/pdf  — Facilitator reference (API, troubleshooting, timing)
+  WORKSHOP_GUIDE.html/pdf     — Short straight-to-the-point session overview
+  USER_GUIDE.html/pdf         — Comprehensive package documentation (17 sections)
+
+### workshop_notebook.ipynb — structure
+  - Setup: installs from github.com/pnayga/whitenoise, downloads sample CSVs
+  - Interactive sliders for all 5 models (exponential, cosine, fBm, sine, DNA)
+  - After EACH slider: model-specific parameter comparison (static 2-panel or 3-panel plots)
+      exponential: vary μ (β fixed) | vary β (μ fixed)
+      cosine:      vary μ (ν fixed) | vary ν (μ fixed)
+      fBm:         vary H (single panel)
+      sine:        vary μ (ν fixed) | vary ν (μ fixed)
+      DNA:         vary a | vary b | vary c
+  - Step-by-step pipeline demo (Steps A–I) using exponential_sunspot.csv
+  - DNA model demo cell (result_dna = wn.analyze('dna_nucleotide.csv', model='dna'))
+  - Hands-on section: participants upload their own CSV and repeat pipeline
+  - Bonus: compare() and publish_comparison()
+
+### DNA model
+  Name: 'dna'
+  Formula: MSD(L) = N · (a − c · e^{−bL})
+  Parameters: a (plateau), b (decay rate), c (amplitude, must satisfy c < a)
+  No μ parameter — no regime classification (always restricted diffusion)
+  Published values: a≈5.21, b≈0.0024, c≈3.81 (Violanda et al. 2019)
+  Sample dataset: dna_nucleotide.csv — OU process, n=2000, seed=99, R²≈0.98
+
+### Key function name facts (avoid confusion)
+  plot_series(time, values, metadata=meta)        ← use metadata= NOT xlabel=/ylabel=
+  plot_msd_empirical(lags, msd, metadata=meta)    ← correct name (NOT plot_msd_raw)
+  plot_diagnostics(result)                        ← 2×2 figure
+  publish_msd / publish_pdf / publish_comparison  ← publication-quality plots
+  metadata dict keys: x_name, x_unit, x_label, y_name, y_unit, y_label (NOT time_*/value_*)
+
+### normalize() methods
+  'zscore', 'minmax', 'mean', 'maxabs'
+  'maxabs' → arr / max(|arr|) → range [-1,1], preserves zero and sign
+
+### N=0 issue
+  Cause: data amplitude very small → optimizer drives N→0
+  Fix: normalize values first (method='zscore'), then analyze
+  Note: μ is unaffected by normalization — N only scales amplitude
+
+### PDF mismatch (histogram narrower than Gaussian)
+  Cause: leptokurtic/intermittent data — physically meaningful, not a bug
+  Gaussian is centered at np.mean(displacements), σ²=N·MSD(T)
+  Default lag_index = len(lags)//10
+
+### Affiliation policy
+  Do NOT mention: Hida, Bernido, Carpio-Bernido, University of San Carlos, CVIF,
+  "Bernido group" in any document or guide. Use "SWNA", "published SWNA work",
+  "the framework" instead. The user is the facilitator and keeps authorship low-key.
+
+### Workshop Colab access
+  Participants: colab.research.google.com → File → Open notebook → GitHub tab
+               → type "pnayga" → select workshop_notebook.ipynb
+  Then: File → Save a copy in Drive
+
+---
+
 ## Prompt 1 ✓ — Scaffold + io/reader.py
 ```
 Read CLAUDE.md fully before writing any code.
