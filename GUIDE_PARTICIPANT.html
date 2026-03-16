@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWNA Workshop — Participant Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #222;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 30px 40px;
+    background: #fff;
+  }
+  h1, h2, h3 { color: #1B2A4A; }
+  h1 { font-size: 2em; margin-bottom: 0.2em; }
+  h2 { font-size: 1.35em; margin-top: 2em; margin-bottom: 0.6em; border-bottom: 2px solid #1B2A4A; padding-bottom: 4px; }
+  h3 { font-size: 1.05em; margin-top: 1.2em; margin-bottom: 0.4em; color: #2C4A7A; }
+  p { margin: 0.6em 0; }
+  ul, ol { margin: 0.5em 0 0.5em 1.5em; }
+  li { margin: 0.25em 0; }
+  pre {
+    background: #f5f5f5;
+    border-left: 3px solid #555;
+    padding: 12px 14px;
+    margin: 0.8em 0;
+    font-size: 0.82em;
+    font-family: 'Courier New', Consolas, monospace;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  code {
+    font-family: 'Courier New', Consolas, monospace;
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.88em;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    font-size: 0.92em;
+  }
+  th {
+    background: #1B2A4A;
+    color: #fff;
+    text-align: left;
+    padding: 7px 10px;
+    font-weight: 600;
+  }
+  td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  .title-page {
+    text-align: center;
+    padding: 60px 20px 40px;
+    border-bottom: 3px solid #1B2A4A;
+    margin-bottom: 2em;
+  }
+  .title-page h1 { font-size: 2.4em; color: #1B2A4A; }
+  .title-page .subtitle { font-size: 1.3em; color: #444; margin-top: 0.5em; }
+  .title-page .year { margin-top: 2em; color: #888; font-size: 1em; }
+  .note {
+    background: #e8f4fd;
+    border-left: 4px solid #1B6CA8;
+    padding: 10px 14px;
+    margin: 0.8em 0;
+    font-size: 0.92em;
+  }
+  .tip {
+    background: #f0faf0;
+    border-left: 4px solid #388e3c;
+    padding: 10px 14px;
+    margin: 0.8em 0;
+    font-size: 0.92em;
+  }
+  .step-label {
+    display: inline-block;
+    background: #1B2A4A;
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  @media print {
+    body { font-size: 10.5pt; padding: 15px 20px; }
+    pre { font-size: 8.5pt; }
+    code { font-size: 9pt; }
+    h2 { page-break-after: avoid; }
+    .page-break { page-break-before: always; }
+    pre, table, .note, .tip { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Title Page -->
+<div class="title-page">
+  <h1>SWNA Workshop</h1>
+  <div class="subtitle">Participant Guide</div>
+  <div class="subtitle" style="font-size:1em; color:#666; margin-top:0.3em;">Stochastic White Noise Analysis</div>
+  <div class="year">2026</div>
+</div>
+
+<!-- Section 1: Setup -->
+<h2>1. Setup (Google Colab)</h2>
+
+<h3>Step 1 — Open the workshop notebook</h3>
+<ol>
+  <li>Go to <strong>colab.research.google.com</strong></li>
+  <li>In the menu bar, click <strong>File → Open notebook</strong></li>
+  <li>Click the <strong>GitHub</strong> tab</li>
+  <li>Type <strong>pnayga</strong> in the search box and press Enter</li>
+  <li>Select the workshop notebook from the list and open it</li>
+</ol>
+
+<h3>Step 2 — Save your own copy</h3>
+<ol>
+  <li>In the menu bar: <strong>File → Save a copy in Drive</strong></li>
+  <li>A copy named <em>"Copy of workshop_notebook.ipynb"</em> opens in a new tab</li>
+  <li>Rename it if you like: <strong>File → Rename</strong></li>
+  <li>All your work is now saved to <em>your</em> Google Drive</li>
+</ol>
+
+<div class="note">
+  <strong>No Google account?</strong> You can still run the notebook without saving — just click
+  <strong>Run anyway</strong> when prompted. Your progress won't be saved if you close the tab.
+</div>
+
+<h3>Step 3 — Run the install cell</h3>
+<p>Run this cell <strong>first</strong> at the top of the notebook:</p>
+
+<pre><code># Install the package
+!pip install git+https://github.com/YOUR_REPO/whitenoise.git -q
+
+# Download sample datasets
+!wget -q https://raw.githubusercontent.com/YOUR_REPO/main/sample_data/earthquake_ph.csv
+!wget -q https://raw.githubusercontent.com/YOUR_REPO/main/sample_data/sunspot_monthly.csv
+!wget -q https://raw.githubusercontent.com/YOUR_REPO/main/sample_data/dna_nucleotide.csv</code></pre>
+
+<div class="note">
+  <strong>Note:</strong> The facilitator will provide the correct installation link during the session.
+  If running locally (not Colab), use <code>pip install whitenoise-swna</code> or install from the folder: <code>pip install -e .</code>
+</div>
+
+<!-- Section 2: CSV Format -->
+<h2>2. CSV Format</h2>
+
+<p>The package reads <strong>2-column CSV files</strong> with this format:</p>
+
+<pre><code>time [months], sunspot_number [count]
+1, 12.4
+2, 15.1
+3, 14.8</code></pre>
+
+<p><strong>Rules:</strong></p>
+<ul>
+  <li><strong>Row 1</strong> is always the header: <code>name [unit]</code></li>
+  <li><strong>Column 1</strong> = independent variable (time, index, position, …)</li>
+  <li><strong>Column 2</strong> = observable (what you measured)</li>
+  <li>Unitless columns: use empty brackets → <code>flux []</code></li>
+  <li>Space before bracket is optional: <code>time[months]</code> works too</li>
+</ul>
+
+<div class="note">
+  <strong>Blank rows in your CSV?</strong> Clean them first:
+  <pre style="margin-top:6px"><code>import pandas as pd
+pd.read_csv('raw.csv', skip_blank_lines=True).dropna(how='all').to_csv('clean.csv', index=False)</code></pre>
+</div>
+
+<!-- Section 3: The Analysis Pipeline -->
+<div class="page-break"></div>
+<h2>3. The Analysis Pipeline</h2>
+
+<div class="step-label">Step A</div>
+<h3>Import the package</h3>
+<pre><code>import whitenoise as wn</code></pre>
+
+<div class="step-label">Step B</div>
+<h3>Load your data</h3>
+<pre><code>time, values, meta = wn.read_csv('earthquake_ph.csv')
+print(meta)   # shows column names, units, number of points</code></pre>
+
+<div class="step-label">Step C</div>
+<h3>Inspect the series</h3>
+<pre><code>wn.plot_series(time, values, metadata=meta)</code></pre>
+
+<div class="step-label">Step D</div>
+<h3>Compute and plot the MSD</h3>
+<pre><code>lags, msd = wn.compute_msd(values)
+wn.plot_msd_empirical(lags, msd, metadata=meta)</code></pre>
+<p>MSD = Mean Square Displacement. The shape of this curve tells you what kind of memory the system has.</p>
+
+<div class="step-label">Step E</div>
+<h3>Choose a model and analyze</h3>
+<pre><code>result = wn.analyze('earthquake_ph.csv', model='exponential')
+result.summary()</code></pre>
+<p>This runs the full pipeline and prints the fitted memory parameter μ with confidence intervals and R².</p>
+
+<div class="step-label">Step F</div>
+<h3>Visualize results</h3>
+<pre><code>wn.plot_diagnostics(result)   # 2×2 figure: series, MSD, PDF, parameters</code></pre>
+
+<div class="step-label">Step G</div>
+<h3>Export your result</h3>
+<pre><code>result.to_csv('my_result.csv')</code></pre>
+
+<div class="step-label">Step H</div>
+<h3>Compare multiple datasets</h3>
+<pre><code>comp = wn.compare({
+    'Earthquakes': 'earthquake_ph.csv',
+    'Sunspots':    'sunspot_monthly.csv',
+}, model='exponential')
+
+comp.summary_table()        # DataFrame of μ values side by side
+wn.publish_comparison(comp) # Bar chart with 95% CI error bars</code></pre>
+
+<div class="step-label">Step I</div>
+<h3>Batch process a folder</h3>
+<pre><code>batch = wn.batch_analyze('my_data_folder/', model='cosine')
+batch.to_csv('batch_results.csv')</code></pre>
+
+<!-- Section 4: Memory Parameter μ -->
+<div class="page-break"></div>
+<h2>4. The Memory Parameter μ</h2>
+
+<p>The central result of each analysis is the <strong>memory parameter μ</strong>, extracted by fitting the MSD curve.</p>
+
+<table>
+  <thead>
+    <tr><th>μ range</th><th>Regime</th><th>What it means</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>μ &lt; 0.95</td><td>Subdiffusive</td><td>System resists spreading — fluctuations slow down over time</td></tr>
+    <tr><td>0.95 – 1.05</td><td>Near-Brownian</td><td>Weak or no memory — behaves like an ordinary random walk</td></tr>
+    <tr><td>1.05 – 2.0</td><td>Superdiffusive</td><td>Fluctuations reinforce each other — fast spreading</td></tr>
+    <tr><td>μ &gt; 2.0</td><td>Hyperballistic</td><td>Extremely persistent dynamics — very strong memory</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>fBm model:</strong> Reports the Hurst exponent <em>H</em> instead of μ.
+  H = 0.5 → Brownian; H &lt; 0.5 → subdiffusive; H &gt; 0.5 → superdiffusive.
+</div>
+
+<!-- Section 5: Available Models -->
+<h2>5. Available Models</h2>
+
+<table>
+  <thead>
+    <tr><th>Model name</th><th>Parameters</th><th>Best for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>'exponential'</code></td><td>μ, β</td><td>Decay-type dynamics, inter-event times (earthquakes)</td></tr>
+    <tr><td><code>'cosine'</code></td><td>μ, ν</td><td>Oscillatory systems (sunspots, CO₂, climate)</td></tr>
+    <tr><td><code>'sine'</code></td><td>μ, ν</td><td>Oscillatory — like cosine, wider valid range</td></tr>
+    <tr><td><code>'fbm'</code></td><td>H</td><td>Classical fractional Brownian motion</td></tr>
+    <tr><td><code>'dna'</code></td><td>a, b, c</td><td>Restricted diffusion (DNA loop distances)</td></tr>
+  </tbody>
+</table>
+
+<p><strong>How to choose:</strong></p>
+<ul>
+  <li>Start with <code>'exponential'</code> — most robust for most datasets</li>
+  <li>Check R²: <strong>≥ 0.8</strong> good &nbsp;|&nbsp; <strong>0.5–0.8</strong> moderate &nbsp;|&nbsp; <strong>&lt; 0.5</strong> try another model</li>
+  <li>Low R²? Try a different model: re-run <code>wn.analyze(..., model='cosine')</code></li>
+  <li>See all models: <code>wn.list_models()</code></li>
+</ul>
+
+<!-- Section 6: Sample Datasets -->
+<h2>6. Sample Datasets</h2>
+
+<table>
+  <thead>
+    <tr><th>File</th><th>Description</th><th>Suggested model</th><th>Expected μ</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>earthquake_ph.csv</code></td>
+      <td>Seismic inter-event times</td>
+      <td><code>exponential</code></td>
+      <td>≈ 1.00 – 1.19</td>
+    </tr>
+    <tr>
+      <td><code>sunspot_monthly.csv</code></td>
+      <td>Monthly sunspot counts</td>
+      <td><code>exponential</code></td>
+      <td>≈ 1.15</td>
+    </tr>
+    <tr>
+      <td><code>dna_nucleotide.csv</code></td>
+      <td>DNA nucleotide loop separation distances</td>
+      <td><code>dna</code></td>
+      <td>a ≈ 5.2, b ≈ 0.002</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 7: Optional Preprocessing -->
+<div class="page-break"></div>
+<h2>7. Optional Preprocessing</h2>
+
+<p>These steps are optional — start without them and add only if needed.</p>
+
+<pre><code># Remove a linear trend (to extract fluctuations)
+fluct = wn.detrend(values, method='linear')
+
+# Normalize if data has extreme scale (makes N parameter stable)
+scaled = wn.normalize(values, method='zscore')
+
+# Smooth noisy data
+smooth = wn.smooth(values, window=7)
+
+# Then analyze preprocessed data
+result = wn.analyze(fluct, model='cosine', label='Detrended data')</code></pre>
+
+<div class="tip">
+  <strong>When to normalize?</strong> If your fit summary shows <code>N = 0.0000</code>, your data amplitude may be very small.
+  Normalize first: <code>wn.normalize(values, method='zscore')</code>, then pass the result to <code>wn.analyze()</code>.
+  The memory parameter μ is <strong>not affected</strong> by normalization.
+</div>
+
+<!-- Section 8: Bringing Your Own Data -->
+<h2>8. Analyzing Your Own Data</h2>
+
+<pre><code># Point analyze() at your CSV file
+result = wn.analyze('my_data.csv', model='exponential')
+result.summary()
+wn.plot_diagnostics(result)</code></pre>
+
+<p>Your CSV must have:</p>
+<ul>
+  <li>Exactly 2 columns (or more for batch analysis)</li>
+  <li>Header row with <code>name [unit]</code> format</li>
+  <li>No missing values in the middle of the series</li>
+</ul>
+
+<p>If your file is in a subfolder:</p>
+<pre><code>result = wn.analyze('dataexo/myfile.csv', model='exponential')</code></pre>
+
+<!-- Section 9: Quick Reference Card -->
+<div class="page-break"></div>
+<h2>9. Quick Reference</h2>
+
+<table>
+  <thead>
+    <tr><th>Function</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>wn.read_csv(path)</code></td>
+      <td>Load CSV → <code>(time, values, meta)</code></td>
+    </tr>
+    <tr>
+      <td><code>wn.plot_series(time, values, metadata=meta)</code></td>
+      <td>Plot the raw time series</td>
+    </tr>
+    <tr>
+      <td><code>wn.compute_msd(values)</code></td>
+      <td>Compute MSD → <code>(lags, msd)</code></td>
+    </tr>
+    <tr>
+      <td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td>
+      <td>Plot MSD scatter</td>
+    </tr>
+    <tr>
+      <td><code>wn.analyze(path, model='...')</code></td>
+      <td>Full pipeline → <code>AnalysisResult</code></td>
+    </tr>
+    <tr>
+      <td><code>result.summary()</code></td>
+      <td>Print fitted parameters and R²</td>
+    </tr>
+    <tr>
+      <td><code>wn.plot_diagnostics(result)</code></td>
+      <td>2×2 diagnostic figure</td>
+    </tr>
+    <tr>
+      <td><code>wn.compare({...}, model='...')</code></td>
+      <td>Compare multiple datasets</td>
+    </tr>
+    <tr>
+      <td><code>wn.batch_analyze(folder, model='...')</code></td>
+      <td>Batch process a folder of CSVs</td>
+    </tr>
+    <tr>
+      <td><code>wn.list_models()</code></td>
+      <td>Show all available models</td>
+    </tr>
+    <tr>
+      <td><code>result.to_csv(path)</code></td>
+      <td>Export result to CSV</td>
+    </tr>
+    <tr>
+      <td><code>wn.publish_msd(result, save_path='fig.pdf')</code></td>
+      <td>Publication-quality MSD figure</td>
+    </tr>
+    <tr>
+      <td><code>wn.publish_comparison(comp, save_path='fig.pdf')</code></td>
+      <td>μ comparison bar chart</td>
+    </tr>
+    <tr>
+      <td><code>wn.detrend(values, method='linear')</code></td>
+      <td>Remove trend from series</td>
+    </tr>
+    <tr>
+      <td><code>wn.normalize(values, method='zscore')</code></td>
+      <td>Normalize series</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="margin-top: 2.5em; padding-top: 1em; border-top: 1px solid #ccc; font-size: 0.88em; color: #666; text-align: center;">
+  SWNA Workshop Participant Guide &nbsp;·&nbsp; 2026
+</div>
+
+</body>
+</html>

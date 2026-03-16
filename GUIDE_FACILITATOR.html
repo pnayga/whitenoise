@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWNA Workshop — Facilitator Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 11.5pt;
+    line-height: 1.6;
+    color: #222;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 30px 40px;
+    background: #fff;
+  }
+  h1, h2, h3 { color: #1B2A4A; }
+  h1 { font-size: 2em; }
+  h2 { font-size: 1.3em; margin-top: 2em; margin-bottom: 0.6em; border-bottom: 2px solid #1B2A4A; padding-bottom: 4px; }
+  h3 { font-size: 1em; margin-top: 1.1em; margin-bottom: 0.3em; color: #2C4A7A; font-weight: 700; }
+  p { margin: 0.5em 0; }
+  ul, ol { margin: 0.4em 0 0.4em 1.5em; }
+  li { margin: 0.2em 0; }
+  pre {
+    background: #f0f0f0;
+    border-left: 3px solid #333;
+    padding: 10px 13px;
+    margin: 0.7em 0;
+    font-size: 0.82em;
+    font-family: 'Courier New', Consolas, monospace;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  code {
+    font-family: 'Courier New', Consolas, monospace;
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.87em;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    font-size: 0.9em;
+  }
+  th {
+    background: #1B2A4A;
+    color: #fff;
+    text-align: left;
+    padding: 7px 9px;
+    font-weight: 600;
+  }
+  td { padding: 5px 9px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  .tip {
+    background: #e8f5e9;
+    border-left: 4px solid #388e3c;
+    padding: 9px 13px;
+    margin: 0.8em 0;
+    font-size: 0.91em;
+  }
+  .tip strong { color: #256427; }
+  .warn {
+    background: #fff3e0;
+    border-left: 4px solid #e65100;
+    padding: 9px 13px;
+    margin: 0.8em 0;
+    font-size: 0.91em;
+  }
+  .warn strong { color: #b34600; }
+  .title-page {
+    text-align: center;
+    padding: 50px 20px 35px;
+    border-bottom: 3px solid #1B2A4A;
+    margin-bottom: 2em;
+  }
+  .title-page h1 { font-size: 2.3em; }
+  .title-page .subtitle { font-size: 1.25em; color: #444; margin-top: 0.4em; }
+  .title-page .for { font-size: 0.95em; color: #888; margin-top: 1.8em; }
+  .sig { font-family: 'Courier New', Consolas, monospace; font-size: 0.88em; background: #f5f5f5; border-left: 3px solid #1B2A4A; padding: 7px 12px; margin: 6px 0; }
+  input[type=checkbox] { margin-right: 7px; }
+  .checklist { list-style: none; margin-left: 0; }
+  .checklist li { margin: 0.4em 0; }
+  .section-label { font-size: 0.8em; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+
+  @media print {
+    body { font-size: 10pt; padding: 15px 20px; }
+    pre { font-size: 8pt; }
+    code { font-size: 8.5pt; }
+    h2 { page-break-after: avoid; }
+    .page-break { page-break-before: always; }
+    pre, table, .tip, .warn { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Title Page -->
+<div class="title-page">
+  <h1>SWNA Workshop</h1>
+  <div class="subtitle">Facilitator Guide</div>
+  <div class="subtitle" style="font-size:0.95em;color:#666;margin-top:0.2em;">Session Reference &amp; Troubleshooting</div>
+  <div class="for">For the session facilitator — 2026</div>
+</div>
+
+<!-- Section 1: Pre-Session Checklist -->
+<h2>1. Pre-Session Checklist</h2>
+
+<ul class="checklist">
+  <li><label><input type="checkbox"> Package installable: test <code>pip install whitenoise-swna</code> or GitHub install on a fresh environment</label></li>
+  <li><label><input type="checkbox"> Sample datasets accessible: <code>earthquake_ph.csv</code>, <code>sunspot_monthly.csv</code>, <code>dna_nucleotide.csv</code></label></li>
+  <li><label><input type="checkbox"> Colab notebook tested end-to-end (all cells run without error)</label></li>
+  <li><label><input type="checkbox"> Google Drive or USB backup of all sample files</label></li>
+  <li><label><input type="checkbox"> Participant guide distributed (printed or shared digitally)</label></li>
+  <li><label><input type="checkbox"> Projector / screen tested</label></li>
+  <li><label><input type="checkbox"> Participant guide link ready to paste into group chat</label></li>
+</ul>
+
+<!-- Section 2: Session Timing -->
+<h2>2. Session Timing Guide</h2>
+
+<table>
+  <thead>
+    <tr><th>Time</th><th>Activity</th><th>Facilitator notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>0 – 10 min</td><td>Setup &amp; install</td><td>Help stragglers with pip install; verify imports work</td></tr>
+    <tr><td>10 – 20 min</td><td>CSV format &amp; <code>read_csv()</code></td><td>Show V1–V4 warnings live with a bad CSV</td></tr>
+    <tr><td>20 – 35 min</td><td>Pipeline Steps A–F (earthquake data)</td><td>Walk through slowly; check everyone sees the MSD plot</td></tr>
+    <tr><td>35 – 45 min</td><td>Model selection &amp; R²</td><td>Explain μ regimes table; demonstrate trying a wrong model</td></tr>
+    <tr><td>45 – 55 min</td><td>Compare &amp; batch</td><td>Use both earthquake + sunspot datasets</td></tr>
+    <tr><td>55 – 65 min</td><td>DNA model demo</td><td>Highlight restricted diffusion; note no μ for DNA model</td></tr>
+    <tr><td>65 – 80 min</td><td>Participants' own data</td><td>Roam and assist individually</td></tr>
+    <tr><td>80 – 90 min</td><td>Q&amp;A, export results</td><td>Show <code>publish_msd()</code> and <code>to_csv()</code></td></tr>
+  </tbody>
+</table>
+
+<!-- Section 3: Complete Function Reference -->
+<div class="page-break"></div>
+<h2>3. Complete Function Reference</h2>
+
+<h3>I/O</h3>
+
+<div class="sig">wn.read_csv(path: str) → (time, values, meta)</div>
+<ul>
+  <li>Reads 2-column CSV with <code>name [unit]</code> headers</li>
+  <li>Returns: <code>time</code> (1D array), <code>values</code> (1D array), <code>meta</code> (dict)</li>
+  <li>Meta keys: <code>x_name</code>, <code>x_unit</code>, <code>x_label</code>, <code>y_name</code>, <code>y_unit</code>, <code>y_label</code>, <code>source_file</code>, <code>n_points</code></li>
+  <li>Raises <code>FileNotFoundError</code> (✗ prefix) or <code>ValueError</code> for bad format</li>
+  <li>Prints ⚠ warnings V1–V4 (non-fatal)</li>
+</ul>
+
+<div class="sig">wn.read_csv_multi(path: str) → list of (time, values, meta)</div>
+<ul>
+  <li>Multi-column CSV; column 1 = time, each other column = one dataset</li>
+</ul>
+
+<h3>Preprocessing</h3>
+
+<div class="sig">wn.detrend(values, method='linear', poly_order=1) → array</div>
+<ul><li>methods: <code>'linear'</code>, <code>'polynomial'</code>, <code>'mean'</code></li></ul>
+
+<div class="sig">wn.normalize(values, method='zscore') → array</div>
+<ul><li>methods: <code>'zscore'</code>, <code>'minmax'</code>, <code>'mean'</code>, <code>'maxabs'</code></li></ul>
+
+<div class="sig">wn.smooth(values, window=5, method='moving_average') → array</div>
+<ul><li>methods: <code>'moving_average'</code>, <code>'gaussian'</code></li></ul>
+
+<h3>Core</h3>
+
+<div class="sig">wn.compute_msd(x, max_lag=None, normalize=False) → (lags, msd)</div>
+<ul>
+  <li>Default <code>max_lag = N // 2</code> (hard-capped at N/2)</li>
+  <li><code>normalize=True</code> divides all MSD values by MSD[lag=1]</li>
+</ul>
+
+<div class="sig">wn.fit_msd(lags, msd, model='cosine', p0=None, bounds=None, max_lag_fraction=1.0) → FitResult | None</div>
+
+<div class="sig">wn.list_models() → None  # prints formatted table of all 16+ models</div>
+<div class="sig">wn.get_model(name: str) → dict</div>
+
+<h3>Analysis</h3>
+
+<div class="sig">wn.analyze(source, model='cosine', label='', max_lag=None, max_lag_fraction=1.0, verbose=True) → AnalysisResult</div>
+<ul>
+  <li><code>source</code>: CSV path string OR numpy array (array requires <code>label=</code>)</li>
+  <li>Returns <code>AnalysisResult</code> with: <code>.summary()</code>, <code>.fit</code>, <code>.regime</code>, <code>.mu</code>, <code>.to_csv()</code>, <code>.values</code>, <code>.lags</code></li>
+</ul>
+
+<div class="sig">wn.compare(datasets, model='cosine') → ComparisonResult</div>
+<ul>
+  <li><code>datasets</code>: dict <code>{label: path_or_array}</code> or list of paths</li>
+  <li>Per-dataset models: <code>model={'A': 'cosine', 'B': 'exponential'}</code></li>
+</ul>
+
+<div class="sig">wn.batch_analyze(source, model='cosine', pattern='*.csv') → ComparisonResult</div>
+<ul>
+  <li><code>source</code>: folder path string, list of paths, or multi-column CSV path</li>
+</ul>
+
+<h3>Exploratory Plots (viz/explore.py)</h3>
+<p>All accept <code>ax=None, show=True</code> and return a <code>Figure</code>.</p>
+
+<table>
+  <thead><tr><th>Function</th><th>Signature</th></tr></thead>
+  <tbody>
+    <tr><td><code>plot_series</code></td><td><code>(time, values, metadata=None, title='', ax=None, show=True)</code></td></tr>
+    <tr><td><code>plot_msd_empirical</code></td><td><code>(lags, msd, metadata=None, title='', ax=None, show=True)</code></td></tr>
+    <tr><td><code>plot_msd</code></td><td><code>(result, ax=None, show=True)</code></td></tr>
+    <tr><td><code>plot_pdf</code></td><td><code>(result, lag_index=None, ax=None, show=True)</code></td></tr>
+    <tr><td><code>plot_timeseries</code></td><td><code>(result, ax=None, show=True)</code></td></tr>
+    <tr><td><code>plot_diagnostics</code></td><td><code>(result, show=True)</code> — 2×2 figure</td></tr>
+  </tbody>
+</table>
+
+<h3>Publication Plots (viz/publish.py)</h3>
+<table>
+  <thead><tr><th>Function</th><th>Signature</th></tr></thead>
+  <tbody>
+    <tr><td><code>publish_msd</code></td><td><code>(result, palette='default', figsize=(5,4), save_path=None, show=True)</code></td></tr>
+    <tr><td><code>publish_pdf</code></td><td><code>(result, lag_index=None, palette='default', figsize=(5,4), save_path=None, show=True)</code></td></tr>
+    <tr><td><code>publish_comparison</code></td><td><code>(cr, palette='default', figsize=None, save_path=None, show=True)</code></td></tr>
+  </tbody>
+</table>
+<p>Palettes: <code>'default'</code> or <code>'colorblind'</code>. Save as PDF: <code>save_path='figure.pdf'</code>.</p>
+
+<!-- Section 4: Models Reference -->
+<div class="page-break"></div>
+<h2>4. Models Reference</h2>
+
+<table>
+  <thead>
+    <tr><th>Model</th><th>Params</th><th>MSD formula</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>exponential</code></td>
+      <td>μ, β, N</td>
+      <td>Γ(μ)·β<sup>−μ</sup>·T<sup>μ−1</sup>·e<sup>−β/T</sup></td>
+      <td>Most stable; good default starting point</td>
+    </tr>
+    <tr>
+      <td><code>cosine</code></td>
+      <td>μ, ν, N</td>
+      <td>Power-law × cos(νT/2) × Bessel J<sub>μ−½</sub></td>
+      <td>Oscillatory; valid range T &lt; π/ν</td>
+    </tr>
+    <tr>
+      <td><code>sine</code></td>
+      <td>μ, ν, N</td>
+      <td>Same as cosine with sin(νT/2)</td>
+      <td>Wider valid range T &lt; 2π/ν; MSD=0 at T=0</td>
+    </tr>
+    <tr>
+      <td><code>fbm</code></td>
+      <td>H, N</td>
+      <td>T<sup>2H</sup></td>
+      <td>H=0.5 → Brownian; reports H not μ</td>
+    </tr>
+    <tr>
+      <td><code>dna</code></td>
+      <td>a, b, c, N</td>
+      <td>N·(a − c·e<sup>−bL</sup>)</td>
+      <td>Restricted diffusion; no μ or regime</td>
+    </tr>
+    <tr>
+      <td>12 stubs</td>
+      <td>—</td>
+      <td>NotImplementedError</td>
+      <td>Not yet implemented; use above 5</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Facilitator tip:</strong> Start participants with <code>'exponential'</code> — it converges reliably for most inter-event time datasets. Introduce <code>'cosine'</code> only after they've seen a successful fit.
+</div>
+
+<!-- Section 5: μ Regime Table -->
+<h2>5. Memory Parameter μ — Full Regime Table</h2>
+
+<table>
+  <thead>
+    <tr><th>μ range</th><th>Regime</th><th>Plain-language description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>μ &lt; 0.95</td><td>SUBDIFFUSIVE</td><td>Past fluctuations resist change — slow spreading</td></tr>
+    <tr><td>0.95 – 1.05</td><td>NEAR-BROWNIAN</td><td>Weak or no memory — near-ordinary random walk</td></tr>
+    <tr><td>1.05 – 2.0</td><td>SUPERDIFFUSIVE</td><td>Past fluctuations reinforce future ones — fast spreading</td></tr>
+    <tr><td>μ &gt; 2.0</td><td>HYPERBALLISTIC</td><td>Extreme memory — strongly persistent dynamics</td></tr>
+  </tbody>
+</table>
+
+<p><strong>For <code>fbm</code> model:</strong> H &lt; 0.475 → subdiffusive; 0.475–0.525 → near-Brownian; H &gt; 0.525 → superdiffusive.</p>
+
+<!-- Section 6: Validated Benchmarks -->
+<h2>6. Validated Benchmarks</h2>
+
+<p>Use these to verify participant results look reasonable:</p>
+
+<table>
+  <thead>
+    <tr><th>Dataset</th><th>Model</th><th>Expected result</th><th>Reference</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Philippine earthquakes</td>
+      <td>exponential</td>
+      <td>μ ≈ 1.00 – 1.19</td>
+      <td>Roque et al. 2024</td>
+    </tr>
+    <tr>
+      <td>Solar sunspots</td>
+      <td>exponential</td>
+      <td>μ ≈ 1.15</td>
+      <td>Toledo et al. 2024</td>
+    </tr>
+    <tr>
+      <td>CO₂ Keeling Curve</td>
+      <td>cosine</td>
+      <td>μ ≈ 0.91 – 0.97</td>
+      <td>Elnar et al. 2024</td>
+    </tr>
+    <tr>
+      <td>DNA nucleotide</td>
+      <td>dna</td>
+      <td>a ≈ 5.21, b ≈ 0.0024, c ≈ 3.81</td>
+      <td>Violanda et al. 2019</td>
+    </tr>
+    <tr>
+      <td>X-ray binaries</td>
+      <td>cosine</td>
+      <td>μ ∈ [0.50, 1.39]</td>
+      <td>Calotes thesis 2024</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 7: Troubleshooting -->
+<div class="page-break"></div>
+<h2>7. Troubleshooting Guide</h2>
+
+<table>
+  <thead>
+    <tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>FileNotFoundError</code></td>
+      <td>Wrong path or working directory</td>
+      <td>Check current directory with <code>import os; os.getcwd()</code>; use relative path from notebook location</td>
+    </tr>
+    <tr>
+      <td><code>AttributeError: 'plot_msd_raw'</code></td>
+      <td>Outdated notebook cell</td>
+      <td>Use <code>wn.plot_msd_empirical()</code> (not <code>plot_msd_raw</code>)</td>
+    </tr>
+    <tr>
+      <td><code>TypeError: plot_series() got unexpected keyword 'xlabel'</code></td>
+      <td>Old notebook cell</td>
+      <td>Use <code>metadata=meta</code> instead of <code>xlabel=</code></td>
+    </tr>
+    <tr>
+      <td>R² &lt; 0.3</td>
+      <td>Wrong model for the data</td>
+      <td>Try a different model; run <code>wn.list_models()</code></td>
+    </tr>
+    <tr>
+      <td><code>N = 0.0000</code> in fit summary</td>
+      <td>Data amplitude too small (optimizer drives N → 0)</td>
+      <td>Normalize first: <code>scaled = wn.normalize(values, 'zscore')</code> then <code>wn.analyze(scaled, ...)</code></td>
+    </tr>
+    <tr>
+      <td>PDF histogram much narrower than Gaussian</td>
+      <td>Leptokurtic / intermittent data (bursty fluctuations)</td>
+      <td>Physically meaningful — not a bug. Try a larger <code>lag_index=</code> value.</td>
+    </tr>
+    <tr>
+      <td>⚠ "Time column not strictly increasing"</td>
+      <td>Data not sorted by time</td>
+      <td>Sort by column 1 before saving the CSV</td>
+    </tr>
+    <tr>
+      <td><code>NotImplementedError</code> for chosen model</td>
+      <td>Stub model selected</td>
+      <td>Use one of: <code>cosine</code>, <code>exponential</code>, <code>sine</code>, <code>fbm</code>, <code>dna</code></td>
+    </tr>
+    <tr>
+      <td>Blank rows / NaN error from CSV</td>
+      <td>Raw data export with empty lines</td>
+      <td><code>pd.read_csv(f, skip_blank_lines=True).dropna(how='all').to_csv('clean.csv', index=False)</code></td>
+    </tr>
+    <tr>
+      <td>No plot appears in Colab</td>
+      <td>Backend issue</td>
+      <td>Add <code>%matplotlib inline</code> before imports; or <code>import matplotlib; matplotlib.use('Agg')</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 8: DNA Model Notes -->
+<h2>8. DNA Model — Facilitator Notes</h2>
+
+<div class="warn">
+  <strong>Key difference:</strong> The <code>'dna'</code> model does <em>not</em> extract a memory parameter μ.
+  It fits a <strong>restricted diffusion / plateau</strong> model: MSD saturates to a finite value at large lag.
+  There is no regime classification (subdiffusive / superdiffusive) for this model.
+</div>
+
+<p><strong>MSD formula:</strong> <code>MSD(L) = N · (a − c · e<sup>−bL</sup>)</code></p>
+
+<table>
+  <thead><tr><th>Parameter</th><th>Meaning</th><th>Published value</th></tr></thead>
+  <tbody>
+    <tr><td><code>a</code></td><td>Plateau MSD at large lag</td><td>≈ 5.21</td></tr>
+    <tr><td><code>b</code></td><td>Rate at which plateau is reached</td><td>≈ 0.0024</td></tr>
+    <tr><td><code>c</code></td><td>Exponential amplitude (must satisfy c &lt; a)</td><td>≈ 3.81</td></tr>
+    <tr><td><code>N</code></td><td>Normalization scalar</td><td>≈ 1.0</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Facilitator tip:</strong> The plateau is only visible for large lags (L ≫ 1/b ≈ 400). The sample dataset has n=2000 points (max_lag=1000) specifically to make the plateau visible. If using a shorter dataset, the plateau may not appear and the fit may perform poorly.
+</div>
+
+<!-- Section 9: CSV Format Reference -->
+<div class="page-break"></div>
+<h2>9. CSV Format — Full Specification</h2>
+
+<pre><code>name1 [unit1], name2 [unit2]
+value, value
+value, value</code></pre>
+
+<table>
+  <thead><tr><th>Rule</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Header required</td><td>Row 1 is always the header. No exceptions.</td></tr>
+    <tr><td>Header format</td><td><code>name [unit]</code> — space before bracket optional</td></tr>
+    <tr><td>Column 1</td><td>Always the independent variable (time, index, position…)</td></tr>
+    <tr><td>Column 2</td><td>Always the observable (what was measured)</td></tr>
+    <tr><td>Unitless</td><td>Use empty brackets: <code>flux []</code></td></tr>
+    <tr><td>Multi-column</td><td>Supported for batch: time + N observables → N separate analyses</td></tr>
+  </tbody>
+</table>
+
+<h3>Validation Warnings (V1–V4) — all non-fatal</h3>
+<ul>
+  <li><strong>V1:</strong> Time not strictly increasing → "⚠ Time column is not strictly increasing."</li>
+  <li><strong>V2:</strong> Negative values in count/number columns → "⚠ Negative values found…"</li>
+  <li><strong>V3:</strong> Time column values too large (possible column swap) → "⚠ Time column values look unusually large."</li>
+  <li><strong>V4:</strong> Unrecognized time unit → "⚠ Unrecognized time unit '…'."</li>
+</ul>
+
+<!-- Section 10: Quick Reference -->
+<h2>10. Quick Command Reference</h2>
+
+<table>
+  <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>wn.read_csv(path)</code></td><td>Load 2-column CSV → (time, values, meta)</td></tr>
+    <tr><td><code>wn.read_csv_multi(path)</code></td><td>Load multi-column CSV → list of tuples</td></tr>
+    <tr><td><code>wn.plot_series(time, values, metadata=meta)</code></td><td>Plot raw series</td></tr>
+    <tr><td><code>wn.compute_msd(values)</code></td><td>Compute MSD → (lags, msd)</td></tr>
+    <tr><td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td><td>Plot MSD scatter</td></tr>
+    <tr><td><code>wn.analyze(path, model='exponential')</code></td><td>Full pipeline → AnalysisResult</td></tr>
+    <tr><td><code>result.summary()</code></td><td>Print μ, R², regime</td></tr>
+    <tr><td><code>wn.plot_diagnostics(result)</code></td><td>2×2 diagnostic figure</td></tr>
+    <tr><td><code>wn.compare({...}, model='...')</code></td><td>Compare datasets → ComparisonResult</td></tr>
+    <tr><td><code>wn.batch_analyze(folder, model='...')</code></td><td>Batch folder → ComparisonResult</td></tr>
+    <tr><td><code>wn.list_models()</code></td><td>Print all 16+ models and status</td></tr>
+    <tr><td><code>result.to_csv(path)</code></td><td>Export result to CSV</td></tr>
+    <tr><td><code>comp.to_csv(path)</code></td><td>Export comparison table to CSV</td></tr>
+    <tr><td><code>wn.publish_msd(result, save_path='fig.pdf')</code></td><td>Publication MSD figure</td></tr>
+    <tr><td><code>wn.publish_comparison(comp, save_path='fig.pdf')</code></td><td>μ bar chart</td></tr>
+    <tr><td><code>wn.detrend(values, method='linear')</code></td><td>Remove linear trend</td></tr>
+    <tr><td><code>wn.normalize(values, method='zscore')</code></td><td>Normalize (fix N=0 issue)</td></tr>
+  </tbody>
+</table>
+
+<div style="margin-top: 2.5em; padding-top: 1em; border-top: 1px solid #ccc; font-size: 0.85em; color: #666; text-align: center;">
+  SWNA Workshop Facilitator Guide &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Keep this page for your reference
+</div>
+
+</body>
+</html>
