@@ -3,1472 +3,211 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stochastic White Noise Analysis with Memory — Workshop Hands-on Guide</title>
+<title>whitenoise — Workshop Guide</title>
 <style>
-  /* ── Base ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 11pt;
-    line-height: 1.65;
-    color: #222;
-    background: #fff;
-    max-width: 210mm;
-    margin: 0 auto;
-    padding: 0;
-  }
-
-  /* ── Typography ── */
-  h1 { font-size: 26pt; color: #1B3A6B; margin-bottom: 0.3em; }
-  h2 { font-size: 16pt; color: #1B3A6B; margin-bottom: 0.5em; margin-top: 0; border-bottom: 2px solid #1B3A6B; padding-bottom: 4px; }
-  h3 { font-size: 12.5pt; color: #1B3A6B; margin-bottom: 0.4em; margin-top: 1em; }
-  h4 { font-size: 11pt; color: #1B3A6B; margin-bottom: 0.3em; margin-top: 0.8em; font-style: italic; }
-  p  { margin-bottom: 0.75em; }
-
-  a  { color: #1B3A6B; }
-
-  /* ── Page sections ── */
-  .page {
-    padding: 18mm 20mm 18mm 20mm;
-    min-height: 277mm;
-  }
-
-  .page-break {
-    page-break-before: always;
-    break-before: page;
-  }
-
-  /* ── Cover page ── */
-  .cover {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 277mm;
-    padding: 22mm 24mm;
-    background: #fff;
-    border-top: 8px solid #1B3A6B;
-  }
-
-  .cover-badge {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 9.5pt;
-    color: #fff;
-    background: #1B3A6B;
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 3px;
-    margin-bottom: 18px;
-    letter-spacing: 0.05em;
-  }
-
-  .cover h1 {
-    font-size: 28pt;
-    line-height: 1.2;
-    color: #1B3A6B;
-    margin-bottom: 6px;
-  }
-
-  .cover-subtitle {
-    font-size: 16pt;
-    color: #555;
-    font-style: italic;
-    margin-bottom: 30px;
-  }
-
-  .cover-meta {
-    font-size: 10.5pt;
-    color: #444;
-    margin-bottom: 6px;
-  }
-
-  .cover-divider {
-    width: 80px;
-    height: 3px;
-    background: #C0392B;
-    margin: 28px 0;
-  }
-
-  .cover-abstract {
-    font-size: 10.5pt;
-    line-height: 1.7;
-    color: #333;
-    max-width: 140mm;
-    border-left: 4px solid #1B3A6B;
-    padding-left: 14px;
-    font-style: italic;
-  }
-
-  .cover-footer {
-    margin-top: auto;
-    font-size: 9pt;
-    color: #888;
-    border-top: 1px solid #ddd;
-    padding-top: 10px;
-    width: 100%;
-  }
-
-  /* ── Code blocks ── */
-  pre {
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-left: 3px solid #1B3A6B;
-    border-radius: 3px;
-    padding: 12px 14px;
-    overflow-x: auto;
-    margin: 10px 0 16px 0;
-    font-size: 9pt;
-    line-height: 1.55;
-    page-break-inside: avoid;
-  }
-
-  code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 9.5pt;
-    background: #f0f0f0;
-    padding: 1px 4px;
-    border-radius: 2px;
-    border: 1px solid #e0e0e0;
-  }
-
-  pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 9pt;
-  }
-
-  /* ── Tables ── */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0 18px 0;
-    font-size: 10pt;
-    page-break-inside: avoid;
-  }
-
-  th {
-    background: #1B3A6B;
-    color: #fff;
-    padding: 8px 10px;
-    text-align: left;
-    font-size: 9.5pt;
-    font-family: Georgia, serif;
-    font-weight: bold;
-  }
-
-  td {
-    padding: 7px 10px;
-    border-bottom: 1px solid #e0e0e0;
-    vertical-align: top;
-  }
-
-  tr:nth-child(even) td { background: #f8f9fa; }
-  tr:last-child td { border-bottom: 2px solid #1B3A6B; }
-
-  /* ── Note boxes ── */
-  .note-warning {
-    border-left: 4px solid #C0392B;
-    background: #fdf3f2;
-    padding: 12px 16px;
-    margin: 14px 0;
-    border-radius: 0 3px 3px 0;
-    page-break-inside: avoid;
-  }
-
-  .note-warning .note-title {
-    font-weight: bold;
-    color: #C0392B;
-    font-size: 10pt;
-    margin-bottom: 6px;
-    font-family: Georgia, serif;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .note-info {
-    border-left: 4px solid #1B3A6B;
-    background: #f0f4fa;
-    padding: 12px 16px;
-    margin: 14px 0;
-    border-radius: 0 3px 3px 0;
-    page-break-inside: avoid;
-  }
-
-  .note-info .note-title {
-    font-weight: bold;
-    color: #1B3A6B;
-    font-size: 10pt;
-    margin-bottom: 6px;
-    font-family: Georgia, serif;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  /* ── Section headers ── */
-  .section-header {
-    background: #1B3A6B;
-    color: #fff;
-    padding: 6px 14px;
-    font-size: 10pt;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-
-  /* ── Quick ref two-col layout ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .ref-table table { font-size: 9pt; }
-  .ref-table th { font-size: 9pt; }
-  .ref-table td { padding: 5px 8px; }
-
-  /* ── Regime badges ── */
-  .badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 3px;
-    font-size: 9pt;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-  }
-  .badge-sub   { background: #d6eaf8; color: #1a5276; }
-  .badge-brown { background: #d5f5e3; color: #1e8449; }
-  .badge-super { background: #fdebd0; color: #a04000; }
-  .badge-hyper { background: #fadbd8; color: #922b21; }
-
-  /* ── TOC ── */
-  .toc { margin: 20px 0 10px 0; }
-  .toc-item {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px dotted #ccc;
-    padding: 4px 0;
-    font-size: 10.5pt;
-  }
-  .toc-item .toc-num { color: #1B3A6B; font-weight: bold; margin-right: 8px; }
-  .toc-item .toc-page { color: #888; font-size: 9.5pt; }
-
-  /* ── Print ── */
+  body { font-family: Georgia, 'Times New Roman', serif; font-size: 10.5pt; color: #222; background: #fff; max-width: 800px; margin: 0 auto; padding: 24px 32px; }
+  h1 { font-size: 22pt; color: #1B3A6B; margin-bottom: 4px; }
+  h2 { font-size: 13pt; color: #1B3A6B; margin: 20px 0 8px 0; border-bottom: 1.5px solid #1B3A6B; padding-bottom: 3px; }
+  h3 { font-size: 11pt; color: #1B3A6B; margin: 14px 0 5px 0; }
+  p { margin: 6px 0; line-height: 1.5; }
+  ul { margin: 6px 0 6px 18px; }
+  li { margin: 3px 0; line-height: 1.5; }
+  code { font-family: Consolas, 'Courier New', monospace; font-size: 9pt; background: #f0f2f5; padding: 1px 4px; border-radius: 2px; }
+  pre { font-family: Consolas, 'Courier New', monospace; font-size: 8.8pt; background: #f0f2f5; border: 1px solid #ccc; border-radius: 3px; padding: 10px 14px; margin: 8px 0; overflow-x: auto; line-height: 1.55; white-space: pre; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 9.5pt; }
+  th { background: #1B3A6B; color: #fff; padding: 5px 8px; text-align: left; font-weight: bold; }
+  td { padding: 4px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+  .cover { text-align: center; padding: 40px 0 30px 0; border-bottom: 2px solid #1B3A6B; margin-bottom: 20px; }
+  .cover .subtitle { font-size: 12pt; color: #555; margin-top: 6px; }
+  .cover .version { font-size: 9.5pt; color: #888; margin-top: 8px; font-family: Consolas, 'Courier New', monospace; }
+  .note { background: #fffbea; border-left: 3px solid #f39c12; padding: 7px 12px; margin: 10px 0; font-size: 9.5pt; }
+  .section-break { page-break-before: always; }
   @media print {
-    body { max-width: 100%; }
-    .page { padding: 14mm 18mm; }
-    .cover { padding: 20mm 22mm; }
-    pre { font-size: 8.5pt; }
-    table { font-size: 9.5pt; }
-    .page-break { page-break-before: always; }
-    h2, h3 { page-break-after: avoid; }
-    pre, table, .note-warning, .note-info { page-break-inside: avoid; }
+    body { padding: 12px 20px; }
+    .section-break { page-break-before: always; }
   }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     COVER PAGE
-════════════════════════════════════════════════════════════════ -->
+<!-- Cover -->
 <div class="cover">
-  <div class="cover-badge">whitenoise v0.2.0 &nbsp;·&nbsp; Python Package</div>
-
-  <h1>Stochastic White Noise<br>Analysis with Memory</h1>
-  <div class="cover-subtitle">Workshop Hands-on Guide</div>
-
-  <div class="cover-meta"><strong>Date:</strong> March 14, 2026</div>
-  <div class="cover-meta"><strong>Package:</strong> <code>whitenoise</code> v0.2.0</div>
-  <div class="cover-meta"><strong>Authors:</strong> Bernido Group, University of San Carlos</div>
-  <div class="cover-meta"><strong>Framework:</strong> Hida White Noise Calculus · Bernido &amp; Carpio-Bernido (2015)</div>
-
-  <div class="cover-divider"></div>
-
-  <div class="cover-abstract">
-    Stochastic White Noise Analysis (SWNA) is a framework for characterizing the memory properties
-    of fluctuating observables in physical and biological systems. Rooted in Hida's white noise
-    calculus, the approach developed by Bernido &amp; Carpio-Bernido (University of San Carlos /
-    CVIF, Philippines) represents a system's trajectory as a stochastic integral
-    x(T) = x&#8320; + &int;&#8320;<sup>T</sup> f(T&minus;t) &middot; h(t) &middot; &omega;(t) dt,
-    where the memory kernel f encodes how strongly the past influences the present.
-    The <code>whitenoise</code> Python package implements this framework: it reads a two-column CSV,
-    computes the empirical Mean Square Displacement (MSD), fits one of 18 theoretical MSD models,
-    and extracts the memory parameter &mu; with 95% confidence intervals — producing
-    publication-quality plots and summary tables in a single function call.
-  </div>
-
-  <div style="margin-top: 40px; font-size: 10pt; color: #555;">
-    <strong>How to use this guide:</strong> Follow the numbered sections in order during the workshop.
-    All code blocks are self-contained and can be copied directly into a Python script or Jupyter notebook.
-    The <em>Quick Reference Card</em> on the final page summarises all public API functions.
-  </div>
-
-  <div class="cover-footer">
-    University of San Carlos &nbsp;·&nbsp; Center for Theoretical Physics and Allied Sciences (CTPAS)
-    &nbsp;·&nbsp; CVIF, Philippines
-  </div>
+  <h1>whitenoise &mdash; Workshop Guide</h1>
+  <div class="subtitle">Stochastic White Noise Analysis with Memory</div>
+  <div class="version">Version 0.2.0 &nbsp;&middot;&nbsp; Python &ge; 3.9</div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     TABLE OF CONTENTS
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>Contents</h2>
+<!-- 1. Setup -->
+<h2>1. Setup</h2>
+<pre># Google Colab
+!pip install git+https://github.com/pnayga/whitenoise.git -q
 
-  <div class="toc">
-    <div class="toc-item"><span><span class="toc-num">1.</span> The Full Pipeline</span></div>
-    <div class="toc-item"><span><span class="toc-num">2.</span> CSV Format</span></div>
-    <div class="toc-item"><span><span class="toc-num">3.</span> The Memory Parameter &mu;</span></div>
-    <div class="toc-item"><span><span class="toc-num">4.</span> Available Models</span></div>
-    <div class="toc-item"><span><span class="toc-num">5.</span> Model Selection</span></div>
-    <div class="toc-item"><span><span class="toc-num">6.</span> Optional Preprocessing</span></div>
-    <div class="toc-item"><span><span class="toc-num">7.</span> Normalization Note</span></div>
-    <div class="toc-item"><span><span class="toc-num">8.</span> The N Parameter</span></div>
-    <div class="toc-item"><span><span class="toc-num">9.</span> The Displacement PDF</span></div>
-    <div class="toc-item"><span><span class="toc-num">10.</span> Multi-dataset Comparison</span></div>
-    <div class="toc-item"><span><span class="toc-num">11.</span> Methodological Notes / Known Limitations</span></div>
-    <div class="toc-item"><span><span class="toc-num">12.</span> Quick Reference Card</span></div>
-  </div>
-
-  <div class="note-info" style="margin-top: 28px;">
-    <div class="note-title">Installation</div>
-    <p style="margin-bottom: 6px;">Install the package and its dependencies with:</p>
-    <pre><code>pip install whitenoise-swna</code></pre>
-    <p style="margin-bottom: 6px;">For Excel export support:</p>
-    <pre><code>pip install whitenoise-swna[excel]</code></pre>
-    <p style="margin-bottom: 0;">Import in Python:</p>
-    <pre><code>import whitenoise as wn
-import numpy as np
-import matplotlib.pyplot as plt</code></pre>
-  </div>
-
-  <div class="note-info" style="margin-top: 16px;">
-    <div class="note-title">Core Concept — What SWNA measures</div>
-    <p style="margin-bottom: 8px;">
-      SWNA fits a theoretical MSD model to your data's empirical Mean Square Displacement.
-      The MSD measures how much a system's observable spreads over time:
-    </p>
-    <p style="text-align: center; font-size: 11pt; margin-bottom: 8px;">
-      MSD(&Delta;) = &lang;[x(i + &Delta;) &minus; x(i)]&sup2;&rang;
-    </p>
-    <p style="margin-bottom: 0;">
-      The memory parameter <strong>&mu;</strong> (or <strong>H</strong> for fBm) is extracted from the
-      shape of this MSD curve. A value near &mu; = 1 means near-Brownian (random walk) behaviour;
-      &mu; &gt; 1 means the system's fluctuations are reinforced by its past; &mu; &lt; 1 means they are damped.
-    </p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 1 — THE FULL PIPELINE
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>1. The Full Pipeline</h2>
-
-  <p>
-    The <code>whitenoise</code> package provides both a step-by-step manual workflow and a
-    single-call shortcut. The table below maps each step to its corresponding function.
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 5%;">Step</th>
-        <th style="width: 35%;">Function</th>
-        <th>What it does</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>A</strong></td>
-        <td><code>wn.read_csv(path)</code></td>
-        <td>Load a two-column CSV file. Returns <code>(time, values, metadata)</code>. Units and axis labels are extracted automatically from the header.</td>
-      </tr>
-      <tr>
-        <td><strong>B</strong></td>
-        <td><code>wn.plot_series(time, values, metadata=meta)</code></td>
-        <td>Plot the raw (or preprocessed) time series for visual inspection.</td>
-      </tr>
-      <tr>
-        <td><strong>C</strong></td>
-        <td><code>wn.compute_msd(values)</code></td>
-        <td>Compute the empirical MSD. Returns <code>(lags, msd)</code> arrays. Default max lag is <code>len(values)//2</code>.</td>
-      </tr>
-      <tr>
-        <td><strong>D</strong></td>
-        <td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td>
-        <td>Scatter-plot the empirical MSD before fitting. Inspect the shape to choose a model.</td>
-      </tr>
-      <tr>
-        <td><strong>E</strong></td>
-        <td><code>wn.fit_msd(lags, msd, model='...')</code></td>
-        <td>Fit <em>N</em> &middot; msd_model to the empirical MSD. Returns a <code>FitResult</code> with all parameters and 95% confidence intervals.</td>
-      </tr>
-      <tr>
-        <td><strong>F</strong></td>
-        <td><code>fit.summary()</code></td>
-        <td>Print the full parameter table: values, standard errors, and 95% CIs for every parameter.</td>
-      </tr>
-      <tr>
-        <td><strong>G</strong></td>
-        <td>matplotlib (manual)</td>
-        <td>Overlay the fitted theoretical MSD curve on the empirical scatter (see PDF section for code).</td>
-      </tr>
-      <tr>
-        <td><strong>H</strong></td>
-        <td>matplotlib (manual)</td>
-        <td>Plot the displacement histogram and compare it to the theoretical Gaussian PDF (see Section 9).</td>
-      </tr>
-      <tr>
-        <td style="background: #eaf2fb;"><strong>I</strong></td>
-        <td style="background: #eaf2fb;"><code>wn.analyze(path, model='...')</code></td>
-        <td style="background: #eaf2fb;"><strong>One-call shortcut</strong> that performs steps A through H automatically. Returns an <code>AnalysisResult</code>.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Full Pipeline Code</h3>
-
-  <p>Steps A–H performed manually, followed by the equivalent one-liner (Step I):</p>
-
-<pre><code>import whitenoise as wn
-import numpy as np
+# Local (from the package folder)
+pip install -e .</pre>
+<pre>import whitenoise as wn
 import matplotlib.pyplot as plt
+import numpy as np</pre>
 
-# ── Steps A–H: manual workflow ───────────────────────────────────
+<!-- 2. CSV Format -->
+<h2>2. CSV Format</h2>
+<pre>time [months], sunspot_number [count]
+1, 12.4
+2, 15.1</pre>
+<ul>
+  <li>Row 1 = header (required)</li>
+  <li>Column 1 = independent variable, Column 2 = observable</li>
+  <li>Format: <code>name [unit]</code> &mdash; unitless: <code>flux []</code></li>
+  <li>Blank lines: <code>pd.read_csv(f, skip_blank_lines=True).dropna(how='all').to_csv('clean.csv', index=False)</code></li>
+</ul>
 
-# A. Load CSV
+<!-- 3. The Pipeline -->
+<h2 class="section-break">3. The Pipeline &mdash; Steps A to I</h2>
+<table>
+  <tr><th>Step</th><th>Function</th><th>What it does</th></tr>
+  <tr><td>A</td><td><code>wn.read_csv(path)</code></td><td>Load CSV &rarr; time, values, meta</td></tr>
+  <tr><td>B</td><td><code>wn.plot_series(time, values, metadata=meta)</code></td><td>Plot raw time series</td></tr>
+  <tr><td>C</td><td><code>wn.compute_msd(values)</code></td><td>Compute empirical MSD &rarr; lags, msd</td></tr>
+  <tr><td>D</td><td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td><td>Inspect MSD shape</td></tr>
+  <tr><td>E</td><td><code>wn.fit_msd(lags, msd, model='...')</code></td><td>Fit model &rarr; FitResult</td></tr>
+  <tr><td>F</td><td><code>print(fit.summary())</code></td><td>Print parameters + 95% CI</td></tr>
+  <tr><td>G</td><td>matplotlib</td><td>Overlay fitted curve on MSD</td></tr>
+  <tr><td>H</td><td>matplotlib</td><td>Plot displacement PDF</td></tr>
+  <tr><td>I</td><td><code>wn.analyze(path, model='...')</code></td><td>Run A&ndash;H in one call</td></tr>
+</table>
+
+<pre># Steps A–D
 time, values, meta = wn.read_csv('mydata.csv')
-
-# B. Plot raw time series
 wn.plot_series(time, values, metadata=meta)
-
-# C. Compute empirical MSD
 lags, msd = wn.compute_msd(values)
-
-# D. Inspect MSD shape before fitting
 wn.plot_msd_empirical(lags, msd, metadata=meta)
 
-# E. Fit a model (researcher chooses)
+# Steps E–F
 fit = wn.fit_msd(lags, msd, model='cosine')
-
-# F. Print full parameter table
 print(fit.summary())
 
-# G. Overlay fitted curve on empirical MSD (manual)
-plt.scatter(lags, msd, s=12, alpha=0.6, label='Empirical MSD')
-plt.plot(lags, fit.msd_fitted, color='#C0392B', lw=2.5, label='Fit')
-plt.legend(); plt.show()
-
-# H. Displacement PDF — see Section 9 for full code
-
-# ── Step I: one-call equivalent ──────────────────────────────────
-
-result = wn.analyze('mydata.csv', model='cosine')
-result.summary()                  # prints full parameter table
-wn.plot_diagnostics(result)       # 2×2 figure: series, MSD, PDF, params
-result.plot_all(show=True)        # 3-panel publication figure</code></pre>
-
-  <div class="note-info">
-    <div class="note-title">When to use the manual workflow vs. the one-liner</div>
-    <p style="margin-bottom: 0;">
-      Use <strong>Step I</strong> (<code>wn.analyze()</code>) for a quick first look at any dataset.
-      Use the <strong>manual workflow (A–H)</strong> when you need intermediate outputs — for example,
-      to preprocess the data before fitting, to inspect the raw MSD shape to guide model selection,
-      or to customise individual plots for a publication figure.
-    </p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 2 — CSV FORMAT
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>2. CSV Format</h2>
-
-  <p>
-    The package reads a two-column CSV with a structured header. The format is simple but exact.
-    All axis labels and unit annotations on plots are derived automatically from this header —
-    you never need to label axes manually.
-  </p>
-
-  <h3>Standard Format</h3>
-
-<pre><code>time [months], sunspot_number [count]
-1, 12.4
-2, 15.1
-3, 14.8</code></pre>
-
-  <h3>Format Rules</h3>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Rule</th>
-        <th>Detail</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Row 1 is always the header</td>
-        <td>No exceptions. The first data row is row 2.</td>
-      </tr>
-      <tr>
-        <td>Column 1 = independent variable</td>
-        <td>Time, index, distance, wavelength, etc. Any independent variable is accepted — the column does not have to be named "time".</td>
-      </tr>
-      <tr>
-        <td>Column 2 = observable</td>
-        <td>The quantity being analysed (sunspot number, CO₂ concentration, flux, etc.).</td>
-      </tr>
-      <tr>
-        <td>Header format: <code>name [unit]</code></td>
-        <td>Unit in square brackets. Space before bracket is optional: <code>time[months]</code> also works.</td>
-      </tr>
-      <tr>
-        <td>Unitless column</td>
-        <td>Use empty brackets: <code>flux []</code>. The axis label will be just <code>flux</code> (no parentheses).</td>
-      </tr>
-      <tr>
-        <td>Multi-column CSV</td>
-        <td>Supported for batch mode. Column 1 = time, all other columns = separate observables. Use <code>wn.read_csv_multi()</code> or <code>wn.batch_analyze()</code>.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Header Examples</h3>
-
-  <table>
-    <thead>
-      <tr><th>Header string</th><th>Parsed name</th><th>Parsed unit</th><th>Axis label produced</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><code>time [months]</code></td><td>time</td><td>months</td><td>time (months)</td></tr>
-      <tr><td><code>sunspot_number [count]</code></td><td>sunspot_number</td><td>count</td><td>sunspot_number (count)</td></tr>
-      <tr><td><code>flux []</code></td><td>flux</td><td>(empty)</td><td>flux</td></tr>
-      <tr><td><code>flux [unitless]</code></td><td>flux</td><td>unitless</td><td>flux</td></tr>
-      <tr><td><code>distance [km]</code></td><td>distance</td><td>km</td><td>distance (km)</td></tr>
-      <tr><td><code>co2[ppm]</code></td><td>co2</td><td>ppm</td><td>co2 (ppm)</td></tr>
-    </tbody>
-  </table>
-
-  <h3>Multi-column CSV (Batch Mode)</h3>
-
-<pre><code>time [yr], co2 [ppm], temperature [°C], sst [°C]
-1958, 315.2, 14.1, 13.8
-1959, 315.9, 14.0, 13.7
-...</code></pre>
-
-<pre><code># Load multi-column CSV
-datasets = wn.read_csv_multi('climate.csv')
-# Returns list of (time, values, metadata) tuples — one per non-time column
-print(len(datasets))   # 3  (co2, temperature, sst)
-
-# Or send directly to batch analysis
-results = wn.batch_analyze('climate.csv', model='cosine')
-results.summary_table()</code></pre>
-
-  <div class="note-warning">
-    <div class="note-title">Automatic Data Validation Warnings</div>
-    <p style="margin-bottom: 6px;">
-      When reading a CSV, the package checks for common data problems and prints
-      <strong>&#9888;</strong> warnings to the console. These warnings are <em>non-fatal</em> — data
-      loading continues regardless. Watch for:
-    </p>
-    <ul style="margin-left: 18px; margin-bottom: 0;">
-      <li><strong>Non-monotonic time</strong> — column 1 values are not strictly increasing.</li>
-      <li><strong>Negative counts</strong> — a column declared as "count" or "freq" contains negative values.</li>
-      <li><strong>Possible column swap</strong> — column 1 has an unusually large spread (std &gt; 1000&times;mean), suggesting the observable may be in the wrong column.</li>
-      <li><strong>Unrecognised time unit</strong> — the unit string is not in the list of known time/index units (e.g. months, yr, days, s…). The package proceeds normally.</li>
-    </ul>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 3 — THE MEMORY PARAMETER μ
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>3. The Memory Parameter &mu;</h2>
-
-  <p>
-    The key output of every SWNA fit is <strong>&mu;</strong> (mu), the memory parameter. It quantifies
-    how strongly past fluctuations influence the future evolution of the observable.
-    Its value determines the diffusive regime of the system.
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 18%;">&mu; range</th>
-        <th style="width: 22%;">Regime</th>
-        <th>Physical meaning</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>&mu; &lt; 0.95</code></td>
-        <td><span class="badge badge-sub">Subdiffusive</span></td>
-        <td>Past fluctuations <em>resist</em> change — the observable spreads more slowly than a random walk. Typical in confined or damped systems.</td>
-      </tr>
-      <tr>
-        <td><code>0.95 &le; &mu; &le; 1.05</code></td>
-        <td><span class="badge badge-brown">Near-Brownian</span></td>
-        <td>Weak or no memory — dynamics are close to an ordinary random walk. Fluctuations are essentially uncorrelated.</td>
-      </tr>
-      <tr>
-        <td><code>1.05 &lt; &mu; &le; 2.0</code></td>
-        <td><span class="badge badge-super">Superdiffusive</span></td>
-        <td>Past fluctuations <em>reinforce</em> future ones — the observable spreads faster than a random walk. Persistent or trending dynamics.</td>
-      </tr>
-      <tr>
-        <td><code>&mu; &gt; 2.0</code></td>
-        <td><span class="badge badge-hyper">Hyperballistic</span></td>
-        <td>Extreme memory — very strongly persistent dynamics. Rare in natural systems; may indicate a driven or quasi-periodic process.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>The fBm Special Case — Hurst Exponent H</h3>
-
-  <p>
-    For the Fractional Brownian Motion model (<code>fbm</code>), the Hurst exponent <strong>H</strong>
-    replaces &mu; as the shape parameter. The MSD formula is simply T<sup>2H</sup>.
-  </p>
-
-  <table>
-    <thead>
-      <tr><th>H range</th><th>Regime</th><th>Notes</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><code>H &lt; 0.475</code></td><td><span class="badge badge-sub">Subdiffusive</span></td><td>Anti-persistent increments</td></tr>
-      <tr><td><code>0.475 &le; H &le; 0.525</code></td><td><span class="badge badge-brown">Near-Brownian</span></td><td>H = 0.5 is pure Brownian motion</td></tr>
-      <tr><td><code>H &gt; 0.525</code></td><td><span class="badge badge-super">Superdiffusive</span></td><td>Persistent increments</td></tr>
-    </tbody>
-  </table>
-
-  <div class="note-info">
-    <div class="note-title">Validated Benchmarks (Published Results)</div>
-    <p style="margin-bottom: 6px;">These reference values give you a sense of typical &mu; ranges in real datasets:</p>
-    <table style="margin: 0;">
-      <thead>
-        <tr><th>System</th><th>Model</th><th>&mu; (published)</th><th>Reference</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Philippine earthquakes</td><td>exponential</td><td>&mu; &approx; 1.00–1.19</td><td>Roque et al. 2024</td></tr>
-        <tr><td>Solar sunspots</td><td>exponential</td><td>&mu; &approx; 1.15</td><td>Toledo et al. 2024</td></tr>
-        <tr><td>GBR coral bleaching</td><td>cosine</td><td>&mu; &approx; 4.64</td><td>Elnar et al. 2021</td></tr>
-        <tr><td>CO&#8322; Keeling curve</td><td>cosine</td><td>&mu; &approx; 0.91–0.97</td><td>Elnar et al. 2024</td></tr>
-        <tr><td>X-ray binaries</td><td>cosine</td><td>&mu; &isin; [0.50, 1.39]</td><td>Calotes thesis 2024</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h3>Reading the Output</h3>
-
-<pre><code>result = wn.analyze('sunspot.csv', model='exponential')
-result.summary()
-
-# Access parameters directly
-print(result.mu)        # the memory parameter (μ or H for fbm)
-print(result.regime)    # 'subdiffusive' | 'near-Brownian' | 'superdiffusive' | 'hyperballistic'
-print(result.fit.params)             # {'mu': 1.15, 'beta': 0.08, 'N': 3.2}
-print(result.fit.confidence_intervals)   # {'mu': (1.09, 1.21), ...}
-print(result.fit.r_squared)          # e.g. 0.962</code></pre>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 4 — AVAILABLE MODELS
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>4. Available Models</h2>
-
-  <p>
-    The package implements a subset of the 18 MSD models tabulated in Bernido &amp; Carpio-Bernido (2015),
-    Table 2.1. The five models below are fully implemented and ready to use.
-    The remaining models are registered but raise <code>NotImplementedError</code> — run
-    <code>wn.list_models()</code> to see the current status of all models.
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Model string</th>
-        <th>Params</th>
-        <th>MSD formula</th>
-        <th>Typical application</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>'cosine'</code></td>
-        <td>&mu;, &nu;</td>
-        <td>&radic;&pi; &Gamma;(&mu;) cos(&nu;T/2) J<sub>&mu;&minus;1/2</sub>(&nu;T/2) (T/&nu;)<sup>&mu;&minus;1/2</sup></td>
-        <td>CO&#8322; Keeling curve, X-ray binaries, coral bleaching</td>
-      </tr>
-      <tr>
-        <td><code>'exponential'</code></td>
-        <td>&mu;, &beta;</td>
-        <td>&Gamma;(&mu;) &beta;<sup>&minus;&mu;</sup> T<sup>&mu;&minus;1</sup> e<sup>&minus;&beta;/T</sup></td>
-        <td>Solar sunspots, earthquake sequences</td>
-      </tr>
-      <tr>
-        <td><code>'sine'</code></td>
-        <td>&mu;, &nu;</td>
-        <td>Same as cosine but sin(&nu;T/2) replaces cos(&nu;T/2)</td>
-        <td>Population dynamics (Tuñaco et al., unpublished)</td>
-      </tr>
-      <tr>
-        <td><code>'fbm'</code></td>
-        <td>H</td>
-        <td>T<sup>2H</sup></td>
-        <td>Self-similar random processes; H = 0.5 is ordinary Brownian motion</td>
-      </tr>
-      <tr>
-        <td><code>'dna'</code></td>
-        <td>a, b, c</td>
-        <td>a &minus; c &middot; e<sup>&minus;bL</sup></td>
-        <td>DNA nucleotide separations — plateau-shaped MSD, no &mu; parameter</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Cosine vs. Sine — When to use which</h3>
-  <p>
-    Both models share the same functional form; only the oscillatory envelope differs.
-    The <strong>cosine</strong> model is positive for lags T &lt; &pi;/&nu;, then becomes unreliable
-    (returns NaN beyond the first zero-crossing). The <strong>sine</strong> model starts from zero
-    at T = 0 and stays positive for T &lt; 2&pi;/&nu;, so it is useful when the MSD
-    starts near zero and rises smoothly. In practice, try both and compare R&#178; values.
-  </p>
-
-  <h3>DNA Model Note</h3>
-  <p>
-    The <code>dna</code> model describes <em>restricted diffusion</em> — the MSD rises from
-    (a&minus;c) at lag L = 0 and saturates at plateau value <em>a</em> as L&rarr;&infin;.
-    It has no memory parameter &mu;; the plateau height <em>a</em> and the rate <em>b</em>
-    are the physically meaningful outputs.
-  </p>
-
-  <h3>List All Models</h3>
-<pre><code>wn.list_models()     # prints a formatted table of all 18 models and their status
-
-# Get detailed info on a specific model
-info = wn.get_model('cosine')
-print(info['params'])       # ['mu', 'nu']
-print(info['status'])       # 'available'
-print(info['description'])  # 'Power-law memory with cosine modulation'</code></pre>
-
-  <div class="note-info">
-    <div class="note-title">Parameter Meanings</div>
-    <table style="margin: 0;">
-      <thead>
-        <tr><th>Parameter</th><th>Symbol</th><th>Models</th><th>Meaning</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Memory exponent</td><td>&mu;</td><td>cosine, exponential, sine</td><td>Controls diffusive regime. &mu; = 1 is Brownian.</td></tr>
-        <tr><td>Characteristic frequency</td><td>&nu;</td><td>cosine, sine</td><td>Sets the oscillation period of the MSD envelope.</td></tr>
-        <tr><td>Exponential rate</td><td>&beta;</td><td>exponential</td><td>Controls the exponential decay modulation.</td></tr>
-        <tr><td>Hurst exponent</td><td>H</td><td>fbm</td><td>H = 0.5 is Brownian; H &gt; 0.5 persistent.</td></tr>
-        <tr><td>Normalization scalar</td><td>N</td><td>all models</td><td>Scales MSD amplitude. Carries no physical meaning — see Section 8.</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 5 — MODEL SELECTION
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>5. Model Selection</h2>
-
-  <div class="note-warning">
-    <div class="note-title">Critical Rule — No Automatic Model Selection</div>
-    <p style="margin-bottom: 0;">
-      The package fits <strong>exactly one model per <code>analyze()</code> call</strong>.
-      It never selects a model automatically. If R&#178; &lt; 0.5, the package will print a
-      &#9888; warning suggesting alternatives, but it is the researcher's responsibility
-      to re-run the analysis with a different model string.
-    </p>
-  </div>
-
-  <h3>R&#178; Quality Thresholds</h3>
-
-  <table>
-    <thead>
-      <tr><th>R&#178; value</th><th>Interpretation</th><th>Action</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>&ge; 0.80</code></td>
-        <td>Good fit</td>
-        <td>Trust the extracted parameters. Report with confidence.</td>
-      </tr>
-      <tr>
-        <td><code>0.50 – 0.80</code></td>
-        <td>Moderate fit</td>
-        <td>Parameters are usable but consider trying other models. Inspect the residuals.</td>
-      </tr>
-      <tr>
-        <td><code>&lt; 0.50</code></td>
-        <td>Poor fit</td>
-        <td>The chosen model likely does not describe this data. Try a different model. The package will print a &#9888; warning automatically.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Manual Iteration Workflow</h3>
-
-<pre><code># Step 1 — Try exponential first (good starting point for many datasets)
-result = wn.analyze('mydata.csv', model='exponential')
-result.summary()   # read the R² value
-
-# Step 2 — If R² < 0.8, try cosine
-result2 = wn.analyze('mydata.csv', model='cosine')
-result2.summary()
-
-# Step 3 — Try fbm for self-similar or simple scaling datasets
-result3 = wn.analyze('mydata.csv', model='fbm')
-result3.summary()
-
-# Step 4 — Search all available models at once
-comp = wn.batch_model_search('mydata.csv')
-wn.print_comparison(comp)        # side-by-side R² table
-comp.summary_table()             # returns a pandas DataFrame</code></pre>
-
-  <div class="note-info">
-    <div class="note-title">How to read the empirical MSD shape to guide model choice</div>
-    <ul style="margin-left: 18px; margin-bottom: 0; margin-top: 6px;">
-      <li><strong>Monotone power-law rise:</strong> Try <code>exponential</code> or <code>fbm</code>. The exponential model flattens at long lags; fBm remains a pure power law.</li>
-      <li><strong>Oscillatory or peaked shape:</strong> Try <code>cosine</code> or <code>sine</code>. The characteristic frequency &nu; will capture the period of the oscillation.</li>
-      <li><strong>Plateau / saturation:</strong> Try <code>dna</code>. This model is designed for MSD curves that level off at large lags.</li>
-      <li><strong>Noisy or unclear shape:</strong> Run <code>wn.batch_model_search()</code> and compare R&#178; values across all models.</li>
-    </ul>
-  </div>
-
-  <h3>Inspecting MSD Shape Before Fitting</h3>
-
-<pre><code>time, values, meta = wn.read_csv('mydata.csv')
-
-# Optional: remove a deterministic trend first
-fluctuations = wn.detrend(values, method='linear')
-
-# Compute and plot MSD before choosing a model
-lags, msd = wn.compute_msd(fluctuations)
-wn.plot_msd_empirical(lags, msd, metadata=meta)
-# → Look at the shape: rising power-law? oscillating? plateau?
-
-# Then fit your chosen model
-fit = wn.fit_msd(lags, msd, model='cosine')
-print(fit.summary())</code></pre>
-
-  <h3>Using max_lag_fraction to Improve Fits</h3>
-  <p>
-    At large lags, the MSD estimate uses very few data pairs and becomes noisy.
-    Restricting the fit to the first fraction of lags can improve parameter recovery:
-  </p>
-<pre><code># Fit using only the first 50% of lags (more reliable region)
-result = wn.analyze('mydata.csv', model='cosine', max_lag_fraction=0.5)
-
-# Or directly in fit_msd
-fit = wn.fit_msd(lags, msd, model='cosine', max_lag_fraction=0.5)
-print(f"Lags used: {len(fit.lags_used)} of {len(lags)}")</code></pre>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 6 — OPTIONAL PREPROCESSING
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>6. Optional Preprocessing</h2>
-
-  <p>
-    Preprocessing is entirely optional. The pipeline never applies it automatically.
-    Use these functions when your data contains a deterministic trend that should be
-    removed before computing the MSD, or when extreme data scale causes numerical instability.
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 40%;">Function</th>
-        <th style="width: 25%;">Method options</th>
-        <th>What it does</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>wn.detrend(values, method='linear')</code></td>
-        <td><code>'linear'</code>, <code>'polynomial'</code>, <code>'mean'</code></td>
-        <td>Subtract a polynomial trend from the data. Returns the residual fluctuations.</td>
-      </tr>
-      <tr>
-        <td><code>wn.normalize(values, method='zscore')</code></td>
-        <td><code>'zscore'</code>, <code>'minmax'</code>, <code>'mean'</code>, <code>'maxabs'</code></td>
-        <td>Rescale the data. The <code>N</code> parameter in the fit absorbs amplitude, so this is rarely needed.</td>
-      </tr>
-      <tr>
-        <td><code>wn.smooth(values, window=5)</code></td>
-        <td><code>'moving_average'</code>, <code>'gaussian'</code></td>
-        <td>Smooth the time series. Output has the same length as input.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Detrending</h3>
-
-<pre><code>time, values, meta = wn.read_csv('co2.csv')
-
-# Remove a linear trend
-fluctuations = wn.detrend(values, method='linear')
-
-# Or remove a quadratic trend
-fluctuations = wn.detrend(values, method='polynomial', poly_order=2)
-
-# Then plot and analyze the residuals
-wn.plot_series(time, fluctuations, title='Detrended fluctuations')
-result = wn.analyze(fluctuations, model='cosine', label='CO₂ fluctuations')</code></pre>
-
-  <h3>Comparing Before and After</h3>
-
-<pre><code>import matplotlib.pyplot as plt
-
-fluctuations = wn.detrend(values, method='linear')
-
-fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-wn.plot_series(time, values,       metadata=meta,
-               title='Original',           ax=axes[0], show=False)
-wn.plot_series(time, fluctuations, metadata=meta,
-               title='Detrended (linear)', ax=axes[1], show=False)
-plt.tight_layout()
-plt.show()</code></pre>
-
-  <h3>Normalization Methods</h3>
-
-  <table>
-    <thead>
-      <tr><th>Method</th><th>Formula</th><th>Output range</th><th>When to use</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>'zscore'</code></td>
-        <td>(x &minus; mean) / std</td>
-        <td>mean=0, std=1</td>
-        <td>General purpose standardisation</td>
-      </tr>
-      <tr>
-        <td><code>'minmax'</code></td>
-        <td>(x &minus; min) / (max &minus; min)</td>
-        <td>[0, 1]</td>
-        <td>When you need a bounded range</td>
-      </tr>
-      <tr>
-        <td><code>'mean'</code></td>
-        <td>x / mean</td>
-        <td>mean=1</td>
-        <td>Relative deviations from mean</td>
-      </tr>
-      <tr>
-        <td><code>'maxabs'</code></td>
-        <td>x / max(|x|)</td>
-        <td>[&minus;1, 1]</td>
-        <td>Preserves zero and sign; useful for centred fluctuations</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="note-warning">
-    <div class="note-title">Preprocessing changes your data — document it</div>
-    <p style="margin-bottom: 0;">
-      If you detrend or smooth before calling <code>wn.analyze()</code>, the <code>AnalysisResult</code>
-      will contain the preprocessed values — not the originals. Always document which preprocessing
-      steps were applied when reporting results. The package does not track preprocessing history
-      automatically.
-    </p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 7 — NORMALIZATION NOTE
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>7. Normalization Note</h2>
-
-  <div class="note-warning">
-    <div class="note-title">Normalization before analysis is NOT standard practice</div>
-    <p style="margin-bottom: 8px;">
-      In the Bernido group's published work, raw (or detrended) values are passed directly to
-      <code>wn.analyze()</code> <em>without</em> prior normalization. This is correct by default.
-    </p>
-    <p style="margin-bottom: 8px;">
-      The reason is that the fit always includes a normalization scalar <strong>N</strong>:
-    </p>
-    <p style="text-align: center; font-size: 11pt; margin-bottom: 8px;">
-      MSD<sub>fitted</sub>(T) = N &middot; msd_model(T, &mu;, ...)
-    </p>
-    <p style="margin-bottom: 8px;">
-      <strong>N absorbs the data amplitude.</strong> Scaling your data by a constant factor before
-      fitting simply changes the fitted value of N — it does not affect &mu;, &nu;, &beta;, or any
-      other shape parameter.
-    </p>
-    <p style="margin-bottom: 0;">
-      <strong>When normalization might help:</strong> only in extreme edge cases where the raw
-      data amplitude is so large (e.g. 10<sup>12</sup>) that it causes numerical overflow or
-      underflow in the MSD computation. In that case, <code>wn.normalize(values, method='maxabs')</code>
-      is the recommended approach because it preserves zero and sign while scaling to [&minus;1, 1].
-    </p>
-  </div>
-
-  <h3>Quick Demonstration</h3>
-
-<pre><code>import whitenoise as wn
-import numpy as np
-
-np.random.seed(42)
-data = np.random.randn(300) * 500     # large amplitude
-
-# Without normalization (correct approach)
-result1 = wn.analyze(data, model='cosine', label='Raw', verbose=False)
-
-# With normalization
-normalized = wn.normalize(data, method='maxabs')
-result2 = wn.analyze(normalized, model='cosine', label='Normalized', verbose=False)
-
-# μ should be essentially identical; only N differs
-print(f"μ (raw):        {result1.mu:.6f}")
-print(f"μ (normalized): {result2.mu:.6f}")   # ≈ same
-print(f"N (raw):        {result1.fit.params['N']:.4f}")
-print(f"N (normalized): {result2.fit.params['N']:.4f}")   # different</code></pre>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 8 — THE N PARAMETER
-════════════════════════════════════════════════════════════════ -->
-<div class="page">
-  <h2>8. The N Parameter</h2>
-
-  <p>
-    Every model fit includes a normalization scalar <strong>N</strong> alongside the physical parameters.
-    Understanding its role prevents misinterpretation of the fit output.
-  </p>
-
-  <h3>What N does</h3>
-
-  <p>
-    The fitted MSD curve is always of the form:
-  </p>
-  <p style="text-align: center; font-size: 12pt; margin: 12px 0;">
-    MSD<sub>fitted</sub>(T) = <strong>N</strong> &middot; msd_model(T, &mu;, ...)
-  </p>
-  <p>
-    N scales the entire curve <em>vertically</em>. Changing N shifts the curve up or down without
-    altering its shape in any way — and therefore without affecting the memory regime.
-  </p>
-
-  <table>
-    <thead>
-      <tr><th>Parameter type</th><th>Parameters</th><th>Controls</th><th>Physically meaningful?</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Shape parameters</td>
-        <td>&mu;, &nu;, &beta;, H</td>
-        <td>The shape of the MSD curve — regime, exponent, frequency</td>
-        <td>Yes — these are the results to report</td>
-      </tr>
-      <tr>
-        <td>Scale parameter</td>
-        <td>N</td>
-        <td>The overall amplitude (height) of the MSD curve</td>
-        <td>No — absorbs data amplitude; not physically interpretable</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="note-info">
-    <div class="note-title">What to report in publications</div>
-    <p style="margin-bottom: 0;">
-      Report &mu; (and &nu; or &beta; as appropriate) with their 95% confidence intervals and the R&#178; value.
-      The N parameter is part of the fit output but carries no physical meaning and should not be
-      reported as a result. It is included in <code>FitResult.params</code> for completeness and
-      for constructing the fitted curve.
-    </p>
-  </div>
-
-  <h3>Accessing N in Code</h3>
-
-<pre><code>result = wn.analyze('mydata.csv', model='cosine')
-
-# Physical parameters (report these)
-print(result.fit.params['mu'])    # memory parameter
-print(result.fit.params['nu'])    # characteristic frequency
-print(result.fit.confidence_intervals['mu'])   # 95% CI: (lo, hi)
-
-# Scale parameter (do not report)
-print(result.fit.params['N'])     # just for internal curve reconstruction</code></pre>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 9 — THE DISPLACEMENT PDF
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>9. The Displacement PDF</h2>
-
-  <p>
-    SWNA predicts that the displacements &Delta;x(i) = x(i+T) &minus; x(i) at any lag T follow
-    a Gaussian distribution centred at zero with variance equal to the theoretical MSD:
-  </p>
-  <p style="text-align: center; font-size: 11.5pt; margin: 12px 0;">
-    P(&Delta;x; T) = (2&pi;&sigma;&#178;)<sup>&minus;1/2</sup> exp( &minus;&Delta;x&#178; / (2&sigma;&#178;) )
-    &nbsp;&nbsp;where&nbsp;&nbsp; &sigma;&#178; = N &middot; msd_model(T, &mu;, ...)
-  </p>
-  <p>
-    Comparing the empirical displacement histogram to this theoretical Gaussian is a key
-    diagnostic: if the histogram matches well, the model and parameters are validated.
-  </p>
-
-  <h3>Automatic PDF via AnalysisResult</h3>
-
-<pre><code># The simplest way — uses a sensible default lag automatically
-result = wn.analyze('mydata.csv', model='cosine')
-result.plot_pdf()           # displacement histogram + theoretical Gaussian
-
-# Or use the publish-quality version
-wn.publish_pdf(result)      # same plot, publication styling</code></pre>
-
-  <h3>Manual PDF Construction (Full Control)</h3>
-
-<pre><code>import whitenoise as wn
-import numpy as np
-import matplotlib.pyplot as plt
-
-time, values, meta = wn.read_csv('mydata.csv')
-lags, msd = wn.compute_msd(values)
-
-MODEL = 'cosine'
-fit = wn.fit_msd(lags, msd, model=MODEL)
-
-# Choose a lag (short lags give more displacement pairs → better statistics)
-lag_index = len(lags) // 10
-T = int(lags[lag_index])
-
-# Compute empirical displacements
+# Steps G–H (manual plots)
+fig, ax = plt.subplots()
+ax.scatter(lags, msd, s=12, color='#555', alpha=0.6, label='Empirical')
+ax.plot(fit.lags_used, fit.msd_fitted, color='#1B3A6B', lw=2, label='Fitted')
+ax.legend(); plt.show()
+
+T = int(lags[len(lags)//10])
 displacements = values[T:] - values[:-T]
+mu_disp = np.mean(displacements)
+model_info = wn.get_model('cosine')
+sigma2 = model_info['msd'](T, fit.params['mu'], fit.params['nu']) * fit.params['N']
+dx = np.linspace(displacements.min(), displacements.max(), 300)
+pdf = np.exp(-(dx-mu_disp)**2/(2*sigma2)) / np.sqrt(2*np.pi*sigma2)
+plt.hist(displacements, bins='auto', density=True, alpha=0.5, color='#888')
+plt.plot(dx, pdf, color='#C0392B', lw=2); plt.show()
 
-# Compute theoretical Gaussian variance
-model_info = wn.get_model(MODEL)
-phys_names = model_info['params']                     # e.g. ['mu', 'nu']
-phys_vals  = [fit.params[p] for p in phys_names]
-sigma2     = model_info['msd'](T, *phys_vals) * fit.params['N']
-mu_disp    = np.mean(displacements)
+# Step I — equivalent one-liner
+result = wn.analyze('mydata.csv', model='cosine')
+result.summary()
+wn.plot_diagnostics(result)</pre>
 
-# Plot
-fig, ax = plt.subplots(figsize=(7, 4.5))
-ax.hist(displacements, bins='auto', density=True,
-        color='#888888', alpha=0.55, label='Empirical displacements')
+<!-- 4. Memory Parameter mu -->
+<h2>4. Memory Parameter &mu;</h2>
+<table>
+  <tr><th>&mu;</th><th>Regime</th></tr>
+  <tr><td>&lt; 0.95</td><td>Subdiffusive</td></tr>
+  <tr><td>0.95&ndash;1.05</td><td>Near-Brownian</td></tr>
+  <tr><td>1.05&ndash;2.0</td><td>Superdiffusive</td></tr>
+  <tr><td>&gt; 2.0</td><td>Hyperballistic</td></tr>
+</table>
+<p>For fBm: H &lt; 0.5 subdiffusive &nbsp;&middot;&nbsp; H = 0.5 Brownian &nbsp;&middot;&nbsp; H &gt; 0.5 superdiffusive</p>
 
-dx  = np.linspace(displacements.min(), displacements.max(), 500)
-pdf = np.exp(-(dx - mu_disp)**2 / (2*sigma2)) / np.sqrt(2*np.pi*sigma2)
-ax.plot(dx, pdf, color='#C0392B', lw=2.0, label=f'Theoretical PDF (T={T})')
+<!-- 5. Available Models -->
+<h2 class="section-break">5. Available Models</h2>
+<table>
+  <tr><th>Model</th><th>Parameters</th><th>MSD formula</th><th>Typical use</th></tr>
+  <tr><td><code>cosine</code></td><td>&mu;, &nu;</td><td>&radic;&pi; &Gamma;(&mu;) cos(&nu;T/2) J<sub>&mu;&minus;1/2</sub>(&nu;T/2) (T/&nu;)<sup>&mu;&minus;1/2</sup></td><td>CO&#8322;, X-ray, coral</td></tr>
+  <tr><td><code>exponential</code></td><td>&mu;, &beta;</td><td>&Gamma;(&mu;) &beta;<sup>&minus;&mu;</sup> T<sup>&mu;&minus;1</sup> e<sup>&minus;&beta;/T</sup></td><td>Sunspots, earthquakes</td></tr>
+  <tr><td><code>sine</code></td><td>&mu;, &nu;</td><td>Same as cosine with sin(&nu;T/2)</td><td>Population dynamics</td></tr>
+  <tr><td><code>fbm</code></td><td>H</td><td>T<sup>2H</sup></td><td>Self-similar processes</td></tr>
+  <tr><td><code>dna</code></td><td>a, b, c</td><td>a &minus; c&middot;e<sup>&minus;bL</sup> (plateau)</td><td>Nucleotide separations</td></tr>
+</table>
+<p>R&sup2; guide: &ge; 0.8 good &nbsp;&middot;&nbsp; 0.5&ndash;0.8 moderate &nbsp;&middot;&nbsp; &lt; 0.5 try another model</p>
+<pre>wn.list_models()                                    # see all models
+result = wn.analyze('mydata.csv', model='cosine')   # try one
+cr = wn.batch_model_search('mydata.csv')            # try all, compare R²
+wn.print_comparison(cr)</pre>
 
-ax.set_xlabel(f'Displacement Δx  ({meta.get("y_unit", "")})')
-ax.set_ylabel('Probability Density')
-ax.legend()
-plt.show()</code></pre>
+<!-- 6. Demo Datasets -->
+<h2>6. Demo Datasets</h2>
+<table>
+  <tr><th>File</th><th>System</th><th>Model</th><th>Expected &mu;</th></tr>
+  <tr><td><code>exponential_sunspot.csv</code></td><td>Solar sunspot</td><td>exponential</td><td>~1.12</td></tr>
+  <tr><td><code>cosine_co2.csv</code></td><td>CO&#8322; Keeling</td><td>cosine</td><td>~0.93</td></tr>
+  <tr><td><code>cosine_xray.csv</code></td><td>X-ray binary</td><td>cosine</td><td>~1.22</td></tr>
+  <tr><td><code>sample_series.csv</code></td><td>Synthetic fBm</td><td>fbm</td><td>H &asymp; 0.72</td></tr>
+  <tr><td><code>dna_nucleotide.csv</code></td><td>Bacterial genome</td><td>dna</td><td>a&asymp;5.2, b&asymp;0.002</td></tr>
+</table>
 
-  <div class="note-info">
-    <div class="note-title">Choosing the lag T for the PDF</div>
-    <ul style="margin-left: 18px; margin-bottom: 0; margin-top: 6px;">
-      <li><strong>Short lags</strong> (T &asymp; len/10): many displacement pairs &rarr; smooth histogram. Use for a reliable PDF comparison.</li>
-      <li><strong>Long lags</strong>: fewer pairs &rarr; noisy histogram. The distribution should still be Gaussian but with larger scatter.</li>
-      <li>The default in <code>wn.publish_pdf()</code> and <code>result.plot_pdf()</code> uses a model-appropriate lag:
-        cosine/sine: T = &pi;/(2&nu;); exponential: T = len/10; fBm: T = len/4.</li>
-    </ul>
-  </div>
-</div>
+<h3>Colab &mdash; download datasets:</h3>
+<pre>base = 'https://raw.githubusercontent.com/pnayga/whitenoise/main/sample_data/'
+for f in ['exponential_sunspot.csv','cosine_co2.csv','cosine_xray.csv',
+          'sample_series.csv','dna_nucleotide.csv']:
+    !wget -q {base}{f}</pre>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 10 — MULTI-DATASET COMPARISON
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>10. Multi-dataset Comparison</h2>
+<h3>Local &mdash; files are in <code>sample_data/</code>:</h3>
+<pre>time, values, meta = wn.read_csv('sample_data/exponential_sunspot.csv')</pre>
 
-  <p>
-    The <code>compare()</code> and <code>batch_analyze()</code> functions let you run SWNA on multiple
-    datasets in one call and compare memory parameters side by side.
-  </p>
+<!-- 7. Preprocessing -->
+<h2>7. Preprocessing (optional)</h2>
+<table>
+  <tr><th>Function</th><th>Options</th><th>Use when</th></tr>
+  <tr><td><code>wn.detrend(values, method='linear')</code></td><td>'linear', 'polynomial', 'mean', 'moving_average'</td><td>Data has a trend</td></tr>
+  <tr><td><code>wn.normalize(values, method='zscore')</code></td><td>'zscore', 'minmax', 'mean', 'maxabs'</td><td>Data amplitude is very small or large</td></tr>
+  <tr><td><code>wn.smooth(values, window=5)</code></td><td>'moving_average', 'gaussian'</td><td>Noisy signal</td></tr>
+</table>
+<pre>fluct = wn.detrend(values, method='linear')
+wn.plot_series(time, fluct, title='Detrended')
 
-  <h3>compare() — Named Datasets</h3>
+# Compare before/after
+fig, axes = plt.subplots(2, 1, figsize=(10, 5), sharex=True)
+wn.plot_series(time, values, metadata=meta, title='Original',  ax=axes[0], show=False)
+wn.plot_series(time, fluct,  metadata=meta, title='Detrended', ax=axes[1], show=False)
+plt.tight_layout(); plt.show()</pre>
+<div class="note"><strong>Note:</strong> The <code>N</code> parameter in the fit (<code>N &middot; msd_model</code>) absorbs data amplitude &mdash; &mu; is scale-independent. Normalize only if <code>N</code> collapses to ~0 in the fit output.</div>
 
-<pre><code>comparison = wn.compare({
-    'Sunspots':     'exponential_sunspot.csv',
-    'CO₂':          'cosine_co2.csv',
-    'X-ray binary': 'cosine_xray.csv',
+<!-- 8. Comparing Multiple Datasets -->
+<h2>8. Comparing Multiple Datasets</h2>
+<pre>cr = wn.compare({
+    'System A': 'a.csv',
+    'System B': 'b.csv',
 }, model='cosine')
+wn.print_comparison(cr)
+wn.publish_comparison(cr)</pre>
 
-# Print ASCII table
-wn.print_comparison(comparison)
-
-# Get as DataFrame
-df = comparison.summary_table()
-print(df[['label', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])
-
-# Publication bar chart of μ with 95% CI error bars
-wn.publish_comparison(comparison)
-
-# Save to CSV
-comparison.to_csv('results/comparison.csv')</code></pre>
-
-  <h3>Per-dataset Model Assignment</h3>
-
-<pre><code># Use a different model for each dataset
-comparison = wn.compare(
-    {
-        'Sunspots':     'sunspot.csv',
-        'CO₂':          'co2.csv',
-    },
-    model={
-        'Sunspots': 'exponential',
-        'CO₂':      'cosine',
-    }
-)</code></pre>
-
-  <h3>batch_analyze() — Three Input Modes</h3>
-
-<pre><code># Mode A: folder of CSVs
-results = wn.batch_analyze('data/earthquakes/', model='exponential')
-
-# Mode B: explicit list of paths
-results = wn.batch_analyze(
-    ['chile.csv', 'japan.csv', 'ph.csv'],
-    model='exponential'
-)
-
-# Mode C: multi-column CSV (one column per system)
-results = wn.batch_analyze('climate.csv', model='cosine')
-# Each non-time column becomes a separate AnalysisResult
-
-# All three return the same ComparisonResult type
-print(len(results.results))        # number of systems analysed
-results.summary_table()            # pandas DataFrame
-results.to_csv('batch_out.csv')    # save to CSV</code></pre>
-
-  <h3>ComparisonResult Structure</h3>
-
-  <table>
-    <thead>
-      <tr><th>Attribute / Method</th><th>Returns</th><th>Description</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><code>.results</code></td><td>list of AnalysisResult</td><td>One entry per dataset analysed</td></tr>
-      <tr><td><code>.summary_table()</code></td><td>pandas DataFrame</td><td>μ, CIs, R&#178;, regime — sorted by μ ascending</td></tr>
-      <tr><td><code>.plot_comparison()</code></td><td>Axes</td><td>Horizontal &mu; bar chart with CI error bars</td></tr>
-      <tr><td><code>.to_csv(path)</code></td><td>None</td><td>Save summary DataFrame to CSV</td></tr>
-      <tr><td><code>.to_excel(path)</code></td><td>None</td><td>Save to .xlsx (requires openpyxl)</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 11 — METHODOLOGICAL NOTES / KNOWN LIMITATIONS
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>11. Methodological Notes / Known Limitations</h2>
-
-  <div class="note-info">
-    <div class="note-title">Fitting Method — Unweighted Least Squares</div>
-    <p style="margin-bottom: 8px;">
-      The current implementation fits the MSD model using <strong>unweighted sum-of-squared
-      residuals (ordinary least squares)</strong>. This is consistent with the fitting approach
-      used in the Bernido group's published results and ensures reproducibility of prior work.
-    </p>
-    <p style="margin-bottom: 0;">
-      <strong>More statistically rigorous alternative:</strong> Weighted Least Squares (WLS) with
-      weights w<sub>&Delta;</sub> = N &minus; &Delta; would be more principled, because large-lag MSD
-      estimates are computed from fewer data pairs (N &minus; &Delta; pairs for lag &Delta;) and are
-      therefore noisier. Assigning lower weight to large-lag points would improve parameter accuracy.
-      This is planned for a future release.
-    </p>
-  </div>
-
-  <p style="margin-top: 4px; font-size: 9.5pt; color: #555;">
-    References for WLS rationale:
-    Michalet, X. (2010). <em>Phys. Rev. E</em> 82, 041914. &nbsp;&nbsp;
-    Vestergaard, C. L., Blainey, P. C., &amp; Flyvbjerg, H. (2014). <em>Phys. Rev. E</em> 89, 022726.
-  </p>
-
-  <div class="note-warning" style="margin-top: 16px;">
-    <div class="note-title">Stub Models — Not Yet Implemented</div>
-    <p style="margin-bottom: 8px;">
-      Of the 18 models in the registry, <strong>9 are stubs</strong> that raise
-      <code>NotImplementedError</code> when called. Only the following are currently available:
-    </p>
-    <p style="font-family: 'Courier New', monospace; font-size: 9pt; margin-bottom: 8px;">
-      cosine &nbsp;&nbsp; exponential &nbsp;&nbsp; sine &nbsp;&nbsp; fbm &nbsp;&nbsp; dna &nbsp;&nbsp;
-      sin_half &nbsp;&nbsp; cos_half &nbsp;&nbsp; inc_gamma &nbsp;&nbsp; bessel_j0_cos &nbsp;&nbsp; bessel_jmu_nu
-    </p>
-    <p style="margin-bottom: 0;">
-      Run <code>wn.list_models()</code> to see the current status of all models. Attempting to
-      use a stub model will produce a clear error message listing the available alternatives.
-    </p>
-  </div>
-
-  <div class="note-info" style="margin-top: 16px;">
-    <div class="note-title">Other Known Limitations</div>
-    <ul style="margin-left: 18px; margin-bottom: 0; margin-top: 6px;">
-      <li style="margin-bottom: 6px;">
-        <strong>Batch parallel mode:</strong> When <code>n_jobs &gt; 1</code>, all CSV paths must be
-        accessible from disk. In-memory numpy arrays cannot be passed to parallel workers — use
-        <code>n_jobs=1</code> in that case.
-      </li>
-      <li style="margin-bottom: 6px;">
-        <strong>matplotlib backend:</strong> <code>import whitenoise as wn</code> does not import
-        matplotlib at package level. On headless servers (no display), set the backend before calling
-        any viz function: <code>import matplotlib; matplotlib.use("Agg")</code>
-      </li>
-      <li style="margin-bottom: 6px;">
-        <strong>Cosine model validity:</strong> The cosine MSD formula becomes negative (and returns
-        NaN) for lags T &gt; &pi;/&nu;. If your MSD fit returns NaN over a large lag range, reduce
-        <code>max_lag_fraction</code> or switch to the <code>sine</code> or <code>exponential</code> model.
-      </li>
-      <li>
-        <strong>NaN handling:</strong> Isolated NaN values in the input are linearly interpolated.
-        If more than 50% of the input is NaN, a clear error is raised.
-      </li>
-    </ul>
-  </div>
-
-  <div class="note-info" style="margin-top: 16px;">
-    <div class="note-title">Architecture Note — Independent Variable Column</div>
-    <p style="margin-bottom: 0;">
-      Column 1 of the CSV is the <em>independent variable</em> — it does not have to be labelled
-      "time". It can be distance, wavelength, genomic position, sequence index, or any other
-      quantity. The validation rules still apply (monotone ordering, known unit names), but
-      the column name is freely chosen.
-    </p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SECTION 12 — QUICK REFERENCE CARD
-════════════════════════════════════════════════════════════════ -->
-<div class="page page-break">
-  <h2>12. Quick Reference Card</h2>
-
-  <p>All names below are importable directly from <code>whitenoise</code> (i.e. <code>wn.&lt;name&gt;</code>).</p>
-
-  <h3>I/O</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.read_csv(path)</code></td><td>Load 2-column whitenoise-format CSV &rarr; (time, values, metadata)</td></tr>
-      <tr><td><code>wn.read_csv_multi(path)</code></td><td>Load multi-column CSV &rarr; list of (time, values, metadata) tuples</td></tr>
-      <tr><td><code>wn.export_csv(result, path)</code></td><td>Save AnalysisResult or ComparisonResult to CSV</td></tr>
-      <tr><td><code>wn.export_summary(cr, path)</code></td><td>Save ComparisonResult summary DataFrame to CSV</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Core</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.compute_msd(values)</code></td><td>Compute empirical MSD &rarr; (lags, msd) arrays</td></tr>
-      <tr><td><code>wn.list_models()</code></td><td>Print table of all 18 SWNA models and their status</td></tr>
-      <tr><td><code>wn.get_model(name)</code></td><td>Return model info dict (msd function, params, status)</td></tr>
-      <tr><td><code>wn.fit_msd(lags, msd, model)</code></td><td>Fit N &middot; msd_model to empirical MSD &rarr; FitResult or None</td></tr>
-      <tr><td><code>fit.summary()</code></td><td>Print formatted parameter table with 95% CIs and R&#178;</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Preprocessing (optional)</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.detrend(values, method='linear')</code></td><td>Subtract trend ('linear', 'polynomial', 'mean') &rarr; residuals</td></tr>
-      <tr><td><code>wn.normalize(values, method='zscore')</code></td><td>Normalize ('zscore', 'minmax', 'mean', 'maxabs')</td></tr>
-      <tr><td><code>wn.smooth(values, window=5)</code></td><td>Smooth ('moving_average', 'gaussian'); output same length as input</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Analysis</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.analyze(path, model)</code></td><td>Full SWNA pipeline on a CSV or array &rarr; AnalysisResult</td></tr>
-      <tr><td><code>result.summary()</code></td><td>Print full parameter table and regime interpretation</td></tr>
-      <tr><td><code>result.mu</code></td><td>Memory parameter (&mu; for all models; H for fbm)</td></tr>
-      <tr><td><code>result.regime</code></td><td>Diffusive regime string (e.g. 'superdiffusive')</td></tr>
-      <tr><td><code>result.to_csv(path)</code></td><td>Save single-row result CSV</td></tr>
-      <tr><td><code>wn.compare(datasets, model)</code></td><td>Analyze multiple datasets &rarr; ComparisonResult</td></tr>
-      <tr><td><code>wn.print_comparison(cr)</code></td><td>Print ASCII &mu; comparison table</td></tr>
-      <tr><td><code>wn.batch_analyze(source, model)</code></td><td>Batch analysis (folder / list / multi-CSV) &rarr; ComparisonResult</td></tr>
-      <tr><td><code>wn.batch_model_search(path)</code></td><td>Try all available models on one file &rarr; ComparisonResult</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Exploratory Plots (viz/explore.py)</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.plot_series(time, values, metadata=meta)</code></td><td>Raw time series line plot with zero reference and grid</td></tr>
-      <tr><td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td><td>MSD scatter with Brownian linear reference line</td></tr>
-      <tr><td><code>wn.plot_diagnostics(result)</code></td><td>2&times;2 figure: time series, MSD, PDF, parameter text box</td></tr>
-      <tr><td><code>wn.plot_msd(result)</code></td><td>Empirical MSD scatter + fitted theoretical curve</td></tr>
-      <tr><td><code>wn.plot_pdf(result)</code></td><td>Displacement histogram + theoretical Gaussian PDF</td></tr>
-      <tr><td><code>wn.plot_timeseries(result)</code></td><td>Time series from AnalysisResult (uses stored metadata)</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Publication Plots (viz/publish.py)</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>Function</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>wn.publish_msd(result)</code></td><td>MSD plot: serif font, inward ticks, dpi=150, no top/right spines</td></tr>
-      <tr><td><code>wn.publish_pdf(result)</code></td><td>PDF plot with publication styling</td></tr>
-      <tr><td><code>wn.publish_comparison(cr)</code></td><td>&mu; horizontal bar chart with 95% CI error bars, colour by regime</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Common kwargs (all viz functions)</h3>
-  <div class="ref-table">
-  <table>
-    <thead><tr><th>kwarg</th><th>Default</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>ax=None</code></td><td>None</td><td>Pass an existing Axes to embed the plot in a larger figure</td></tr>
-      <tr><td><code>show=True</code></td><td>True</td><td>Set <code>show=False</code> to suppress <code>plt.show()</code> (e.g. when saving to file)</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <div class="note-info" style="margin-top: 18px;">
-    <div class="note-title">Citation</div>
-    <p style="margin-bottom: 4px;">
-      When using results from this package in publications, please cite:
-    </p>
-    <p style="font-family: 'Courier New', monospace; font-size: 9pt; margin-bottom: 4px;">
-      Bernido, C. C., &amp; Carpio-Bernido, M. V. (2015).
-      <em>Stochastic and Infinite Dimensional Analysis.</em> Trends in Mathematics.
-      Birkhäuser, Basel. DOI: 10.1007/978-3-319-07245-6
-    </p>
-    <p style="margin-bottom: 0; font-size: 9.5pt;">
-      Contact: Center for Theoretical Physics and Allied Sciences (CTPAS),
-      University of San Carlos, Cebu City, Philippines.
-    </p>
-  </div>
-</div>
+<!-- 9. Quick Reference -->
+<h2>9. Quick Reference</h2>
+<table>
+  <tr><th>Function</th><th>Returns</th></tr>
+  <tr><td><code>wn.read_csv(path)</code></td><td>time, values, meta</td></tr>
+  <tr><td><code>wn.read_csv_multi(path)</code></td><td>list of (time, values, meta)</td></tr>
+  <tr><td><code>wn.compute_msd(values)</code></td><td>lags, msd</td></tr>
+  <tr><td><code>wn.fit_msd(lags, msd, model)</code></td><td>FitResult or None</td></tr>
+  <tr><td><code>wn.analyze(path, model)</code></td><td>AnalysisResult</td></tr>
+  <tr><td><code>wn.compare(datasets, model)</code></td><td>ComparisonResult</td></tr>
+  <tr><td><code>wn.batch_analyze(source, model)</code></td><td>ComparisonResult</td></tr>
+  <tr><td><code>wn.batch_model_search(path)</code></td><td>ComparisonResult</td></tr>
+  <tr><td><code>wn.plot_series(x, values, metadata=meta)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.plot_msd(result)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.plot_pdf(result, lag_index=None)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.plot_diagnostics(result)</code></td><td>Figure (2&times;2)</td></tr>
+  <tr><td><code>wn.publish_msd(result, save_path=None)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.publish_comparison(cr, save_path=None)</code></td><td>Figure</td></tr>
+  <tr><td><code>wn.export_csv(result, path)</code></td><td>saves CSV</td></tr>
+  <tr><td><code>wn.detrend(values, method)</code></td><td>ndarray</td></tr>
+  <tr><td><code>wn.normalize(values, method)</code></td><td>ndarray</td></tr>
+  <tr><td><code>wn.smooth(values, window)</code></td><td>ndarray</td></tr>
+  <tr><td><code>wn.list_models()</code></td><td>prints table</td></tr>
+  <tr><td><code>wn.get_model(name)</code></td><td>model info dict</td></tr>
+</table>
 
 </body>
 </html>
