@@ -1318,6 +1318,18 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
   <tr><td><code>export_summary</code></td><td><code>export_summary(cr, path)</code></td><td><code>None</code></td></tr>
 </table>
 
+<h3>Genomics (<code>wn.genomics</code>)</h3>
+<table>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>wn.genomics.read_fasta</code></td><td><code>read_fasta(path)</code></td><td><code>list[dict]</code></td></tr>
+  <tr><td><code>wn.genomics.read_fasta_single</code></td><td><code>read_fasta_single(path)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>wn.genomics.filter_sequence</code></td><td><code>filter_sequence(sequence, keep='ACGT')</code></td><td><code>str</code></td></tr>
+  <tr><td><code>wn.genomics.parse_seqrecord</code></td><td><code>parse_seqrecord(seqrecord)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>wn.genomics.get_transition_distances</code></td><td><code>get_transition_distances(sequence, from_nuc, to_nuc)</code></td><td><code>ndarray[int64]</code></td></tr>
+  <tr><td><code>wn.genomics.get_all_transition_distances</code></td><td><code>get_all_transition_distances(sequence, nucleotides='ACGT')</code></td><td><code>dict[(str,str), ndarray]</code></td></tr>
+  <tr><td><code>wn.genomics.summarize_matrix</code></td><td><code>summarize_matrix(matrix)</code></td><td><code>None</code> (prints table)</td></tr>
+</table>
+
 <h3>Preprocessing (optional)</h3>
 <table>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
@@ -1368,9 +1380,190 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 </table>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  15. VALIDATED BENCHMARKS                                               -->
+<!--  15. GENOMICS EXTENSION                                                  -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>15. Validated Benchmarks</h2>
+<h2>15. Genomics Extension (<code>wn.genomics</code>)</h2>
+
+<p>
+  The <code>wn.genomics</code> submodule bridges standard genomic sequence
+  data (FASTA format from NCBI, BOLD, or any public database) into the
+  whitenoise SWNA pipeline. It implements the nucleotide separation distance
+  approach described in Violanda et al. (2019), extended to include all 16
+  pairwise transition distances.
+</p>
+
+<div class="note">
+  <strong>No additional dependencies required.</strong> The genomics submodule
+  uses only NumPy and the Python standard library. BioPython is optional — a
+  convenience adapter is provided for users who already have it.
+</div>
+
+<h3>The stochastic variable</h3>
+
+<p>
+  Following Violanda et al. (2019), the stochastic variable is the
+  <em>separation distance</em> between nucleotides along the genome. For a
+  given pair (from_nuc &rarr; to_nuc):
+</p>
+<ul>
+  <li><strong>Same-type</strong> (A&rarr;A, G&rarr;G, etc.): distance between consecutive
+      occurrences of the same nucleotide. Reproduces the paper's method exactly.</li>
+  <li><strong>Cross-type</strong> (A&rarr;C, A&rarr;G, etc.): from each occurrence of
+      <code>from_nuc</code>, the distance to the very next occurrence of
+      <code>to_nuc</code> downstream (nearest-next rule). This is a generalization
+      not in the original paper.</li>
+</ul>
+<p>
+  Across all four nucleotides, this produces a 4&times;4 matrix of 16 distance
+  sequences. Each sequence is the stochastic observable fed into
+  <code>wn.compute_msd()</code> and <code>wn.analyze()</code>.
+</p>
+
+<h3>Supported input formats</h3>
+
+<p>The submodule accepts any standard FASTA file, including:</p>
+<ul>
+  <li>COI barcodes (~658 bp) from NCBI GenBank or BOLD</li>
+  <li>Whole mitochondrial genomes (~15&ndash;20 kb)</li>
+  <li>Complete bacterial/organism genomes (Mbp&ndash;Gbp)</li>
+  <li>Multi-record FASTA files (one record returned per sequence)</li>
+</ul>
+
+<h3>read_fasta()</h3>
+
+<pre>records = wn.genomics.read_fasta(path)
+
+# Returns a list of dicts, one per FASTA record:
+# {
+#   'id':          str   accession/identifier (first token after '>')
+#   'description': str   full header line
+#   'sequence':    str   uppercase DNA string
+#   'length':      int   total sequence length
+#   'n_ambiguous': int   count of non-ACGT characters (W, N, R, etc.)
+# }</pre>
+
+<div class="tip">
+  <strong>Ambiguous bases (W, N, R, Y, etc.)</strong> are kept in the sequence
+  and a warning is printed. They are silently skipped during position lookup in the
+  distance functions, so they do not cause errors. Use
+  <code>wn.genomics.filter_sequence(seq)</code> to remove them first if you prefer.
+</div>
+
+<h3>get_transition_distances()</h3>
+
+<pre>distances = wn.genomics.get_transition_distances(sequence, from_nuc, to_nuc)
+# Returns: np.ndarray of int64 distances</pre>
+
+<p>
+  Extracts the distance array for a single (from_nuc, to_nuc) pair.
+  Pass the result directly to <code>wn.compute_msd()</code> or
+  <code>wn.analyze()</code>.
+</p>
+
+<p>
+  <strong>Performance:</strong> fully vectorized using
+  <code>np.frombuffer</code> + <code>np.searchsorted</code>.
+  Complexity is O(N log M) — handles whole bacterial genomes
+  (&gt;2 Mbp) in milliseconds per pair.
+</p>
+
+<h3>get_all_transition_distances()</h3>
+
+<pre>matrix = wn.genomics.get_all_transition_distances(sequence)
+# Returns: dict with (from_nuc, to_nuc) tuple keys
+# e.g. matrix[('A', 'C')] -> np.ndarray of distances
+
+wn.genomics.summarize_matrix(matrix)   # prints count table</pre>
+
+<p>Computes all 16 pairs in one call, scanning the sequence only 4 times
+(once per nucleotide). More efficient than calling
+<code>get_transition_distances()</code> 16 times individually.</p>
+
+<h3>Complete genomics workflow</h3>
+
+<pre>import whitenoise as wn
+
+# 1. Load FASTA from NCBI or any source
+records = wn.genomics.read_fasta('Synechococcus_elongatus.fasta')
+seq = records[0]['sequence']
+print(f"Loaded {records[0]['id']}: {records[0]['length']} bp")
+
+# 2. Optional: remove ambiguous bases
+seq = wn.genomics.filter_sequence(seq)
+
+# 3. Check all 16 transition pairs
+matrix = wn.genomics.get_all_transition_distances(seq)
+wn.genomics.summarize_matrix(matrix)
+
+# 4. Analyze one pair with SWNA
+distances = matrix[('A', 'A')]   # same-type: reproduces Violanda et al.
+result = wn.analyze(distances, model='dna', label='A->A (S. elongatus)')
+result.summary()
+
+# 5. Compare all 16 pairs
+all_results = {}
+for (from_n, to_n), dist in matrix.items():
+    if len(dist) >= 50:   # skip pairs with too few observations
+        label = f'{from_n}->{to_n}'
+        all_results[label] = dist
+
+comparison = wn.compare(all_results, model='dna')
+comparison.summary_table()
+wn.publish_comparison(comparison)</pre>
+
+<h3>genomics API reference</h3>
+
+<table>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr>
+    <td><code>wn.genomics.read_fasta</code></td>
+    <td><code>read_fasta(path)</code></td>
+    <td><code>list[dict]</code></td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.read_fasta_single</code></td>
+    <td><code>read_fasta_single(path)</code></td>
+    <td><code>dict</code></td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.filter_sequence</code></td>
+    <td><code>filter_sequence(sequence, keep='ACGT')</code></td>
+    <td><code>str</code></td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.parse_seqrecord</code></td>
+    <td><code>parse_seqrecord(seqrecord)</code></td>
+    <td><code>dict</code> (BioPython adapter)</td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.get_transition_distances</code></td>
+    <td><code>get_transition_distances(sequence, from_nuc, to_nuc)</code></td>
+    <td><code>ndarray[int64]</code></td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.get_all_transition_distances</code></td>
+    <td><code>get_all_transition_distances(sequence, nucleotides='ACGT')</code></td>
+    <td><code>dict[(str,str), ndarray]</code></td>
+  </tr>
+  <tr>
+    <td><code>wn.genomics.summarize_matrix</code></td>
+    <td><code>summarize_matrix(matrix)</code></td>
+    <td><code>None</code> (prints table)</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>Short sequences (COI barcodes, ~658 bp).</strong> Each distance array will
+  contain only ~50&ndash;150 values per pair. MSD plots will be noisy and the
+  plateau behavior (characteristic of the DNA model) is harder to resolve than
+  with whole genomes. This is a data limitation, not a bug. Interpret results from
+  short sequences with caution and consider pooling sequences across samples.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  16. VALIDATED BENCHMARKS                                               -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>16. Validated Benchmarks</h2>
 
 <p>The following published results serve as benchmarks for validating your analysis setup.</p>
 
@@ -1423,7 +1616,7 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  16. KNOWN LIMITATIONS                                                  -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>16. Known Limitations</h2>
+<h2>17. Known Limitations</h2>
 
 <div class="warn">
   <strong>1. Stub models.</strong> Nine models in the MODELS registry raise
@@ -1464,7 +1657,7 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  17. CITATION                                                           -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>17. Citation</h2>
+<h2>18. Citation</h2>
 
 <p>If you use this package in published work, please cite:</p>
 
