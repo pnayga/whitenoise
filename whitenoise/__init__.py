@@ -13,6 +13,8 @@ from .analysis.batch import batch_analyze, batch_model_search
 from .viz.explore import plot_series, plot_msd_empirical, plot_msd, plot_pdf, plot_timeseries, plot_diagnostics
 from .viz.publish import publish_msd, publish_pdf, publish_comparison
 
+from . import genomics
+
 __version__ = '0.1.0'
 __all__ = [
     'read_csv', 'read_csv_multi',
