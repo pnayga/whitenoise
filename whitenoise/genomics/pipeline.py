@@ -72,6 +72,15 @@ def extract_pair(
         If provided, saves the distance array to a whitenoise-format CSV
         at this path.  The file can be reloaded with ``wn.read_csv()``.
 
+        .. warning::
+            **Do not save distances for large genomes.**
+            A 179 Mbp chromosome produces ~50 million distances per pair
+            (~350 MB CSV). Reloading that file takes 15–30 s. Recomputing
+            from the in-memory sequence with this function takes under 8 s —
+            faster than loading the saved file. Leave ``save_path=None`` for
+            any genome where ``len(distances) > 1_000_000``, and save only
+            the MSD CSV from :func:`compute_pair_msd` instead.
+
     Returns
     -------
     np.ndarray (1-D, int64)
@@ -95,7 +104,7 @@ def extract_pair(
         return distances
 
     print(
-        f'  ✓ {from_nuc}→{to_nuc}: {len(distances):,} distances  '
+        f'  \u2713 {from_nuc}->{to_nuc}: {len(distances):,} distances  '
         f'(mean={distances.mean():.2f}, median={float(np.median(distances)):.2f})'
     )
 
@@ -435,7 +444,7 @@ def analyze_pair(
         os.makedirs(save_dir, exist_ok=True)
 
     if verbose:
-        print(f'\n── {from_nuc}→{to_nuc}  |  model={model}  |  max_lag={max_lag} ──')
+        print(f'\n-- {from_nuc}->{to_nuc}  |  model={model}  |  max_lag={max_lag} --')
 
     distances        = extract_pair(seq, from_nuc, to_nuc, save_path=dist_csv)
     lags, msd        = compute_pair_msd(distances, max_lag=max_lag, save_path=msd_csv)

@@ -83,9 +83,19 @@ def export_series(
     for example after extracting nucleotide transition distances or after detrending.
 
     .. note::
-        For very large arrays (e.g. tens of millions of genomic distances) the
-        resulting CSV will be large. Consider saving only a representative subset
-        or using :func:`export_msd` to checkpoint after MSD computation instead.
+        **Large genomic distance arrays — recompute, don't save.**
+
+        For a 179 Mbp chromosome, each nucleotide pair produces ~50 million
+        distances (~350 MB as CSV per pair, ~5.6 GB for all 16). Loading that
+        CSV back into Python via ``read_csv`` takes 15–30 seconds. Recomputing
+        the distances directly from the in-memory sequence with
+        ``get_transition_distances`` takes under 8 seconds — faster than
+        loading the saved file.
+
+        **Rule of thumb:** if ``len(distances) > 1_000_000``, do not save —
+        recompute from the FASTA instead. Use :func:`export_msd` to save the
+        MSD arrays (1500 rows, ~50 KB each) — those are the scientific
+        checkpoint worth keeping.
 
     Parameters
     ----------
