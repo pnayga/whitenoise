@@ -21,6 +21,7 @@
 
 from .io import read_fasta, read_fasta_single, filter_sequence, parse_seqrecord
 from .distances import get_transition_distances, get_all_transition_distances, summarize_matrix
+from .pipeline import extract_pair, compute_pair_msd, fit_pair, plot_pair, analyze_pair, refit_pair
 
 __all__ = [
     'read_fasta',
@@ -30,4 +31,10 @@ __all__ = [
     'get_transition_distances',
     'get_all_transition_distances',
     'summarize_matrix',
+    'extract_pair',
+    'compute_pair_msd',
+    'fit_pair',
+    'plot_pair',
+    'analyze_pair',
+    'refit_pair',
 ]

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>whitenoise — Genomics Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      padding: 36px 44px;
+      max-width: 950px;
+      margin: 0 auto;
+      line-height: 1.55;
+    }
+
+    /* ── Title block ── */
+    .title-block { margin-bottom: 28px; }
+    h1 {
+      font-size: 22pt;
+      letter-spacing: 0.5px;
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .subtitle { font-size: 10pt; color: #555; margin-bottom: 4px; }
+    .author-block { font-size: 9.5pt; color: #777; margin-top: 2px; }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 13pt;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+      border-left: 5px solid #1B3A6B;
+      padding-left: 10px;
+    }
+    h3 {
+      font-size: 11pt;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      color: #2c3e50;
+    }
+
+    /* ── Callout boxes ── */
+    .note {
+      background: #eef4fb;
+      border-left: 4px solid #1B3A6B;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fff8e1;
+      border-left: 4px solid #e67e22;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .tip {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      overflow-x: auto;
+      margin: 10px 0 16px 0;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 10px 0 20px 0;
+    }
+    th {
+      background: #1B3A6B;
+      color: white;
+      padding: 7px 10px;
+      text-align: left;
+      font-weight: bold;
+      font-family: 'Arial', sans-serif;
+      font-size: 9.5pt;
+    }
+    td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f9f9f9; }
+
+    /* ── Function signature blocks ── */
+    .sig {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10pt;
+      background: #1B3A6B;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 4px;
+      display: block;
+      margin: 8px 0 10px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    .pipe-step {
+      background: #1B3A6B;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+      font-family: 'Consolas', monospace;
+    }
+    .pipe-arrow { font-size: 14pt; color: #888; }
+    .pipe-save {
+      background: #27ae60;
+      color: white;
+      padding: 4px 9px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      font-family: 'Consolas', monospace;
+    }
+
+    /* ── Lists ── */
+    ul, ol {
+      margin: 8px 0 12px 22px;
+    }
+    li { margin-bottom: 4px; }
+
+    p { margin: 8px 0; }
+
+    /* ── Section divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 28px 0;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { padding: 0; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Title ──────────────────────────────────────────────────────────────── -->
+<div class="title-block">
+  <h1>whitenoise — Genomics Guide</h1>
+  <div class="subtitle">SWNA on DNA Sequences · <code>wn.genomics</code> submodule</div>
+  <div class="author-block">Framework: Violanda et al. (2019) · Physica Scripta 94, 125006</div>
+</div>
+
+<!-- ── Overview ───────────────────────────────────────────────────────────── -->
+<h2>Overview</h2>
+<p>
+  This guide covers applying Stochastic White Noise Analysis (SWNA) to genomic DNA sequences.
+  The stochastic variable is the <strong>separation distance</strong> between consecutive
+  nucleotide occurrences along the sequence. This distance sequence feeds directly into the
+  standard SWNA pipeline via the DNA model.
+</p>
+
+<div class="pipeline">
+  <span class="pipe-step">FASTA</span>
+  <span class="pipe-arrow">→</span>
+  <span class="pipe-step">filter_sequence()</span>
+  <span class="pipe-arrow">→</span>
+  <span class="pipe-step">extract_pair()</span>
+  <span class="pipe-save">save CSV</span>
+  <span class="pipe-arrow">→</span>
+  <span class="pipe-step">compute_pair_msd()</span>
+  <span class="pipe-save">save CSV</span>
+  <span class="pipe-arrow">→</span>
+  <span class="pipe-step">fit_pair()</span>
+  <span class="pipe-arrow">→</span>
+  <span class="pipe-step">plot_pair()</span>
+</div>
+
+<p>Each checkpoint CSV can be reloaded to skip earlier steps. Use <code>refit_pair()</code>
+to retry fitting from a saved MSD CSV without recomputing anything.</p>
+
+<hr>
+
+<!-- ── 1. Setup ────────────────────────────────────────────────────────────── -->
+<h2>1 · Setup</h2>
+<pre>import whitenoise as wn
+
+# Check version and available genomics functions
+print(wn.__version__)
+print(dir(wn.genomics))</pre>
+
+<div class="note">
+  <strong>Path note (VS Code):</strong> Run scripts from VS Code's integrated terminal — the
+  virtual environment is auto-activated and the package resolves correctly.
+  If running from the project root via Git Bash, add to the top of your script:
+  <pre style="margin-top:8px">import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'whitenoise'))</pre>
+</div>
+
+<hr>
+
+<!-- ── 2. Loading FASTA ────────────────────────────────────────────────────── -->
+<h2>2 · Loading a FASTA File</h2>
+
+<span class="sig">wn.genomics.read_fasta(path)  →  list[dict]
+wn.genomics.read_fasta_single(path)  →  dict</span>
+
+<pre>record = wn.genomics.read_fasta_single('chromosome1.fasta')
+seq_raw = record['sequence']
+print(f"Length: {len(seq_raw):,} bp")
+print(f"Ambiguous bases: {record['n_ambiguous']:,}")</pre>
+
+<table>
+  <tr><th>Key</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>id</code></td><td>str</td><td>Accession identifier (first token after <code>&gt;</code>)</td></tr>
+  <tr><td><code>description</code></td><td>str</td><td>Full header line</td></tr>
+  <tr><td><code>sequence</code></td><td>str</td><td>Uppercase sequence — all characters kept</td></tr>
+  <tr><td><code>length</code></td><td>int</td><td>Total sequence length in bp</td></tr>
+  <tr><td><code>n_ambiguous</code></td><td>int</td><td>Count of non-ACGT characters</td></tr>
+</table>
+
+<hr>
+
+<!-- ── 3. Filtering ───────────────────────────────────────────────────────── -->
+<h2>3 · Filtering Ambiguous Bases</h2>
+
+<span class="sig">wn.genomics.filter_sequence(seq, keep='ACGT')  →  str</span>
+
+<pre>seq = wn.genomics.filter_sequence(seq_raw)   # removes W, S, N, R, Y, etc.</pre>
+
+<div class="tip">
+  For most whole mitochondrial genomes and chromosomes, ambiguous bases are &lt; 1% and
+  their removal has negligible effect. Always filter before calling any distance function.
+</div>
+
+<hr>
+
+<!-- ── 4. Transition Distances ────────────────────────────────────────────── -->
+<h2>4 · Computing Transition Distances</h2>
+
+<h3>4.1 · Full 4×4 matrix (all 16 pairs)</h3>
+<span class="sig">wn.genomics.get_all_transition_distances(seq)  →  dict[(from, to): np.ndarray]
+wn.genomics.summarize_matrix(matrix)</span>
+
+<pre>matrix = wn.genomics.get_all_transition_distances(seq)
+wn.genomics.summarize_matrix(matrix)   # prints count table
+
+distances_AA = matrix[('A', 'A')]      # same-type pair
+distances_AC = matrix[('A', 'C')]      # cross-type pair</pre>
+
+<h3>4.2 · Single pair</h3>
+<span class="sig">wn.genomics.get_transition_distances(seq, from_nuc, to_nuc)  →  np.ndarray</span>
+
+<pre>dist = wn.genomics.get_transition_distances(seq, 'A', 'A')</pre>
+
+<table>
+  <tr><th>Pair type</th><th>Definition</th><th>Scientific basis</th></tr>
+  <tr>
+    <td><strong>Diagonal</strong> (A→A, C→C, G→G, T→T)</td>
+    <td>Distances between <em>consecutive</em> same-nucleotide occurrences</td>
+    <td>Direct from Violanda et al. (2019)</td>
+  </tr>
+  <tr>
+    <td><strong>Off-diagonal</strong> (A→C, A→G, …)</td>
+    <td>From each A, distance to the <em>next</em> C downstream</td>
+    <td>Nearest-next extension</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>Important:</strong> The DNA model was derived for <strong>same-type (diagonal)</strong>
+  distances. Off-diagonal pairs often yield low R² — this is expected, not a bug.
+  For off-diagonal pairs, try <code>model='exponential'</code> or <code>model='cosine'</code>.
+</div>
+
+<hr>
+
+<!-- ── 5. Step-by-Step Single-Pair Pipeline ───────────────────────────────── -->
+<h2>5 · Step-by-Step Single-Pair Pipeline</h2>
+
+<p>Use this when you want full control over each step, or when re-fitting a specific pair.</p>
+
+<h3>Step 1 — Extract distances</h3>
+<span class="sig">wn.genomics.extract_pair(sequence, from_nuc, to_nuc, save_path=None)  →  np.ndarray</span>
+
+<pre>dist = wn.genomics.extract_pair(seq, 'A', 'A', save_path='AA_distances.csv')
+
+# Reload later:
+_, dist, _ = wn.read_csv('AA_distances.csv')</pre>
+
+<div class="note">
+  <strong>Large genomes:</strong> For a 179 Mbp chromosome, each distance array is ~44 million
+  values (~350 MB as CSV). For such cases, skip saving distances and save only the MSD
+  in Step 2 instead.
+</div>
+
+<h3>Step 2 — Compute MSD</h3>
+<span class="sig">wn.genomics.compute_pair_msd(source, max_lag=1500, save_path=None)  →  (lags, msd)</span>
+
+<pre># From a distances array
+lags, msd = wn.genomics.compute_pair_msd(dist, max_lag=1500, save_path='AA_msd.csv')
+
+# Or load from saved distances CSV
+lags, msd = wn.genomics.compute_pair_msd('AA_distances.csv', max_lag=1500)</pre>
+
+<div class="tip">
+  <strong>Choosing max_lag:</strong> The DNA model saturates at approximately L ≈ 3/b.
+  With the published bacterial value b ≈ 0.0024, saturation occurs near L = 1250.
+  <code>max_lag=1500</code> is a safe default that captures the full curve with a visible flat tail.
+  For organisms with very different b, check the plateau visually first.
+</div>
+
+<h3>Step 3 — Fit a model</h3>
+<span class="sig">wn.genomics.fit_pair(source, model='dna', p0=None, bounds=None, ...)  →  FitResult</span>
+
+<pre># From arrays
+fit = wn.genomics.fit_pair((lags, msd), model='dna')
+
+# From a saved MSD CSV
+fit = wn.genomics.fit_pair('AA_msd.csv', model='dna')
+
+# With custom initial parameters
+fit = wn.genomics.fit_pair((lags, msd), model='dna', p0=[27.0, 0.025, 2.0])</pre>
+
+<h3>Step 4 — Plot</h3>
+<span class="sig">wn.genomics.plot_pair(lags, msd, fit=None, title='', save_path=None)  →  Figure</span>
+
+<pre>fig = wn.genomics.plot_pair(lags, msd, fit, title='A→A | DNA model', save_path='AA_fit.png')
+fig.show()</pre>
+
+<hr>
+
+<!-- ── 6. Full Single-Pair Pipeline ──────────────────────────────────────── -->
+<h2>6 · Full Single-Pair Pipeline (One Call)</h2>
+
+<span class="sig">wn.genomics.analyze_pair(source, from_nuc, to_nuc, model='dna', max_lag=1500,
+                         save_dir=None, p0=None, bounds=None, verbose=True)  →  dict</span>
+
+<pre>result = wn.genomics.analyze_pair(
+    source='chromosome1.fasta',
+    from_nuc='A', to_nuc='A',
+    model='dna',
+    max_lag=1500,
+    save_dir='results/',      # saves distances CSV, MSD CSV, and plot PNG
+)
+
+print(result['fit'].r_squared)
+result['figure'].show()</pre>
+
+<table>
+  <tr><th>Key</th><th>Description</th></tr>
+  <tr><td><code>pair</code></td><td><code>('A', 'A')</code> tuple</td></tr>
+  <tr><td><code>n_distances</code></td><td>Number of transition distances found</td></tr>
+  <tr><td><code>lags</code></td><td>Lag array from <code>compute_msd</code></td></tr>
+  <tr><td><code>msd</code></td><td>Empirical MSD array</td></tr>
+  <tr><td><code>fit</code></td><td><code>FitResult</code> object (or <code>None</code> if fitting failed)</td></tr>
+  <tr><td><code>figure</code></td><td>matplotlib <code>Figure</code> object</td></tr>
+</table>
+
+<hr>
+
+<!-- ── 7. Re-fitting ──────────────────────────────────────────────────────── -->
+<h2>7 · Re-fitting from a Saved MSD CSV</h2>
+
+<span class="sig">wn.genomics.refit_pair(msd_csv_path, model='dna', p0=None, bounds=None,
+                       max_lag_fraction=1.0, save_path=None, verbose=True)  →  (FitResult, Figure)</span>
+
+<p>This is the primary tool for improving a poor fit without recomputing distances or MSD.</p>
+
+<pre># Retry with a better initial guess
+fit, fig = wn.genomics.refit_pair(
+    'results/A_A_msd.csv',
+    model='dna',
+    p0=[27.0, 0.025, 2.0],
+    save_path='results/A_A_refit.png',
+)
+print(fit.r_squared)
+
+# Try a different model entirely
+fit, fig = wn.genomics.refit_pair('results/A_C_msd.csv', model='exponential')
+
+# Fit only first 70% of lags (exclude noisy plateau)
+fit, fig = wn.genomics.refit_pair('results/A_A_msd.csv', max_lag_fraction=0.7)</pre>
+
+<hr>
+
+<!-- ── 8. DNA Model ────────────────────────────────────────────────────────── -->
+<h2>8 · The DNA Model</h2>
+
+<pre>MSD(L) = N · (a − c · exp(−b · L))</pre>
+
+<table>
+  <tr><th>Parameter</th><th>Role</th><th>Typical range (bacterial)</th></tr>
+  <tr><td><code>a</code></td><td>Plateau height — MSD approaches <em>a</em> as L → ∞</td><td>3–8</td></tr>
+  <tr><td><code>b</code></td><td>Exponential decay rate — how fast MSD rises to plateau</td><td>0.001–0.01</td></tr>
+  <tr><td><code>c</code></td><td>Amplitude of exponential term; must satisfy c &lt; a</td><td>2–6</td></tr>
+  <tr><td><code>N</code></td><td>Normalization scalar — fitted automatically</td><td>~1</td></tr>
+</table>
+
+<div class="note">
+  <strong>No μ parameter.</strong> The DNA model uses a, b, c — not the memory parameter μ
+  used in cosine/exponential/sine models. It always describes <em>restricted diffusion</em>
+  (bounded MSD plateau).
+</div>
+
+<p><strong>Published reference values</strong> (Violanda et al. 2019, bacterial genomes):<br>
+<code>a ≈ 5.21</code>, <code>b ≈ 0.0024</code>, <code>c ≈ 3.81</code></p>
+
+<hr>
+
+<!-- ── 9. Fixing Poor Fits ─────────────────────────────────────────────────── -->
+<h2>9 · Fixing Poor Fits</h2>
+
+<h3>Symptom: curve looks right but R² is low</h3>
+<p>The optimizer settled in a local minimum far from the visual optimum. Provide a better initial guess.</p>
+<p><strong>How to estimate p0 from the plot:</strong></p>
+<ol>
+  <li>Read <code>a</code> ≈ the plateau value (where the curve flattens)</li>
+  <li>Read <code>c</code> ≈ <code>a − MSD(L=1)</code></li>
+  <li>Estimate <code>b</code> ≈ <code>6 / L_plateau</code> where <code>L_plateau</code> is the lag where the curve visually flattens</li>
+</ol>
+
+<pre>fit, fig = wn.genomics.refit_pair(
+    'A_A_msd.csv',
+    model='dna',
+    p0=[27.0, 0.025, 2.0],   # your a, b, c estimates
+)</pre>
+
+<h3>Symptom: R² &lt; 0.3 (off-diagonal pairs)</h3>
+<p>Cross-type distances don't follow the DNA saturating-exponential shape. Try other models:</p>
+<pre>fit, fig = wn.genomics.refit_pair('A_C_msd.csv', model='exponential')
+fit, fig = wn.genomics.refit_pair('A_C_msd.csv', model='cosine')
+wn.list_models()   # see all available models</pre>
+
+<h3>Symptom: plateau not visible at max_lag=1500</h3>
+<p>The decay rate <code>b</code> is smaller than the bacterial reference. Increase <code>max_lag</code>:</p>
+<pre>lags, msd = wn.genomics.compute_pair_msd(dist, max_lag=5000, save_path='A_A_msd_5000.csv')</pre>
+
+<hr>
+
+<!-- ── 10. Saving & Reloading ─────────────────────────────────────────────── -->
+<h2>10 · Saving and Reloading Intermediate Data</h2>
+
+<table>
+  <tr><th>Checkpoint</th><th>Save with</th><th>Reload with</th></tr>
+  <tr>
+    <td>Raw distances</td>
+    <td><code>wn.export_series(dist, path, label='dist_AA', unit='bp')</code><br><em>or</em> <code>save_path=</code> in <code>extract_pair()</code></td>
+    <td><code>_, dist, _ = wn.read_csv(path)</code></td>
+  </tr>
+  <tr>
+    <td>MSD arrays</td>
+    <td><code>wn.export_msd(lags, msd, path)</code><br><em>or</em> <code>save_path=</code> in <code>compute_pair_msd()</code></td>
+    <td><code>lags, msd, _ = wn.read_csv(path)</code></td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>Large genome note:</strong> For a 179 Mbp chromosome, each distance array is ~44 million
+  values (~350 MB as CSV, 5.6 GB total for all 16 pairs). It is faster to recompute distances
+  from the FASTA than to save/load at that volume. <strong>Save MSD CSVs instead</strong>
+  (1500 rows, ~50 KB each).
+</div>
+
+<hr>
+
+<!-- ── 11. Complete Workflow ──────────────────────────────────────────────── -->
+<h2>11 · Complete Workflow Example</h2>
+
+<pre>import whitenoise as wn
+import os
+
+# 1. Load and filter
+record = wn.genomics.read_fasta_single('chromosome1.fasta')
+seq = wn.genomics.filter_sequence(record['sequence'])
+print(f"Sequence: {len(seq):,} bp")
+
+# 2. Analyze diagonal pairs step by step
+os.makedirs('results', exist_ok=True)
+
+for nuc in ['A', 'C', 'G', 'T']:
+    dist = wn.genomics.extract_pair(seq, nuc, nuc)
+    lags, msd = wn.genomics.compute_pair_msd(
+        dist, max_lag=1500, save_path=f'results/{nuc}_{nuc}_msd.csv'
+    )
+    fit = wn.genomics.fit_pair((lags, msd), model='dna')
+    wn.genomics.plot_pair(
+        lags, msd, fit,
+        title=f'{nuc}→{nuc} | DNA model',
+        save_path=f'results/{nuc}_{nuc}_fit.png'
+    )
+
+# 3. Re-fit a specific pair with better p0
+fit, fig = wn.genomics.refit_pair(
+    'results/A_A_msd.csv',
+    model='dna',
+    p0=[28.0, 0.025, 3.0],
+    save_path='results/A_A_refit.png',
+)
+print(fit.summary())</pre>
+
+<hr>
+
+<!-- ── 12. Batch Analysis ──────────────────────────────────────────────────── -->
+<h2>12 · Batch Analysis (All 16 Pairs)</h2>
+
+<p>For a full 4×4 matrix run, use <code>chromosome1_swna.py</code>. The script:</p>
+<ol>
+  <li>Reads the FASTA and filters the sequence</li>
+  <li>Computes all 16 distance arrays (<code>get_all_transition_distances</code>)</li>
+  <li>Runs <code>compute_msd</code> + <code>fit_msd</code> for each pair (max_lag=1500)</li>
+  <li>Saves per-pair MSD CSVs (<code>chromosome1_msd_X_Y.csv</code>) for later re-fitting</li>
+  <li>Writes <code>chromosome1_results.csv</code> and <code>chromosome1_matrix.png</code></li>
+</ol>
+
+<p>To re-fit any single pair from the batch output:</p>
+<pre>fit, fig = wn.genomics.refit_pair(
+    'chromosome1_msd_A_A.csv',
+    model='dna',
+    p0=[28.0, 0.025, 3.0],
+    save_path='chromosome1_A_A_refit.png',
+)</pre>
+
+<hr>
+
+<!-- ── 13. Function Reference ─────────────────────────────────────────────── -->
+<h2>13 · Function Reference</h2>
+
+<table>
+  <tr><th>Function</th><th>Location</th><th>Description</th></tr>
+  <tr><td><code>read_fasta(path)</code></td><td><code>wn.genomics</code></td><td>Load all records from a FASTA file</td></tr>
+  <tr><td><code>read_fasta_single(path)</code></td><td><code>wn.genomics</code></td><td>Load first record only</td></tr>
+  <tr><td><code>filter_sequence(seq)</code></td><td><code>wn.genomics</code></td><td>Remove non-ACGT characters</td></tr>
+  <tr><td><code>get_transition_distances(seq, from, to)</code></td><td><code>wn.genomics</code></td><td>Single pair distances</td></tr>
+  <tr><td><code>get_all_transition_distances(seq)</code></td><td><code>wn.genomics</code></td><td>Full 4×4 distance matrix</td></tr>
+  <tr><td><code>summarize_matrix(matrix)</code></td><td><code>wn.genomics</code></td><td>Print count table</td></tr>
+  <tr><td><code>extract_pair(seq, from, to, save_path)</code></td><td><code>wn.genomics</code></td><td>Extract + optionally save to CSV</td></tr>
+  <tr><td><code>compute_pair_msd(source, max_lag, save_path)</code></td><td><code>wn.genomics</code></td><td>MSD from array or CSV, optional save</td></tr>
+  <tr><td><code>fit_pair(source, model, p0, ...)</code></td><td><code>wn.genomics</code></td><td>Fit from arrays or CSV</td></tr>
+  <tr><td><code>plot_pair(lags, msd, fit, ...)</code></td><td><code>wn.genomics</code></td><td>Single-pair MSD plot</td></tr>
+  <tr><td><code>analyze_pair(source, from, to, ...)</code></td><td><code>wn.genomics</code></td><td>Full single-pair pipeline</td></tr>
+  <tr><td><code>refit_pair(msd_csv, model, p0, ...)</code></td><td><code>wn.genomics</code></td><td>Reload saved MSD and refit</td></tr>
+  <tr><td><code>export_series(values, path, ...)</code></td><td><code>wn</code></td><td>Save 1-D array to whitenoise CSV</td></tr>
+  <tr><td><code>export_msd(lags, msd, path)</code></td><td><code>wn</code></td><td>Save MSD arrays to CSV</td></tr>
+  <tr><td><code>compute_msd(x, max_lag)</code></td><td><code>wn</code></td><td>Empirical MSD</td></tr>
+  <tr><td><code>fit_msd(lags, msd, model, p0)</code></td><td><code>wn</code></td><td>Fit any SWNA model</td></tr>
+  <tr><td><code>list_models()</code></td><td><code>wn</code></td><td>Print all 16 models and availability status</td></tr>
+</table>
+
+<hr>
+<p style="font-size:9pt; color:#888; text-align:center;">
+  whitenoise · SWNA Genomics Guide · Framework: Violanda R R, Bernido C C, Carpio-Bernido M V (2019). Physica Scripta 94, 125006.
+</p>
+
+</body>
+</html>

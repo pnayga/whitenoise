@@ -2,7 +2,7 @@
 # Hida-Bernido framework — University of San Carlos
 
 from .io.reader import read_csv, read_csv_multi
-from .io.export import export_csv, export_summary
+from .io.export import export_csv, export_summary, export_series, export_msd
 from .core.msd import compute_msd
 from .core.models import list_models, get_model
 from .core.fitting import fit_msd, FitResult
