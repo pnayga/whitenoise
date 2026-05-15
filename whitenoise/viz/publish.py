@@ -1,8 +1,10 @@
 """
-viz/publish.py — Publication-quality plots for whitenoise analysis results.
+viz/publish.py — Publication-quality comparison plot for whitenoise results.
 
-Applies strict rcParams styling via a context manager so global state is
-never modified.  All functions return a matplotlib Figure.
+publish_comparison()  μ bar chart with 95% CI error bars (unique to this module).
+
+publish_msd() and publish_pdf() are aliases of plot_msd() / plot_pdf() from
+viz/explore.py — calling either name produces the same single figure.
 """
 
 from __future__ import annotations
@@ -47,7 +49,6 @@ PALETTES: dict[str, dict[str, str]] = {
 
 @contextlib.contextmanager
 def _style_ctx():
-    """Apply STYLE rcParams within a context, restore afterwards."""
     with matplotlib.rc_context(STYLE):
         yield
 
@@ -55,7 +56,7 @@ def _style_ctx():
 def _resolve_palette(palette: str) -> dict[str, str]:
     if palette not in PALETTES:
         raise ValueError(
-            f"\u2717 Unknown palette '{palette}'. "
+            f"✗ Unknown palette '{palette}'. "
             f"Available: {list(PALETTES.keys())}"
         )
     return PALETTES[palette]
@@ -67,203 +68,10 @@ def _save(fig: matplotlib.figure.Figure, save_path: str | None) -> None:
     dirn = os.path.dirname(save_path)
     if dirn:
         os.makedirs(dirn, exist_ok=True)
-    # Infer format from extension; fall back to PDF for publication default
     ext = os.path.splitext(save_path)[1].lstrip('.').lower()
     fmt = ext if ext in {'pdf', 'png', 'svg', 'eps', 'jpg', 'jpeg'} else 'pdf'
     fig.savefig(save_path, format=fmt, bbox_inches='tight')
-    print(f'\u2713 Saved to {save_path}')
-
-
-def _unit_label(name: str, unit: str) -> str:
-    if not unit or unit.lower() == 'unitless':
-        return name
-    return f'{name} ({unit})'
-
-
-def _fd_bins(data: np.ndarray) -> int:
-    n = len(data)
-    if n < 2:
-        return 10
-    q75, q25 = np.percentile(data, [75, 25])
-    iqr = q75 - q25
-    if iqr == 0:
-        return max(10, int(np.sqrt(n)))
-    h = 2.0 * iqr * n ** (-1.0 / 3.0)
-    data_range = np.max(data) - np.min(data)
-    if h == 0 or data_range == 0:
-        return 10
-    return max(5, int(np.ceil(data_range / h)))
-
-
-# ── publish_msd ───────────────────────────────────────────────────────────────
-
-def publish_msd(
-    result,
-    palette:   str = 'default',
-    figsize:   tuple = (5, 4),
-    save_path: str | None = None,
-    show:      bool = True,
-) -> matplotlib.figure.Figure:
-    """
-    Publication-quality MSD plot: empirical scatter + fitted curve.
-
-    Parameters
-    ----------
-    result : AnalysisResult
-    palette : str, default ``'default'``
-        ``'default'`` or ``'colorblind'``.
-    figsize : tuple, default ``(5, 4)``
-    save_path : str, optional
-        If provided, save as PDF.
-
-    Returns
-    -------
-    matplotlib.figure.Figure
-    """
-    colors = _resolve_palette(palette)
-    meta      = result.metadata
-    x_unit    = meta.get('x_unit', '')
-    obs_unit  = meta.get('y_unit', '')
-    dname     = result.dataset_name
-
-    xlabel = f'Lag ({x_unit})' if x_unit else 'Lag'
-    ylabel = f'MSD ({obs_unit}\u00b2)' if obs_unit else 'MSD'
-
-    with _style_ctx():
-        fig, ax = plt.subplots(figsize=figsize)
-
-        ax.scatter(
-            result.lags, result.msd_empirical,
-            s=10, color=colors['empirical'], alpha=0.6, label='Empirical MSD', zorder=3,
-        )
-
-        if result.fit is not None:
-            r2    = result.fit.r_squared
-            label = f'Fitted {result.model} (R\u00b2={r2:.4f})'
-            lags_used  = result.fit.lags_used
-            msd_fitted = result.fit.msd_fitted
-            finite = np.isfinite(msd_fitted)
-            ax.plot(
-                lags_used[finite], msd_fitted[finite],
-                color=colors['theory'], linewidth=1.8, label=label, zorder=4,
-            )
-        else:
-            ax.annotate(
-                'Fit not available',
-                xy=(0.5, 0.85), xycoords='axes fraction',
-                ha='center', fontsize=9, color='#C0392B',
-            )
-
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_title(f'{dname} \u2014 MSD')
-        ax.legend(loc='lower right')
-        fig.tight_layout()
-
-    _save(fig, save_path)
-    if show:
-        plt.show()
-    return fig
-
-
-# ── publish_pdf ───────────────────────────────────────────────────────────────
-
-def publish_pdf(
-    result,
-    lag_index: int | None = None,
-    palette:   str = 'default',
-    figsize:   tuple = (5, 4),
-    save_path: str | None = None,
-    show:      bool = True,
-) -> matplotlib.figure.Figure:
-    """
-    Publication-quality displacement PDF plot.
-
-    Parameters
-    ----------
-    result : AnalysisResult
-    lag_index : int, optional
-        Index into ``result.lags``.  Defaults to ``len(lags) // 4``.
-    palette : str, default ``'default'``
-    figsize : tuple, default ``(5, 4)``
-    save_path : str, optional
-
-    Returns
-    -------
-    matplotlib.figure.Figure
-    """
-    colors   = _resolve_palette(palette)
-    meta     = result.metadata
-    obs_unit = meta.get('y_unit', '')
-    dname    = result.dataset_name
-
-    lags   = result.lags
-    values = result.values
-
-    if lag_index is None:
-        lag_index = max(0, len(lags) // 10)
-    lag_index = min(lag_index, len(lags) - 1)
-    T       = float(lags[lag_index])
-    lag_int = max(1, int(round(T)))
-
-    xlabel = f'\u0394x ({obs_unit})' if obs_unit else '\u0394x'
-
-    if lag_int < len(values):
-        displacements = values[lag_int:] - values[:-lag_int]
-        displacements = displacements[np.isfinite(displacements)]
-    else:
-        displacements = np.array([])
-
-    with _style_ctx():
-        fig, ax = plt.subplots(figsize=figsize)
-
-        if len(displacements) > 1:
-            bins = _fd_bins(displacements)
-            ax.hist(
-                displacements, bins=bins, density=True,
-                color=colors['empirical'], alpha=0.5, label='Empirical displacements',
-            )
-
-            if result.fit is not None:
-                from ..core.models import MODELS
-                info   = MODELS.get(result.model, {})
-                msd_fn = info.get('msd')
-                params = result.fit.params
-
-                if msd_fn is not None:
-                    phys_names = info.get('params', [])
-                    phys_vals  = [params[n] for n in phys_names if n in params]
-                    try:
-                        sigma2 = float(msd_fn(T, *phys_vals)) * params.get('N', 1.0)
-                        if np.isfinite(sigma2) and sigma2 > 0:
-                            mu_disp = float(np.mean(displacements))
-                            dx_range = np.linspace(displacements.min(), displacements.max(), 500)
-                            pdf_vals = (
-                                np.exp(-(dx_range - mu_disp) ** 2 / (2.0 * sigma2))
-                                / np.sqrt(2.0 * np.pi * sigma2)
-                            )
-                            ax.plot(
-                                dx_range, pdf_vals,
-                                color=colors['pdf'], linewidth=1.8,
-                                label=f'PDF (T={T:.3f})',
-                            )
-                    except Exception:
-                        pass
-
-            ax.legend(loc='upper right')
-        else:
-            ax.text(0.5, 0.5, 'Insufficient data', transform=ax.transAxes,
-                    ha='center', va='center', fontsize=10, color='#888888')
-
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel('Probability density')
-        ax.set_title(f'{dname} \u2014 PDF at lag T={T:.3f}')
-        fig.tight_layout()
-
-    _save(fig, save_path)
-    if show:
-        plt.show()
-    return fig
+    print(f'✓ Saved to {save_path}')
 
 
 # ── publish_comparison ────────────────────────────────────────────────────────
@@ -282,8 +90,13 @@ def publish_comparison(
     ----------
     cr : ComparisonResult
     palette : str, default ``'default'``
-    figsize : tuple, default ``(7, 4)``
+        ``'default'`` or ``'colorblind'``.
+    figsize : tuple, optional
+        Defaults to ``(7, height)`` where height scales with the number of datasets.
     save_path : str, optional
+        If provided, save the figure (PDF, PNG, SVG, or EPS based on extension).
+    show : bool, default ``True``
+        If ``True``, call ``plt.show()`` after drawing.
 
     Returns
     -------
@@ -306,7 +119,6 @@ def publish_comparison(
         except Exception:
             xerr[i] = 0.0
 
-    # Auto-size figure height so bars don't crowd when there are many systems
     if figsize is None:
         figsize = (7, max(3, 0.5 * n_sys + 1.5))
 
@@ -314,20 +126,18 @@ def publish_comparison(
         fig, ax = plt.subplots(figsize=figsize)
 
         y = np.arange(n_sys)
-        # Horizontal bars — dataset names on y-axis are readable without rotation
         ax.barh(y, mu_vals, color=colors['theory'], alpha=0.75, zorder=3)
         ax.errorbar(
             mu_vals, y, xerr=xerr,
             fmt='none', color='black', linewidth=1.2, capsize=4, zorder=4,
         )
 
-        # Brownian reference line at μ = 1.0
         ax.axvline(1.0, color='#888888', linewidth=0.8, linestyle='--',
-                   label='\u03bc = 1 (Brownian)')
+                   label='μ = 1 (Brownian)')
 
         ax.set_yticks(y)
         ax.set_yticklabels(labels)
-        ax.set_xlabel('Memory parameter \u03bc')
+        ax.set_xlabel('Memory parameter μ')
         ax.set_title('Memory Parameter Comparison')
         ax.legend()
         fig.tight_layout()
@@ -336,3 +146,19 @@ def publish_comparison(
     if show:
         plt.show()
     return fig
+
+
+# ── Backward-compat aliases ───────────────────────────────────────────────────
+# publish_msd and publish_pdf were removed in v0.1 because they were
+# identical to plot_msd / plot_pdf. Aliased here so existing code doesn't break.
+
+def publish_msd(result, **kwargs) -> matplotlib.figure.Figure:
+    """Alias for :func:`~whitenoise.viz.explore.plot_msd`. Use ``wn.plot_msd()``."""
+    from .explore import plot_msd
+    return plot_msd(result, **kwargs)
+
+
+def publish_pdf(result, **kwargs) -> matplotlib.figure.Figure:
+    """Alias for :func:`~whitenoise.viz.explore.plot_pdf`. Use ``wn.plot_pdf()``."""
+    from .explore import plot_pdf
+    return plot_pdf(result, **kwargs)

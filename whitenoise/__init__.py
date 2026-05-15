@@ -11,7 +11,7 @@ from .analysis.pipeline import analyze, AnalysisResult
 from .analysis.compare import compare, print_comparison, ComparisonResult
 from .analysis.batch import batch_analyze, batch_model_search
 from .viz.explore import plot_series, plot_msd_empirical, plot_msd, plot_pdf, plot_timeseries, plot_diagnostics
-from .viz.publish import publish_msd, publish_pdf, publish_comparison
+from .viz.publish import publish_comparison
 
 from . import genomics
 from . import radiojove
@@ -28,5 +28,5 @@ __all__ = [
     'compare', 'print_comparison', 'ComparisonResult',
     'batch_analyze', 'batch_model_search',
     'plot_series', 'plot_msd_empirical', 'plot_msd', 'plot_pdf', 'plot_timeseries', 'plot_diagnostics',
-    'publish_msd', 'publish_pdf', 'publish_comparison',
+    'publish_comparison',
 ]
