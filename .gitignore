@@ -33,3 +33,10 @@ Thumbs.db
 REVIEW_PLAN.html
 REVIEW_PLAN.pdf
 PROGRESS.md
+
+# Local project folders that don't belong in the whitenoise package repo
+Stochastic/
+
+# Generated output / demo results
+swna_results*/
+_synthetic_radiojove/

@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>whitenoise — RadioJOVE Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      padding: 36px 44px;
+      max-width: 950px;
+      margin: 0 auto;
+      line-height: 1.55;
+    }
+
+    /* ── Title block ── */
+    .title-block { margin-bottom: 28px; }
+    h1 {
+      font-size: 22pt;
+      letter-spacing: 0.5px;
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .subtitle { font-size: 10pt; color: #555; margin-bottom: 4px; }
+    .author-block { font-size: 9.5pt; color: #777; margin-top: 2px; }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 13pt;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+      border-left: 5px solid #1B3A6B;
+      padding-left: 10px;
+    }
+    h3 {
+      font-size: 11pt;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      color: #2c3e50;
+    }
+
+    /* ── Callout boxes ── */
+    .note {
+      background: #eef4fb;
+      border-left: 4px solid #1B3A6B;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fff8e1;
+      border-left: 4px solid #e67e22;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .tip {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      overflow-x: auto;
+      margin: 10px 0 16px 0;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 10px 0 20px 0;
+    }
+    th {
+      background: #1B3A6B;
+      color: white;
+      padding: 7px 10px;
+      text-align: left;
+      font-weight: bold;
+      font-family: 'Arial', sans-serif;
+      font-size: 9.5pt;
+    }
+    td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f9f9f9; }
+
+    /* ── Function signature blocks ── */
+    .sig {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10pt;
+      background: #1B3A6B;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 4px;
+      display: block;
+      margin: 8px 0 10px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    .pipe-step {
+      background: #1B3A6B;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+      font-family: 'Consolas', monospace;
+    }
+    .pipe-manual {
+      background: #7f8c8d;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+      font-family: 'Consolas', monospace;
+    }
+    .pipe-arrow { font-size: 14pt; color: #888; }
+    .pipe-save {
+      background: #27ae60;
+      color: white;
+      padding: 4px 9px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      font-family: 'Consolas', monospace;
+    }
+
+    /* ── Lists ── */
+    ul, ol { margin: 8px 0 12px 22px; }
+    li { margin-bottom: 4px; }
+
+    p { margin: 8px 0; }
+
+    /* ── Section divider ── */
+    hr { border: none; border-top: 1px solid #ddd; margin: 28px 0; }
+
+    /* ── Print ── */
+    @media print {
+      body { padding: 0; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Title ──────────────────────────────────────────────────────────────── -->
+<div class="title-block">
+  <h1>whitenoise — RadioJOVE Guide</h1>
+  <div class="subtitle">SWNA on Radio Burst Observations &middot; <code>wn.radiojove</code> submodule</div>
+  <div class="author-block">Framework: Bernido &amp; Carpio-Bernido (2015) &middot; World Scientific</div>
+</div>
+
+<!-- ── Overview ───────────────────────────────────────────────────────────── -->
+<h2>Overview</h2>
+<p>
+  This guide covers applying Stochastic White Noise Analysis (SWNA) to radio burst observations
+  recorded with a <strong>RadioJOVE</strong> spectrograph. The stochastic variable is the
+  <strong>Z-score normalized intensity</strong> of a selected burst region, sampled at a fixed
+  cadence (typically 0.1&nbsp;s or 1.0&nbsp;s). The memory parameter &mu; extracted by SWNA
+  quantifies the dynamical memory structure of the burst.
+</p>
+
+<p>The full pipeline has two stages:</p>
+
+<p><strong>Stage 1 — Preprocessing (manual, using the RadioJOVE GUI):</strong></p>
+<div class="pipeline">
+  <span class="pipe-manual">JPG spectrograph</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-manual">region selection GUI</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-manual">Z-score export</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-save">CSV file</span>
+</div>
+
+<p><strong>Stage 2 — SWNA analysis (automated, using this package):</strong></p>
+<div class="pipeline">
+  <span class="pipe-step">read_radiojove_csv()</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">[preprocess]</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">analyze_burst()</span>
+  <span class="pipe-save">plots + CSV</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">compare_bursts()</span>
+</div>
+
+<p>
+  Use <code>analyze_burst()</code> for a single event or <code>batch_analyze_bursts()</code>
+  to process an entire folder at once. All functions in Stage&nbsp;2 are accessible via
+  <code>wn.radiojove.*</code>.
+</p>
+
+<hr>
+
+<!-- ── 1. Setup ────────────────────────────────────────────────────────────── -->
+<h2>1 &middot; Setup</h2>
+<pre>import whitenoise as wn
+
+# Verify the submodule is available
+print(wn.__version__)
+print(dir(wn.radiojove))</pre>
+
+<div class="note">
+  <strong>Path note:</strong> If whitenoise is installed via <code>pip install -e .</code> from
+  the package root, no path configuration is needed. If running from a project that embeds
+  the package, add to the top of your script:
+  <pre style="margin-top:8px">import sys, os
+sys.path.insert(0, 'path/to/whitenoise')</pre>
+</div>
+
+<hr>
+
+<!-- ── 2. Stage 1: Preprocessing Pipeline ─────────────────────────────────── -->
+<h2>2 &middot; Stage 1 — Preprocessing: From Spectrograph to CSV</h2>
+
+<p>
+  This stage is performed <strong>manually</strong> using the RadioJOVE observation software
+  and a region-selection GUI. The output is one or more CSV files ready for SWNA analysis.
+</p>
+
+<h3>Step 1 — Record a spectrum</h3>
+<p>
+  A RadioJOVE receiver (dipole antenna + receiver + sound card) records Jupiter or solar
+  radio emissions. The observation software produces a <strong>JPG spectrograph</strong>:
+  time on the x-axis, frequency on the y-axis, intensity as colour. Typical observing windows
+  are 5&ndash;30 minutes.
+</p>
+
+<h3>Step 2 — Select burst regions (GUI)</h3>
+<p>In the region-selection tool:</p>
+<ol>
+  <li>Load the JPG spectrograph</li>
+  <li>Draw a bounding box around each burst event of interest</li>
+  <li>The tool extracts the intensity column summed (or averaged) over the selected frequency band</li>
+  <li>Export each region as a <strong>Z-score normalized CSV</strong> at the desired cadence</li>
+</ol>
+
+<p>The GUI exports at two standard cadences:</p>
+<table>
+  <tr><th>Cadence</th><th>Points per second</th><th>Typical use</th></tr>
+  <tr><td>0.1&nbsp;s</td><td>10</td><td>Fine temporal structure; higher noise</td></tr>
+  <tr><td>1.0&nbsp;s</td><td>1</td><td>Smoothed envelope; lower noise</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Why two cadences?</strong> Running SWNA on both and comparing &mu; values confirms
+  that the memory structure is robust to temporal resolution. Consistent &mu; at 0.1&nbsp;s and
+  1.0&nbsp;s is a sign of a genuine physical signal, not sampling artefact.
+</div>
+
+<h3>Step 3 — Resulting CSV format</h3>
+<p>Each exported CSV has exactly two columns:</p>
+<pre>time_seconds,intensity_zscore
+0.000,-4.050984
+0.100,-4.054093
+0.200,-4.057201
+...</pre>
+
+<p>Column 1 is time in seconds; Column 2 is the Z-score normalized intensity
+(mean = 0, std = 1 across the selected burst window).</p>
+
+<h3>Step 4 — Filename convention</h3>
+<p>The GUI produces filenames following the pattern:</p>
+<pre>YYMMDDHHMMSS&lt;Station&gt;_region_&lt;N&gt;_&lt;cadence&gt;s.csv
+
+Example:
+  230728154000Higgins_Home_region_1_0.1s.csv   &larr; 0.1 s cadence
+  230728154000Higgins_Home_region_1_1.0s.csv   &larr; 1.0 s cadence</pre>
+
+<table>
+  <tr><th>Field</th><th>Description</th><th>Example</th></tr>
+  <tr><td><code>YYMMDDHHMMSS</code></td><td>12-digit recording timestamp</td><td><code>230728154000</code></td></tr>
+  <tr><td><code>&lt;Station&gt;</code></td><td>Observer name or station ID</td><td><code>Higgins_Home</code></td></tr>
+  <tr><td><code>region_&lt;N&gt;</code></td><td>Region index within the spectrograph</td><td><code>region_1</code></td></tr>
+  <tr><td><code>&lt;cadence&gt;s</code></td><td>Time cadence in seconds</td><td><code>0.1s</code>, <code>1.0s</code></td></tr>
+</table>
+
+<div class="note">
+  <strong>Z-score normalization:</strong> The GUI applies Z-score normalization automatically
+  within each selected region. This means the exported intensity values have mean&nbsp;=&nbsp;0
+  and std&nbsp;=&nbsp;1. Do <em>not</em> call <code>wn.radiojove.zscore_normalize()</code> again
+  on data exported by the GUI — it is already normalized. Only use that function if you are
+  starting from raw ADC counts or linear intensity values.
+</div>
+
+<hr>
+
+<!-- ── 3. Reading and Organizing Data ─────────────────────────────────────── -->
+<h2>3 &middot; Reading and Organizing Data</h2>
+
+<h3>3.1 &middot; List all CSVs in a folder</h3>
+<span class="sig">wn.radiojove.list_burst_csvs(folder, pattern='*.csv')  &rarr;  list[str]</span>
+
+<pre>paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+print(len(paths), 'files found')
+for p in paths:
+    print(p)</pre>
+
+<h3>3.2 &middot; Parse metadata from a filename</h3>
+<span class="sig">wn.radiojove.parse_filename_metadata(filename)  &rarr;  dict</span>
+
+<pre>meta = wn.radiojove.parse_filename_metadata(
+    '230728154000Higgins_Home_region_1_0.1s.csv'
+)
+print(meta['datetime'])    # '230728154000'
+print(meta['station'])     # 'Higgins_Home'
+print(meta['region'])      # 1
+print(meta['cadence_s'])   # 0.1</pre>
+
+<p>Any field that cannot be parsed is returned as <code>None</code> — no exception is raised.</p>
+
+<h3>3.3 &middot; Read a single CSV</h3>
+<span class="sig">wn.radiojove.read_radiojove_csv(path)  &rarr;  (time, intensity, metadata)</span>
+
+<pre>time, intensity, meta = wn.radiojove.read_radiojove_csv(
+    '230728154000Higgins_Home_region_1_0.1s.csv'
+)
+print(f"N points : {len(time)}")
+print(f"Duration : {time[-1] - time[0]:.1f} s")
+print(f"Station  : {meta['station']}")
+print(f"Cadence  : {meta['cadence_s']} s")</pre>
+
+<p>
+  This wraps <code>wn.read_csv()</code> and enriches the returned metadata with
+  <code>station</code>, <code>region</code>, <code>cadence_s</code>, and <code>datetime</code>
+  parsed from the filename.
+</p>
+
+<table>
+  <tr><th>Metadata key</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>station</code></td><td>str</td><td>Station name from filename</td></tr>
+  <tr><td><code>region</code></td><td>int</td><td>Region index from filename</td></tr>
+  <tr><td><code>cadence_s</code></td><td>float</td><td>Time cadence in seconds</td></tr>
+  <tr><td><code>datetime</code></td><td>str</td><td>12-digit timestamp from filename</td></tr>
+  <tr><td><code>x_name</code></td><td>str</td><td><code>'time_seconds'</code></td></tr>
+  <tr><td><code>y_name</code></td><td>str</td><td><code>'intensity_zscore'</code></td></tr>
+  <tr><td><code>n_points</code></td><td>int</td><td>Number of rows in the CSV</td></tr>
+  <tr><td><code>source_file</code></td><td>str</td><td>Full path to the CSV</td></tr>
+</table>
+
+<h3>3.4 &middot; Group files by cadence</h3>
+<span class="sig">wn.radiojove.group_by_cadence(paths)  &rarr;  dict[float, list[str]]</span>
+
+<pre>paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+groups = wn.radiojove.group_by_cadence(paths)
+
+paths_01s = groups[0.1]   # all 0.1-second cadence files
+paths_10s = groups[1.0]   # all 1.0-second cadence files
+print(list(groups.keys()))  # [0.1, 1.0]</pre>
+
+<hr>
+
+<!-- ── 4. Preprocessing Utilities ─────────────────────────────────────────── -->
+<h2>4 &middot; Stage 2 — Preprocessing Utilities</h2>
+
+<p>
+  These functions are <strong>optional</strong>. Data exported by the RadioJOVE GUI is already
+  Z-scored and does not require additional preprocessing before SWNA. Use these utilities
+  only when working with raw data or when comparing analyses across different cadences.
+</p>
+
+<h3>4.1 &middot; Z-score normalization</h3>
+<span class="sig">wn.radiojove.zscore_normalize(intensity)  &rarr;  np.ndarray</span>
+
+<pre># Only needed if intensity is in raw ADC counts or linear units
+# (NOT needed for GUI-exported CSVs — they are already Z-scored)
+intensity_z = wn.radiojove.zscore_normalize(raw_intensity)
+print(intensity_z.mean(), intensity_z.std())  # approx 0.0 and 1.0</pre>
+
+<h3>4.2 &middot; Cadence resampling</h3>
+<span class="sig">wn.radiojove.resample(time, intensity, target_cadence)  &rarr;  (time_new, intensity_new)</span>
+
+<pre>time, intensity, _ = wn.radiojove.read_radiojove_csv('region_1_0.1s.csv')
+
+# Downsample from 0.1 s to 1.0 s using linear interpolation
+time_1s, intensity_1s = wn.radiojove.resample(time, intensity, target_cadence=1.0)
+print(f"{len(time)} -> {len(time_1s)} points")</pre>
+
+<div class="tip">
+  <strong>When to use resample:</strong> The GUI already exports two cadences (0.1&nbsp;s and
+  1.0&nbsp;s) separately. Use <code>resample()</code> only if you have a single cadence
+  and need to generate a comparison at a different resolution, or if the exported CSV
+  has irregular spacing that needs standardizing.
+</div>
+
+<hr>
+
+<!-- ── 5. Single Burst Analysis — Step by Step ────────────────────────────── -->
+<h2>5 &middot; Single Burst Analysis — Step by Step</h2>
+
+<p>Use this approach when you want to inspect each stage individually.</p>
+
+<h3>Step 1 — Read the CSV</h3>
+<pre>time, intensity, meta = wn.radiojove.read_radiojove_csv('region_1_0.1s.csv')</pre>
+
+<h3>Step 2 — (Optional) Detrend</h3>
+<p>
+  A linear trend within the burst window may be present due to receiver drift or the burst
+  envelope. Removing it isolates the stochastic fluctuations used in SWNA.
+</p>
+<pre>intensity_detrended = wn.detrend(intensity, method='linear')</pre>
+
+<h3>Step 3 — Compute MSD</h3>
+<pre>lags, msd = wn.compute_msd(intensity_detrended)
+print(f"MSD: {len(lags)} lags, MSD[1]={msd[0]:.4f}, MSD[-1]={msd[-1]:.4f}")</pre>
+
+<div class="note">
+  <strong>Lag range:</strong> <code>compute_msd()</code> computes lags 1 to N/2 by default.
+  N/2 is the statistical reliability cutoff — beyond that, each lag value is estimated
+  from fewer than two full sweep lengths. All N/2 lags are used for fitting (the default
+  <code>max_lag_fraction=1.0</code>).
+</div>
+
+<h3>Step 4 — Fit a model</h3>
+<pre>fit = wn.fit_msd(lags, msd, model='exponential')
+if fit:
+    print(fit.summary())</pre>
+
+<h3>Step 5 — Plot</h3>
+<pre>import matplotlib.pyplot as plt
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+
+# Linear scale
+ax1.scatter(lags, msd, s=8, color='steelblue', alpha=0.7, label='Empirical MSD')
+ax1.plot(fit.lags_used, fit.msd_fitted, color='crimson', lw=2, label='exponential fit')
+ax1.set_xlabel('Time lag (s)')
+ax1.set_ylabel('MSD')
+ax1.legend()
+
+# Log-log scale
+ax2.loglog(lags, msd, '.', color='steelblue', alpha=0.7, label='Empirical MSD')
+ax2.loglog(fit.lags_used, fit.msd_fitted, color='crimson', lw=2)
+ax2.set_xlabel('Time lag (s)')
+ax2.set_ylabel('MSD')
+
+plt.tight_layout()
+plt.savefig('burst_msd.png', dpi=150)
+plt.show()</pre>
+
+<hr>
+
+<!-- ── 6. Full Single-Burst Pipeline (One Call) ───────────────────────────── -->
+<h2>6 &middot; Full Single-Burst Pipeline (One Call)</h2>
+
+<span class="sig">wn.radiojove.analyze_burst(path, model='exponential', detrend_method='linear',
+                           normalize=False, output_dir=None, verbose=True)  &rarr;  dict</span>
+
+<p>Runs all five steps above in a single call and returns a dict with the result, figure, and
+summary row.</p>
+
+<pre>out = wn.radiojove.analyze_burst(
+    '230728154000Higgins_Home_region_1_0.1s.csv',
+    model='exponential',
+    detrend_method='linear',
+    output_dir='swna_results/',   # saves plot PNG here
+)
+
+result = out['result']
+if result and result.fit:
+    print(f"mu    = {result.fit.params['mu']:.4f}")
+    print(f"R2    = {result.fit.r_squared:.4f}")
+    print(f"regime: {result.regime}")
+
+out['figure'].show()     # dual-panel MSD plot (linear + log-log)</pre>
+
+<table>
+  <tr><th>Return key</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>path</code></td><td>str</td><td>Input file path</td></tr>
+  <tr><td><code>dataset</code></td><td>str</td><td>Filename stem (no extension)</td></tr>
+  <tr><td><code>result</code></td><td>AnalysisResult</td><td>Full SWNA result (<code>None</code> if failed)</td></tr>
+  <tr><td><code>figure</code></td><td>Figure</td><td>Dual-panel MSD plot</td></tr>
+  <tr><td><code>row</code></td><td>dict</td><td>Summary row for DataFrame construction</td></tr>
+</table>
+
+<div class="note">
+  <strong>detrend_method='linear'</strong> is the recommended default. It removes a
+  linear trend within the burst window, isolating stochastic fluctuations from receiver
+  drift or the burst envelope. Set to <code>None</code> to skip detrending.
+</div>
+
+<h3>Plotting a result separately</h3>
+<span class="sig">wn.radiojove.plot_burst_msd(result, title='', save_path=None)  &rarr;  Figure</span>
+
+<pre>fig = wn.radiojove.plot_burst_msd(
+    out['result'],
+    title='Region 1 - 0.1s cadence',
+    save_path='region1_msd.png',
+)
+fig.show()</pre>
+
+<hr>
+
+<!-- ── 7. Batch Analysis ───────────────────────────────────────────────────── -->
+<h2>7 &middot; Batch Analysis</h2>
+
+<span class="sig">wn.radiojove.batch_analyze_bursts(source, model='exponential',
+                                  detrend_method='linear', normalize=False,
+                                  output_dir=None, n_jobs=1, verbose=True)
+                                  &rarr;  pd.DataFrame</span>
+
+<p>
+  Processes all CSVs in a folder (or an explicit list), saves per-file MSD plots,
+  and returns a summary DataFrame with one row per file.
+</p>
+
+<pre>df = wn.radiojove.batch_analyze_bursts(
+    'Solar/Type 3 Bursts/first trials/',
+    model='exponential',
+    output_dir='swna_results/',
+)
+
+print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])</pre>
+
+<p>You can also pass a specific list of files:</p>
+<pre>paths_01s = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+paths_01s = [p for p in paths_01s if '0.1s' in p]
+
+df = wn.radiojove.batch_analyze_bursts(paths_01s, model='exponential')</pre>
+
+<table>
+  <tr><th>DataFrame column</th><th>Description</th></tr>
+  <tr><td><code>dataset</code></td><td>Filename stem</td></tr>
+  <tr><td><code>filename</code></td><td>Full filename with extension</td></tr>
+  <tr><td><code>model</code></td><td>SWNA model used</td></tr>
+  <tr><td><code>n_points</code></td><td>Number of time points in the burst</td></tr>
+  <tr><td><code>mu</code></td><td>Memory parameter &mu;</td></tr>
+  <tr><td><code>mu_ci_low</code></td><td>95% CI lower bound for &mu;</td></tr>
+  <tr><td><code>mu_ci_high</code></td><td>95% CI upper bound for &mu;</td></tr>
+  <tr><td><code>beta</code></td><td>Exponential decay rate &beta; (exponential model)</td></tr>
+  <tr><td><code>r_squared</code></td><td>Goodness of fit R&sup2;</td></tr>
+  <tr><td><code>regime</code></td><td>Diffusion regime (see Section&nbsp;8)</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Parallel processing:</strong> Set <code>n_jobs=4</code> (or more) to analyze
+  files in parallel using threads. I/O-bound analysis on large folders is typically
+  2&ndash;4&times; faster with parallelism.
+</div>
+
+<hr>
+
+<!-- ── 8. Comparing Bursts ─────────────────────────────────────────────────── -->
+<h2>8 &middot; Comparing Bursts</h2>
+
+<span class="sig">wn.radiojove.compare_bursts(paths, model='exponential',
+                            detrend_method='linear', normalize=False,
+                            max_lag_fraction=1.0)  &rarr;  ComparisonResult</span>
+
+<pre># Group files by cadence and compare only the 0.1 s files
+paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+groups = wn.radiojove.group_by_cadence(paths)
+
+cr = wn.radiojove.compare_bursts(groups[0.1], model='exponential')
+
+# ASCII table
+wn.print_comparison(cr)
+
+# Publication-quality mu bar chart
+wn.publish_comparison(cr)</pre>
+
+<p>The returned <code>ComparisonResult</code> also contains:</p>
+<pre>print(cr.summary_df)        # full results DataFrame
+cr.summary_df.to_csv('comparison.csv', index=False)</pre>
+
+<hr>
+
+<!-- ── 9. Multi-Resolution Comparison ─────────────────────────────────────── -->
+<h2>9 &middot; Multi-Resolution Comparison (0.1&nbsp;s vs 1.0&nbsp;s)</h2>
+
+<p>
+  Comparing &mu; values at two cadences verifies that the memory structure is resolution-independent.
+  Robust results should show consistent &mu; at both cadences (within confidence intervals).
+</p>
+
+<pre>import pandas as pd
+
+paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+groups = wn.radiojove.group_by_cadence(paths)
+
+df_01s = wn.radiojove.batch_analyze_bursts(groups[0.1], model='exponential', verbose=False)
+df_10s = wn.radiojove.batch_analyze_bursts(groups[1.0], model='exponential', verbose=False)
+
+df_01s['cadence'] = '0.1s'
+df_10s['cadence'] = '1.0s'
+
+df_all = pd.concat([df_01s, df_10s], ignore_index=True)
+print(df_all[['dataset', 'cadence', 'mu', 'r_squared', 'regime']])</pre>
+
+<div class="tip">
+  <strong>Interpretation:</strong> If &mu; at 0.1&nbsp;s and 1.0&nbsp;s agree to within their
+  95% confidence intervals, the memory structure is robust. A significant discrepancy suggests
+  the result may be influenced by noise at the finer cadence or by smoothing artefacts at the
+  coarser one.
+</div>
+
+<hr>
+
+<!-- ── 10. The Exponential Model ──────────────────────────────────────────── -->
+<h2>10 &middot; The Exponential SWNA Model</h2>
+
+<pre>MSD(T, mu, beta) = Gamma(mu) * beta^(-mu) * T^(mu-1) * exp(-beta / T)</pre>
+
+<table>
+  <tr><th>Parameter</th><th>Role</th><th>Typical range (Type III bursts)</th></tr>
+  <tr><td><code>mu</code> (&mu;)</td><td>Memory exponent — controls long-time MSD growth rate</td><td>1.4&ndash;1.7</td></tr>
+  <tr><td><code>beta</code> (&beta;)</td><td>Exponential decay rate — controls where MSD peaks</td><td>10&ndash;100</td></tr>
+  <tr><td><code>N</code></td><td>Normalization scalar — fitted automatically, scales amplitude</td><td>&sim;1</td></tr>
+</table>
+
+<div class="note">
+  <strong>Why exponential and not cosine?</strong> The cosine model produces an oscillating MSD
+  that can become negative, causing catastrophic failure (R&sup2; &asymp; &minus;10<sup>60</sup>) on data with
+  a monotonically growing MSD. Type III solar bursts and most Jovian S-bursts have monotonically
+  growing MSDs &mdash; always use <code>model='exponential'</code> for these event types.
+  Use <code>wn.list_models()</code> to see all available models.
+</div>
+
+<h3>Interpreting &mu;</h3>
+<table>
+  <tr><th>&mu; range</th><th>Regime</th><th>Physical interpretation</th></tr>
+  <tr><td>&mu; &lt; 0.95</td><td>subdiffusive</td><td>Anti-correlated fluctuations; restricted spreading</td></tr>
+  <tr><td>0.95 &le; &mu; &le; 1.05</td><td>near-Brownian</td><td>Weak or no memory; ordinary random walk</td></tr>
+  <tr><td>1.05 &lt; &mu; &le; 2.0</td><td>superdiffusive</td><td>Positively correlated; fast spreading</td></tr>
+  <tr><td>&mu; &gt; 2.0</td><td>hyperballistic</td><td>Strongly persistent; extreme memory</td></tr>
+</table>
+
+<p>
+  Type III solar bursts are driven by semi-relativistic electron beams spiralling along open
+  coronal magnetic field lines. These beams produce positively correlated, fast-spreading
+  intensity fluctuations — consistent with the observed <strong>&mu; &asymp; 1.4&ndash;1.6
+  (superdiffusive)</strong> regime.
+</p>
+
+<hr>
+
+<!-- ── 11. When the Fit is Poor ───────────────────────────────────────────── -->
+<h2>11 &middot; When the Fit is Poor</h2>
+
+<h3>Symptom: R&sup2; &lt; 0.5 or very negative</h3>
+<p>
+  First check the model choice. The <strong>cosine</strong> model fails catastrophically on
+  monotonic MSD data (R&sup2; can be &minus;10<sup>60</sup>). Switch to
+  <code>model='exponential'</code>.
+</p>
+<pre>out = wn.radiojove.analyze_burst('burst.csv', model='exponential')</pre>
+
+<h3>Symptom: fit curve covers only part of the MSD points</h3>
+<p>
+  This can happen if <code>max_lag_fraction</code> is set below 1.0. The default is 1.0,
+  which fits all displayed MSD lags. Do not change this unless you are deliberately excluding
+  the noisy high-lag tail.
+</p>
+
+<h3>Symptom: good shape but low R&sup2;</h3>
+<p>The optimizer found a local minimum. Try providing custom initial parameters:</p>
+<pre>import whitenoise as wn
+
+time, intensity, _ = wn.radiojove.read_radiojove_csv('burst.csv')
+intensity_d = wn.detrend(intensity, method='linear')
+lags, msd   = wn.compute_msd(intensity_d)
+
+# Inspect the MSD visually first to estimate mu
+fit = wn.fit_msd(lags, msd, model='exponential',
+                 p0=[1.5, 20.0],   # [mu_guess, beta_guess]
+                 bounds=([0.1, 0.001], [4.0, 500.0]))
+print(fit.summary())</pre>
+
+<h3>Symptom: burst is very short (&lt; 50 time points)</h3>
+<p>
+  The MSD computed from a short burst has very few lags and high statistical noise.
+  Consider using the 0.1&nbsp;s cadence file (10&times; more points for the same event).
+  If the burst is genuinely short, report the result with a low confidence note.
+</p>
+
+<hr>
+
+<!-- ── 12. Complete Workflow Example ──────────────────────────────────────── -->
+<h2>12 &middot; Complete Workflow Example</h2>
+
+<pre>import whitenoise as wn
+import pandas as pd
+import os
+
+# ── Configuration ──────────────────────────────────────────────────────────────
+DATA_DIR   = 'Solar/Type 3 Bursts/first trials/'
+OUT_DIR    = 'swna_results/'
+MODEL      = 'exponential'
+os.makedirs(OUT_DIR, exist_ok=True)
+
+# ── Step 1: List and organize files ───────────────────────────────────────────
+paths  = wn.radiojove.list_burst_csvs(DATA_DIR)
+groups = wn.radiojove.group_by_cadence(paths)
+
+print(f"Found {len(paths)} files:")
+for cadence, fpaths in sorted(groups.items(), key=lambda x: x[0] or 0):
+    print(f"  {cadence}s: {len(fpaths)} file(s)")
+
+# ── Step 2: Batch analyze at both cadences ─────────────────────────────────────
+df_01s = wn.radiojove.batch_analyze_bursts(
+    groups[0.1], model=MODEL,
+    output_dir=os.path.join(OUT_DIR, '01s'),
+    verbose=True,
+)
+df_10s = wn.radiojove.batch_analyze_bursts(
+    groups[1.0], model=MODEL,
+    output_dir=os.path.join(OUT_DIR, '10s'),
+    verbose=False,
+)
+
+# ── Step 3: Merge and save summary ─────────────────────────────────────────────
+df_01s['cadence'] = '0.1s'
+df_10s['cadence'] = '1.0s'
+df_all = pd.concat([df_01s, df_10s], ignore_index=True)
+df_all.to_csv(os.path.join(OUT_DIR, 'swna_summary.csv'), index=False)
+
+cols = ['dataset', 'cadence', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']
+print(df_all[cols].to_string(index=False))
+
+# ── Step 4: Compare 0.1s cadence bursts ───────────────────────────────────────
+cr = wn.radiojove.compare_bursts(groups[0.1], model=MODEL)
+wn.print_comparison(cr)
+
+# Publication-quality mu comparison bar chart
+fig = wn.publish_comparison(cr, show=False)
+fig.savefig(os.path.join(OUT_DIR, 'comparison_mu.png'), dpi=150, bbox_inches='tight')</pre>
+
+<hr>
+
+<!-- ── 13. Function Reference ─────────────────────────────────────────────── -->
+<h2>13 &middot; Function Reference</h2>
+
+<table>
+  <tr><th>Function</th><th>Location</th><th>Description</th></tr>
+  <tr><td><code>list_burst_csvs(folder)</code></td><td><code>wn.radiojove</code></td><td>List all CSVs in a folder, sorted</td></tr>
+  <tr><td><code>parse_filename_metadata(filename)</code></td><td><code>wn.radiojove</code></td><td>Extract datetime, station, region, cadence from filename</td></tr>
+  <tr><td><code>read_radiojove_csv(path)</code></td><td><code>wn.radiojove</code></td><td>Read CSV; returns (time, intensity, enriched metadata)</td></tr>
+  <tr><td><code>group_by_cadence(paths)</code></td><td><code>wn.radiojove</code></td><td>Group file list by time cadence</td></tr>
+  <tr><td><code>zscore_normalize(intensity)</code></td><td><code>wn.radiojove</code></td><td>Z-score normalize (only if not already done)</td></tr>
+  <tr><td><code>resample(time, intensity, cadence)</code></td><td><code>wn.radiojove</code></td><td>Resample to a different cadence</td></tr>
+  <tr><td><code>analyze_burst(path, model, ...)</code></td><td><code>wn.radiojove</code></td><td>Full SWNA pipeline for one burst CSV</td></tr>
+  <tr><td><code>plot_burst_msd(result, ...)</code></td><td><code>wn.radiojove</code></td><td>Dual-panel MSD plot (linear + log-log)</td></tr>
+  <tr><td><code>batch_analyze_bursts(source, ...)</code></td><td><code>wn.radiojove</code></td><td>Batch analysis; returns summary DataFrame</td></tr>
+  <tr><td><code>compare_bursts(paths, model, ...)</code></td><td><code>wn.radiojove</code></td><td>Multi-burst comparison via <code>wn.compare()</code></td></tr>
+  <tr><td><code>compute_msd(x)</code></td><td><code>wn</code></td><td>Empirical MSD (lags 1 to N/2)</td></tr>
+  <tr><td><code>fit_msd(lags, msd, model)</code></td><td><code>wn</code></td><td>Fit any SWNA model; returns FitResult</td></tr>
+  <tr><td><code>detrend(values, method)</code></td><td><code>wn</code></td><td>Remove linear/polynomial/mean trend</td></tr>
+  <tr><td><code>list_models()</code></td><td><code>wn</code></td><td>Print all 16 SWNA models and status</td></tr>
+  <tr><td><code>print_comparison(cr)</code></td><td><code>wn</code></td><td>ASCII comparison table</td></tr>
+  <tr><td><code>publish_comparison(cr)</code></td><td><code>wn</code></td><td>Publication-quality &mu; bar chart</td></tr>
+</table>
+
+<hr>
+<p style="font-size:9pt; color:#888; text-align:center;">
+  whitenoise &middot; RadioJOVE SWNA Guide &middot;
+  Framework: Bernido C C, Carpio-Bernido M V (2015). <em>Methods and Applications of White Noise Analysis in Interdisciplinary Sciences.</em> World Scientific.
+</p>
+
+</body>
+</html>

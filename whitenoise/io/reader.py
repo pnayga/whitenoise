@@ -30,6 +30,11 @@ _KNOWN_INDEX_NAMES: set[str] = {
     'samples', 'observation', 'observations', 'date', 'datetime',
     'timestamp', 'epoch', 'frame', 'lag', 'year', 'month', 'day',
     'hour', 'minute', 'second', 'yr', 'mo', 'hr', 'min', 'sec',
+    # Compound time names common in instrument-specific exports
+    'time_seconds', 'time_s', 'time_sec', 'time_ms', 'time_min',
+    'time_hr', 'time_hours', 'time_minutes', 'time_days', 'time_yr',
+    't_seconds', 't_s', 't_ms', 'elapsed', 'elapsed_s', 'elapsed_seconds',
+    'x', 'n',
 }
 
 # Units that physically imply non-negative values, used to warn if negatives appear (V3 check).

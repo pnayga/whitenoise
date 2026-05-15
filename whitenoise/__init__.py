@@ -14,6 +14,7 @@ from .viz.explore import plot_series, plot_msd_empirical, plot_msd, plot_pdf, pl
 from .viz.publish import publish_msd, publish_pdf, publish_comparison
 
 from . import genomics
+from . import radiojove
 
 __version__ = '0.1.0'
 __all__ = [
