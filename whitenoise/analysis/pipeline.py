@@ -64,8 +64,8 @@ def _regime(fit: FitResult | None) -> str:
             return 'superdiffusive'
 
     elif 'a' in params:
-        # DNA model — saturating MSD, not a power-law diffusion regime
-        return 'plateau (DNA)'
+        # exp_plateau model — purely exponential memory, saturating MSD (restricted diffusion)
+        return 'plateau'
 
     return 'unknown'
 
@@ -157,8 +157,18 @@ class AnalysisResult:
                 se = self.fit.std_errors.get(pname, float('nan'))
                 sym = _sym(pname)
                 print(f'   {sym:<6} = {pval:.4f}  \u00b1  {se:.4f}')
-            print(f' R\u00b2        = {self.fit.r_squared:.4f}')
-            print(f' Regime    : {self.regime}')
+
+            def _r2s(v: float) -> str:
+                return f'{v:.4f}' if v == v else 'failed'  # nan check
+
+            mode_lbl = 'N\u00b7MSD' if getattr(self.fit, 'fit_mode', 'scaled') == 'scaled' else 'pure MSD'
+            r2_pure   = getattr(self.fit, 'r_squared_pure',   float('nan'))
+            r2_scaled = getattr(self.fit, 'r_squared_scaled', float('nan'))
+            pure_tag   = ' \u2190 selected' if self.fit.fit_mode == 'pure'   else ''
+            scaled_tag = ' \u2190 selected' if self.fit.fit_mode == 'scaled' else ''
+            print(f' R\u00b2 (pure MSD)  = {_r2s(r2_pure)}{pure_tag}')
+            print(f' R\u00b2 (N\u00b7MSD)     = {_r2s(r2_scaled)}{scaled_tag}')
+            print(f' Regime         : {self.regime}')
 
         print(SEP_SINGLE)
         t_label = self.metadata.get('x_label', 'x')

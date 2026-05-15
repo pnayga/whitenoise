@@ -155,11 +155,18 @@ def analyze_burst(
 
     if verbose and result is not None and result.fit is not None:
         mu = result.fit.params.get('mu', float('nan'))
-        r2 = result.fit.r_squared
         lo, hi = result.fit.confidence_intervals.get('mu', (float('nan'), float('nan')))
+        r2_pure   = getattr(result.fit, 'r_squared_pure',   float('nan'))
+        r2_scaled = getattr(result.fit, 'r_squared_scaled', float('nan'))
+        fit_mode  = getattr(result.fit, 'fit_mode', 'scaled')
+        mode_lbl  = 'N·MSD' if fit_mode == 'scaled' else 'pure MSD'
+
+        def _r2s(v): return f'{v:.4f}' if v == v else 'failed'
+        mu_str = f'mu={mu:.4f} (95% CI: {lo:.4f}-{hi:.4f})' if mu == mu else ''
         print(
-            f'  mu = {mu:.4f}  (95% CI: {lo:.4f}-{hi:.4f})'
-            f'  |  R2 = {r2:.4f}  |  {result.regime.upper()}'
+            f'  {mu_str}'
+            f'  |  R2(pure)={_r2s(r2_pure)}  R2(N·MSD)={_r2s(r2_scaled)}'
+            f'  [{mode_lbl} selected]  |  {result.regime.upper()}'
         )
 
     fig = plot_burst_msd(
@@ -468,16 +475,23 @@ def _build_row(result, stem: str, model: str, path: str) -> 'dict | None':
     mu = result.fit.params.get('mu', float('nan'))
     lo, hi = result.fit.confidence_intervals.get('mu', (float('nan'), float('nan')))
 
+    r2_pure   = getattr(result.fit, 'r_squared_pure',   float('nan'))
+    r2_scaled = getattr(result.fit, 'r_squared_scaled', float('nan'))
+    fit_mode  = getattr(result.fit, 'fit_mode', 'scaled')
+
     row: dict = {
-        'dataset':    stem,
-        'filename':   os.path.basename(path),
-        'model':      model,
-        'n_points':   len(result.values),
-        'mu':         round(mu, 4),
-        'mu_ci_low':  round(lo, 4),
-        'mu_ci_high': round(hi, 4),
-        'r_squared':  round(result.fit.r_squared, 4),
-        'regime':     result.regime,
+        'dataset':          stem,
+        'filename':         os.path.basename(path),
+        'model':            model,
+        'n_points':         len(result.values),
+        'mu':               round(mu, 4),
+        'mu_ci_low':        round(lo, 4),
+        'mu_ci_high':       round(hi, 4),
+        'r_squared':        round(result.fit.r_squared, 4),
+        'r_squared_pure':   round(r2_pure,   4) if math.isfinite(r2_pure)   else float('nan'),
+        'r_squared_scaled': round(r2_scaled, 4) if math.isfinite(r2_scaled) else float('nan'),
+        'fit_mode':         fit_mode,
+        'regime':           result.regime,
     }
 
     # Second parameter varies by model

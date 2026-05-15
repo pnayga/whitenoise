@@ -181,7 +181,7 @@ def compute_pair_msd(
 def fit_pair(
     source,
     msd: np.ndarray | None = None,
-    model: str = 'dna',
+    model: str = 'exp_plateau',
     p0: list | None = None,
     bounds: tuple | None = None,
     max_lag_fraction: float = 1.0,
@@ -201,7 +201,8 @@ def fit_pair(
         MSD array.  Only used when *source* is a lags ``np.ndarray``.
     model : str, default ``'dna'``
         SWNA model name.  Run ``wn.list_models()`` to see all options.
-        Use ``'dna'`` for same-type diagonal pairs (A→A, C→C, G→G, T→T).
+        Use ``'exp_plateau'`` for same-type diagonal pairs (A→A, C→C, G→G, T→T).
+        ``'dna'`` is accepted as a backward-compat alias.
         For off-diagonal cross-type pairs, try ``'exponential'`` or ``'cosine'``.
     p0 : list, optional
         Initial parameter guess (physical params only; N is appended internally).
@@ -321,7 +322,7 @@ def plot_pair(
 
         # Build annotation text
         p = fit.params
-        if fit.model == 'dna':
+        if fit.model in ('exp_plateau', 'dna'):
             ann = (
                 f"a = {p.get('a', float('nan')):.4f}\n"
                 f"b = {p.get('b', float('nan')):.6f}\n"
@@ -367,7 +368,7 @@ def analyze_pair(
     source,
     from_nuc: str,
     to_nuc: str,
-    model: str = 'dna',
+    model: str = 'exp_plateau',
     max_lag: int = 1500,
     save_dir: str | None = None,
     p0: list | None = None,
@@ -416,7 +417,7 @@ def analyze_pair(
     --------
     >>> result = wn.genomics.analyze_pair(
     ...     'chromosome1.fasta', 'A', 'A',
-    ...     model='dna', max_lag=1500, save_dir='results/',
+    ...     model='exp_plateau', max_lag=1500, save_dir='results/',
     ... )
     >>> print(result['fit'].r_squared)
     >>> result['figure'].show()
@@ -469,7 +470,7 @@ def analyze_pair(
 
 def refit_pair(
     msd_csv_path: str,
-    model: str = 'dna',
+    model: str = 'exp_plateau',
     p0: list | None = None,
     bounds: tuple | None = None,
     max_lag_fraction: float = 1.0,
@@ -521,7 +522,7 @@ def refit_pair(
     >>> # Retry with better initial guess
     >>> fit, fig = wn.genomics.refit_pair(
     ...     'results/A_A_msd.csv',
-    ...     model='dna',
+    ...     model='exp_plateau',
     ...     p0=[27.0, 0.025, 2.0],
     ...     save_path='results/A_A_refit.png',
     ... )

@@ -23,7 +23,8 @@ _DF_COLS = [
     'dataset_name', 'model',
     'mu', 'mu_ci',
     'nu_or_beta', 'nu_or_beta_ci',
-    'N', 'r_squared', 'regime',
+    'N', 'r_squared', 'r_squared_pure', 'r_squared_scaled', 'fit_mode',
+    'regime',
 ]
 
 _NAN = float('nan')
@@ -40,6 +41,9 @@ def _nan_row(dataset_name: str, model: str) -> dict:
         'nu_or_beta_ci':   'N/A',
         'N':               _NAN,
         'r_squared':       _NAN,
+        'r_squared_pure':  _NAN,
+        'r_squared_scaled': _NAN,
+        'fit_mode':        'N/A',
         'regime':          'N/A',
     }
 
@@ -90,8 +94,11 @@ def _result_row(ar: AnalysisResult) -> dict:
         row['nu_or_beta']    = _NAN
         row['nu_or_beta_ci'] = 'N/A'
 
-    row['N']         = params.get('N', _NAN)
-    row['r_squared'] = ar.fit.r_squared
+    row['N']               = params.get('N', _NAN)
+    row['r_squared']       = ar.fit.r_squared
+    row['r_squared_pure']  = getattr(ar.fit, 'r_squared_pure',   _NAN)
+    row['r_squared_scaled'] = getattr(ar.fit, 'r_squared_scaled', _NAN)
+    row['fit_mode']        = getattr(ar.fit, 'fit_mode',          'scaled')
 
     return row
 

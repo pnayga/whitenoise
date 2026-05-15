@@ -2,14 +2,14 @@
 core/models.py — Theoretical MSD and PDF formulas for all SWNA models.
 
 Implemented models (10): fbm, sin_half, cos_half, exponential, sine, cosine,
-                          inc_gamma, bessel_j0_cos, bessel_jmu_nu, dna
+                          inc_gamma, bessel_j0_cos, bessel_jmu_nu, exp_plateau
 Stubs (9):               exp_whittaker, bessel_K, hypergeom_F1, bessel_I,
                           hypergeom_3F2, csc_power, cot_power, bessel_pair,
                           bessel_pair2
 
 References:
   Bernido non-Markovian book (draft), Table 2.1
-  Violanda et al. (2019), Phys. Scr. 94, 125006  [dna model]
+  Violanda et al. (2019), Phys. Scr. 94, 125006  [exp_plateau model; 'dna' is a backward-compat alias]
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def _pdf_from_sigma2(dx, sigma2: float) -> np.ndarray:
 
 _NOT_IMPL_MSG = (
     "Model '{name}' is not yet implemented.\n"
-    "Implemented: cosine, exponential, sine, fbm, dna, "
+    "Implemented: cosine, exponential, sine, fbm, exp_plateau, "
     "sin_half, cos_half, inc_gamma, bessel_j0_cos, bessel_jmu_nu\n"
     "Run wn.list_models() to see all 18 models and their status."
 )
@@ -365,42 +365,50 @@ def pdf_fbm(dx, T: float, H: float) -> np.ndarray:
     return _pdf_from_sigma2(dx, sigma2)
 
 
-# ── Published DNA model (Violanda et al. 2019) ───────────────────────────────
-# Published applications in Bernido group:
-#   Violanda, Bernido & Carpio-Bernido (2019) — nucleotide separation distances
-#   in Synechococcus elongatus PCC 7942 bacterial genome.
-#   Phys. Scr. 94, 125006.  DOI: 10.1088/1402-4896/ab2920
-#   Results: a ≈ 5.21, b ≈ 0.0024, c ≈ 3.81 (nucleotide A in that organism).
+# ── exp_plateau model ─────────────────────────────────────────────────────────
+# Derived from a SWNA path integral with a PURELY EXPONENTIAL memory kernel:
+#   x(L) = x₀ + ∫₀ᴸ exp(-b(L-s)/2) · ω(s) ds
+# The kernel is strictly exponential (no power-law component), which makes this
+# model more purely exponential than the 'exponential' model (Table 2.1 row 4),
+# whose kernel is power-law × exponential.
+#
+# The resulting MSD is a shifted-exponential (plateau) curve:
+#   MSD(L) = a - c · exp(-b · L)
+# This is domain-agnostic: it applies to any system with exponential-memory
+# restricted/confined diffusion (ecology, radio bursts, finance, etc.).
+#
+# FIRST APPLIED TO DNA by Violanda, Bernido & Carpio-Bernido (2019):
+#   "White noise functional integral for exponentially decaying memory:
+#    nucleotide distribution in bacterial genomes", Phys. Scr. 94, 125006.
+#   DOI: 10.1088/1402-4896/ab2920
+#   Validated parameters for nucleotide A in Synechococcus elongatus PCC 7942:
+#   a ≈ 5.21, b ≈ 0.0024, c ≈ 3.81
+# NOTE: 'dna' is kept as a backward-compat alias (see end of file).
 
-def msd_dna(L, a: float, b: float, c: float):
+def msd_exp_plateau(L, a: float, b: float, c: float):
     """
-    MSD model for DNA nucleotide separation distances.
+    MSD for the exp_plateau model: purely exponential memory, plateau-shaped MSD.
 
-    Derived from the stochastic integral with exponentially decaying memory::
+    Derived from the SWNA path integral with exponentially decaying memory::
 
         x(L) = x₀ + ∫₀ᴸ exp(-b(L-s)/2) · ω(s) ds
 
-    The resulting MSD takes the shifted exponential (plateau) form::
+    Resulting MSD (shifted-exponential / plateau form)::
 
         MSD(L) = a - c · exp(-b · L)
 
-    The curve rises from ``(a - c)`` at ``L = 0`` and asymptotes to the
-    plateau ``a`` as ``L → ∞``, characteristic of restricted diffusion.
+    Rises from ``(a - c)`` at ``L = 0`` to plateau ``a`` as ``L → ∞``.
 
     Parameters
     ----------
     L : float or np.ndarray
-        Occurrence number (analogous to time) — the number of intervening
-        bases between successive occurrences of a nucleotide.
+        Lag variable (time, occurrence number, distance, etc.).
     a : float
-        Plateau height.  MSD approaches ``a`` as L → ∞.  Must satisfy
-        ``a > c > 0``.
+        Plateau height (MSD → a as L → ∞).  Must satisfy ``a > c > 0``.
     b : float
-        Exponential decay rate (memory decay parameter, analogous to β
-        in other models).
+        Exponential memory decay rate.
     c : float
-        Amplitude of the exponential term.  Controls the rate of rise to
-        the plateau.  Must satisfy ``c < a``.
+        Exponential amplitude (controls rise speed).  Must satisfy ``c < a``.
 
     Returns
     -------
@@ -409,30 +417,13 @@ def msd_dna(L, a: float, b: float, c: float):
 
     Notes
     -----
-    Physical interpretation:
-
-    * Small L:  MSD rises from ``(a - c)`` toward plateau ``a``.
-    * Large L:  MSD ≈ ``a``  (restricted diffusion plateau).
-    * ``b`` controls the rate of rise; larger ``b`` → faster saturation.
-
-    Validated parameters from Violanda et al. (2019),
-    nucleotide A in *Synechococcus elongatus* PCC 7942:
-
-        a ≈ 5.21,  b ≈ 0.0024,  c ≈ 3.81
-
-    (Values vary by nucleotide identity and genome species.)
-
-    References
-    ----------
-    Violanda, Bernido & Carpio-Bernido (2019),
-    "White noise functional integral for exponentially decaying memory:
-    nucleotide distribution in bacterial genomes",
-    Physica Scripta 94, 125006.
+    First applied to DNA by Violanda et al. (2019) — see module header.
+    Domain-agnostic: use for any system with confined/restricted dynamics.
 
     Examples
     --------
     >>> L = np.arange(1, 500)
-    >>> msd = msd_dna(L, a=5.21, b=0.0024, c=3.81)
+    >>> msd = msd_exp_plateau(L, a=5.21, b=0.0024, c=3.81)
     """
     # Step 1: Normalize input — accept scalar, list, or array; remember if scalar
     L_arr, scalar = _to_array(L)
@@ -449,9 +440,9 @@ def msd_dna(L, a: float, b: float, c: float):
     return _finalize_msd(val, scalar)
 
 
-def pdf_dna(dx, L: float, a: float, b: float, c: float) -> np.ndarray:
+def pdf_exp_plateau(dx, L: float, a: float, b: float, c: float) -> np.ndarray:
     """
-    PDF for DNA nucleotide separation distances.
+    PDF for the exp_plateau model.
 
     Gaussian with variance equal to the plateau MSD::
 
@@ -461,23 +452,20 @@ def pdf_dna(dx, L: float, a: float, b: float, c: float) -> np.ndarray:
     Parameters
     ----------
     dx : float or np.ndarray
-        Displacement values.
     L : float
-        Occurrence number at which the PDF is evaluated (scalar).
     a, b, c : float
-        Same parameters as :func:`msd_dna`.
 
     Returns
     -------
     np.ndarray
-        PDF values.  All-nan if σ² is non-positive or non-finite.
-
-    References
-    ----------
-    Violanda et al. (2019), Phys. Scr. 94, 125006.
     """
-    sigma2 = msd_dna(float(L), a, b, c)
+    sigma2 = msd_exp_plateau(float(L), a, b, c)
     return _pdf_from_sigma2(dx, sigma2)
+
+
+# Backward-compat aliases — 'dna' name still works in all call sites
+msd_dna = msd_exp_plateau
+pdf_dna = pdf_exp_plateau
 
 
 # ── Extended model stubs ──────────────────────────────────────────────────────
@@ -1088,22 +1076,24 @@ MODELS: dict[str, dict] = {
         'description': 'MSD = J_{mu+nu}(T)/mu  (Eq. 11.3.40)',
         'reference':   'Table 2.1 row 18, Eq. 11.3.40',
     },
-    # dna — used in:
-    #   Violanda, Bernido & Carpio-Bernido (2019): nucleotide separation
-    #   distances in bacterial genomes (Synechococcus elongatus PCC 7942);
-    #   plateau-shaped MSD (restricted diffusion), not a Table 2.1 power-law model.
-    'dna': {
-        'msd':         msd_dna,
-        'pdf':         pdf_dna,
+    # exp_plateau — purely exponential memory kernel, plateau MSD shape.
+    # Domain-agnostic: applies to any confined/restricted diffusion system.
+    # First applied to DNA by Violanda et al. (2019) — see module header.
+    # 'dna' remains a backward-compat alias (added after this dict).
+    'exp_plateau': {
+        'msd':         msd_exp_plateau,
+        'pdf':         pdf_exp_plateau,
         'params':      ['a', 'b', 'c'],
         'n_params':    3,
         'row':         None,
         'status':      'available',
-        'description': 'Exponentially decaying memory — DNA nucleotide '
-                       'separation distances (plateau MSD shape)',
+        'description': 'Purely exponential memory, plateau MSD: a - c·exp(-b·L)',
         'reference':   'Violanda et al. (2019), Phys. Scr. 94, 125006',
     },
 }
+
+# 'dna' is a backward-compat alias — all existing code using model='dna' still works
+MODELS['dna'] = MODELS['exp_plateau']
 
 _AVAILABLE_NAMES = [n for n, v in MODELS.items() if v['status'] == 'available']
 _ALL_NAMES = list(MODELS.keys())
@@ -1148,7 +1138,7 @@ def get_model(name: str) -> dict:
     if info['status'] == 'not_implemented':
         raise NotImplementedError(
             f"Model '{name}' (row {info['row']}) is not yet implemented.\n"
-            f"Implemented: cosine, exponential, sine, fbm, dna, "
+            f"Implemented: cosine, exponential, sine, fbm, exp_plateau, "
             f"sin_half, cos_half, inc_gamma, bessel_j0_cos, bessel_jmu_nu\n"
             f"Run wn.list_models() to see all 18 models."
         )

@@ -1,14 +1,19 @@
 """
 core/fitting.py — Parameter extraction with 95% confidence intervals.
 
-Fits  N · msd_theory(T, *params)  to empirical MSD using the
-Levenberg-Marquardt algorithm (scipy.optimize.curve_fit).
+Two fitting modes are always tried and compared:
+  (1) Pure fit:   msd_theory(T, *params)        — N fixed at 1
+  (2) Scaled fit: N · msd_theory(T, *params)    — N is a free parameter
+
+The mode with the higher R² is selected as the winner. Both R² values are
+always stored in FitResult and reported in summaries so the user can see
+which formulation fits better for their data.
 """
 
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from scipy.optimize import curve_fit
 
 from .models import MODELS
@@ -17,9 +22,9 @@ from .models import MODELS
 # ── Greek symbol display ───────────────────────────────────────────────────────
 
 _GREEK: dict[str, str] = {
-    'mu':   '\u03bc',   # μ
-    'nu':   '\u03bd',   # ν
-    'beta': '\u03b2',   # β
+    'mu':   'μ',   # μ
+    'nu':   'ν',   # ν
+    'beta': 'β',   # β
     'H':    'H',
     'N':    'N',
     'a':    'a',
@@ -51,7 +56,7 @@ DEFAULTS: dict[str, dict] = {
         'p0':     [0.6],
         'bounds': ([0.01], [2.0]),
     },
-    'dna': {
+    'exp_plateau': {
         'p0':     [5.0, 0.01, 3.0],
         'bounds': ([0.01, 1e-9, 0.01], [1000.0, 100.0, 1000.0]),
     },
@@ -61,12 +66,13 @@ DEFAULTS: dict[str, dict] = {
         'bounds': ([0.01, 1e-9], [10.0, 100.0]),
     },
     # bessel_jmu_nu: mu = memory param (denominator), nu = secondary order
-    # Constraint: mu + nu > -1 for J_{mu+nu} to be regular
     'bessel_jmu_nu': {
         'p0':     [1.0, 0.5],
         'bounds': ([0.01, -0.99], [10.0, 10.0]),
     },
 }
+# Backward-compat alias
+DEFAULTS['dna'] = DEFAULTS['exp_plateau']
 
 
 # ── FitResult dataclass ────────────────────────────────────────────────────────
@@ -79,20 +85,28 @@ class FitResult:
     Attributes
     ----------
     params : dict
-        Fitted parameter values, e.g. ``{'mu': 1.15, 'beta': 0.1, 'N': 2.1}``.
+        Fitted parameter values from the winning mode.
+        Includes 'N' when fit_mode == 'scaled'.
     std_errors : dict
-        Standard errors ``sqrt(diag(pcov))``, same keys as *params*.
+        Standard errors, same keys as *params*.
     confidence_intervals : dict
-        95 % confidence intervals ``(param - 1.96*se, param + 1.96*se)``,
-        same keys as *params*.
+        95% confidence intervals, same keys as *params*.
     r_squared : float
-        Coefficient of determination R\u00b2.
+        R² of the winning fit (whichever of pure/scaled was higher).
+    r_squared_pure : float
+        R² when fitting msd_theory(T, *params) directly (N = 1 fixed).
+        nan if that fit failed.
+    r_squared_scaled : float
+        R² when fitting N · msd_theory(T, *params) (N free).
+        nan if that fit failed.
+    fit_mode : str
+        ``'pure'`` or ``'scaled'`` — which mode won (higher R²).
     model : str
         Name of the fitted model.
     lags_used : np.ndarray
         Lag values supplied to ``fit_msd`` after applying *max_lag_fraction*.
     msd_fitted : np.ndarray
-        Theoretical curve ``N \u00b7 msd_theory(lags_used, *physical_params)``.
+        Theoretical curve from the winning fit evaluated on *lags_used*.
     """
 
     params:               dict
@@ -102,51 +116,146 @@ class FitResult:
     model:                str
     lags_used:            np.ndarray
     msd_fitted:           np.ndarray
+    r_squared_pure:       float = float('nan')
+    r_squared_scaled:     float = float('nan')
+    fit_mode:             str   = 'scaled'
 
     def summary(self) -> str:
         """
         Return a formatted box-drawing string showing fit results.
 
-        Example for the cosine model::
-
-            \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
-            \u2502  Fit Summary                            \u2502
-            \u2502  Model  : cosine          R\u00b2 = 0.9823  \u2502
-            \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-            \u2502  \u03bc    = 1.2341 \u00b1 0.0082                \u2502
-            \u2502         95% CI: (1.218, 1.250)          \u2502
-            \u2502  \u03bd    = 0.0082 \u00b1 0.0003                 \u2502
-            \u2502         95% CI: (0.008, 0.009)          \u2502
-            \u2502  N    = 2.4312 \u00b1 0.0441                 \u2502
-            \u2502         95% CI: (2.345, 2.518)          \u2502
-            \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
-
-        Returns
-        -------
-        str
+        Includes R² for both fitting modes so the user can compare.
         """
-        W = 43  # inner width (between box walls)
+        W = 45
 
         def _line(text: str) -> str:
-            return '\u2502  ' + text.ljust(W - 2) + '\u2502'
+            return '│  ' + text.ljust(W - 2) + '│'
 
-        header = f'Model  : {self.model:<14} R\u00b2 = {self.r_squared:.4f}'
+        mode_label = 'N·MSD' if self.fit_mode == 'scaled' else 'pure MSD'
+        header = f'Model  : {self.model:<12}  [{mode_label} selected]'
         lines = [
-            '\u250c' + '\u2500' * W + '\u2510',
+            '┌' + '─' * W + '┐',
             _line('Fit Summary'),
             _line(header),
-            '\u251c' + '\u2500' * W + '\u2524',
+            '├' + '─' * W + '┤',
         ]
 
         for pname, pval in self.params.items():
             se       = self.std_errors.get(pname, float('nan'))
             lo, hi   = self.confidence_intervals.get(pname, (float('nan'), float('nan')))
             sym      = _sym(pname)
-            lines.append(_line(f'  {sym:<4} = {pval:.4f} \u00b1 {se:.4f}'))
+            lines.append(_line(f'  {sym:<4} = {pval:.4f} ± {se:.4f}'))
             lines.append(_line(f'         95% CI: ({lo:.3f}, {hi:.3f})'))
 
-        lines.append('\u2514' + '\u2500' * W + '\u2518')
+        lines.append('├' + '─' * W + '┤')
+
+        def _r2_str(v: float) -> str:
+            return f'{v:.4f}' if np.isfinite(v) else 'failed'
+
+        pure_tag   = ' ← selected' if self.fit_mode == 'pure'   else ''
+        scaled_tag = ' ← selected' if self.fit_mode == 'scaled' else ''
+        lines.append(_line(f'  R² (pure MSD):   {_r2_str(self.r_squared_pure)}{pure_tag}'))
+        lines.append(_line(f'  R² (N·MSD):      {_r2_str(self.r_squared_scaled)}{scaled_tag}'))
+        lines.append('└' + '─' * W + '┘')
         return '\n'.join(lines)
+
+
+# ── Internal fit helpers ───────────────────────────────────────────────────────
+
+def _r2(msd_fit: np.ndarray, fitted: np.ndarray) -> float:
+    """Compute R² between empirical and fitted arrays (finite values only)."""
+    mask = np.isfinite(msd_fit) & np.isfinite(fitted) & (fitted < 1e29)
+    if not np.any(mask):
+        return float('nan')
+    y    = msd_fit[mask]
+    yhat = fitted[mask]
+    ss_res = float(np.sum((y - yhat) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    return 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+
+def _fit_pure(
+    msd_fn,
+    lags_fit: np.ndarray,
+    msd_fit:  np.ndarray,
+    param_names: list[str],
+    p0:   list,
+    bounds: tuple,
+) -> 'tuple | None':
+    """
+    Fit msd_theory(T, *params) directly — N = 1 fixed.
+
+    Returns (popt, perr, r2) where popt/perr are indexed to param_names.
+    Returns None if fitting fails.
+    """
+    if len(param_names) == 0:
+        # No-param model: evaluate directly, no optimization
+        try:
+            fitted = np.asarray(msd_fn(lags_fit), dtype=float)
+            fitted = np.where(np.isfinite(fitted) & (fitted > 0), fitted, np.nan)
+        except Exception:
+            return None
+        return np.array([]), np.array([]), _r2(msd_fit, fitted)
+
+    def wrapper(T, *args):
+        out = msd_fn(T, *args)
+        if np.ndim(out) == 0:
+            v = float(out)
+            return 1e30 if (not np.isfinite(v) or v <= 0) else v
+        out_arr = np.asarray(out, dtype=float)
+        return np.where(np.isfinite(out_arr) & (out_arr > 0), out_arr, 1e30)
+
+    try:
+        popt, pcov = curve_fit(
+            wrapper, lags_fit, msd_fit,
+            p0=p0, bounds=bounds, maxfev=10_000,
+        )
+    except Exception:
+        return None
+
+    perr   = np.sqrt(np.diag(np.clip(pcov, 0.0, None)))
+    fitted = np.asarray(wrapper(lags_fit, *popt), dtype=float)
+    return popt, perr, _r2(msd_fit, fitted)
+
+
+def _fit_scaled(
+    msd_fn,
+    lags_fit: np.ndarray,
+    msd_fit:  np.ndarray,
+    p0:   list,
+    bounds: tuple,
+) -> 'tuple | None':
+    """
+    Fit N · msd_theory(T, *params) — N is a free scaling parameter.
+
+    Returns (popt_full, perr_full, r2) where popt_full is indexed to
+    param_names + ['N'].
+    Returns None if fitting fails.
+    """
+    p0_full     = list(p0) + [1.0]
+    bounds_full = (list(bounds[0]) + [0.0], list(bounds[1]) + [np.inf])
+
+    def wrapper(T, *args):
+        phys = args[:-1]
+        N    = args[-1]
+        out  = msd_fn(T, *phys)
+        if np.ndim(out) == 0:
+            v = float(out)
+            return 1e30 if (not np.isfinite(v) or v <= 0) else N * v
+        out_arr = np.asarray(out, dtype=float) * N
+        return np.where(np.isfinite(out_arr), out_arr, 1e30)
+
+    try:
+        popt, pcov = curve_fit(
+            wrapper, lags_fit, msd_fit,
+            p0=p0_full, bounds=bounds_full, maxfev=10_000,
+        )
+    except Exception:
+        return None
+
+    perr   = np.sqrt(np.diag(np.clip(pcov, 0.0, None)))
+    fitted = np.asarray(wrapper(lags_fit, *popt), dtype=float)
+    return popt, perr, _r2(msd_fit, fitted)
 
 
 # ── fit_msd ────────────────────────────────────────────────────────────────────
@@ -160,65 +269,56 @@ def fit_msd(
     max_lag_fraction: float = 1.0,
 ) -> 'FitResult | None':
     """
-    Fit ``N \u00b7 msd_theory(T, *params)`` to an empirical MSD curve.
+    Fit MSD theory to an empirical MSD curve using dual-mode comparison.
 
-    The fit function is::
+    Both fitting modes are always attempted:
 
-        f(T) = N \u00b7 msd_model(T, *physical_params)
+    * **Pure fit** — ``msd_theory(T, *params)`` with N = 1 (fixed).
+    * **Scaled fit** — ``N · msd_theory(T, *params)`` with N as a free parameter.
 
-    where *N* is a dimensionless normalization scalar always appended to
-    *p0* and *bounds* internally.
+    The mode with the higher R² is selected. Both R² values are stored in
+    :class:`FitResult` and shown in summaries for user comparison.
 
     Parameters
     ----------
     lags : np.ndarray
-        Lag values (e.g. from :func:`~whitenoise.core.msd.compute_msd`).
+        Lag values from :func:`~whitenoise.core.msd.compute_msd`.
     msd_empirical : np.ndarray
         Empirical MSD values, same shape as *lags*.
     model : str, default ``'cosine'``
         Model name.  Must be a registered, available model.
     p0 : list, optional
-        Initial guess for physical parameters only; ``N = 1.0`` appended
-        internally.  Defaults to ``DEFAULTS[model]['p0']``.
+        Initial guess for physical parameters only.
+        Defaults to ``DEFAULTS[model]['p0']``.
     bounds : tuple, optional
-        ``(lower, upper)`` for physical parameters only; ``(0, inf)`` for N
-        appended internally.  Defaults to ``DEFAULTS[model]['bounds']``.
+        ``(lower, upper)`` for physical parameters only.
+        Defaults to ``DEFAULTS[model]['bounds']``.
     max_lag_fraction : float, default 1.0
-        Fraction of the lag range to use.
-        E.g. ``0.5`` \u2192 only the first 50\u202f% of lags.
+        Fraction of the lag range to use for fitting.
 
     Returns
     -------
     FitResult or None
-        ``None`` if fitting fails or if *msd_empirical* is all-zero / all-nan.
-
-    Raises
-    ------
-    ValueError
-        If *model* is not in the MODELS registry or is not yet available.
+        ``None`` if both fits fail.
 
     Notes
     -----
-    * Prints ``\u2713`` for R\u00b2 \u2265 0.8, ``\u26a0`` for moderate (0.5\u20130.8) or low (< 0.5) R\u00b2,
-      ``\u2717`` on failure.
-    * Never raises for fitting failures \u2014 returns ``None`` instead.
-
-    Examples
-    --------
-    >>> lags, msd = wn.compute_msd(values)
-    >>> result = wn.fit_msd(lags, msd, model='cosine')
-    >>> print(result.summary())
+    * ``r_squared_pure`` = R² of the pure fit (no N scaling).
+    * ``r_squared_scaled`` = R² of the N·MSD fit.
+    * ``r_squared`` = best of the two (the winner).
+    * ``fit_mode`` = ``'pure'`` or ``'scaled'`` — which won.
+    * N is included in ``params`` only when ``fit_mode == 'scaled'``.
     """
     # ── Validate model ─────────────────────────────────────────────────────────
     if model not in MODELS:
         raise ValueError(
-            f"\u2717 Unknown model '{model}'.\n"
+            f"✗ Unknown model '{model}'.\n"
             f"Run wn.list_models() to see all available models."
         )
     info = MODELS[model]
     if info['status'] != 'available':
         raise ValueError(
-            f"\u2717 Model '{model}' is not yet implemented.\n"
+            f"✗ Model '{model}' is not yet implemented.\n"
             f"Run wn.list_models() to see available models."
         )
 
@@ -233,66 +333,52 @@ def fit_msd(
     lags_use = lags_arr[:n_use]
     msd_use  = msd_arr[:n_use]
 
-    # Guard: all-zero / all-nan / near-zero (e.g. detrended constant series
-    # leaves floating-point residuals ~1e-30, giving MSD ~1e-60 — unphysical).
     finite_vals = msd_use[np.isfinite(msd_use)]
     max_abs = float(np.max(np.abs(finite_vals))) if len(finite_vals) > 0 else 0.0
     if max_abs < 1e-20 or np.all(np.isnan(msd_use)):
-        print(f"\u2717 Fitting failed for model '{model}': MSD is all-zero or all-nan.")
+        print(f"✗ Fitting failed for model '{model}': MSD is all-zero or all-nan.")
         return None
 
-    # Remove any NaN / inf pairs
     valid    = np.isfinite(msd_use) & np.isfinite(lags_use)
     if not np.any(valid):
-        print(f"\u2717 Fitting failed for model '{model}': no finite MSD values.")
+        print(f"✗ Fitting failed for model '{model}': no finite MSD values.")
         return None
     lags_fit = lags_use[valid]
     msd_fit  = msd_use[valid]
 
     # ── Defaults ───────────────────────────────────────────────────────────────
+    # Resolve model key for DEFAULTS (handles 'dna' alias)
+    defaults_key = model if model in DEFAULTS else 'exp_plateau' if model == 'dna' else model
     if p0 is None:
-        p0 = list(DEFAULTS.get(model, {}).get('p0', [1.0] * len(param_names)))
+        p0 = list(DEFAULTS.get(defaults_key, {}).get('p0', [1.0] * len(param_names)))
     if bounds is None:
-        d  = DEFAULTS.get(model, {})
+        d  = DEFAULTS.get(defaults_key, {})
         lb = list(d.get('bounds', ([1e-9] * len(param_names), [1e9] * len(param_names)))[0])
         ub = list(d.get('bounds', ([1e-9] * len(param_names), [1e9] * len(param_names)))[1])
         bounds = (lb, ub)
 
-    # Append N (normalization scalar)
-    p0_full     = list(p0) + [1.0]
-    bounds_full = (list(bounds[0]) + [0.0], list(bounds[1]) + [np.inf])
+    # ── Dual fit ───────────────────────────────────────────────────────────────
+    res_pure   = _fit_pure(msd_fn, lags_fit, msd_fit, param_names, p0, bounds)
+    res_scaled = _fit_scaled(msd_fn, lags_fit, msd_fit, p0, bounds)
 
-    # ── Model wrapper (NaN-safe) ───────────────────────────────────────────────
-    def _wrapper(T, *args):
-        phys = args[:-1]
-        N    = args[-1]
-        out  = msd_fn(T, *phys)
-        if np.ndim(out) == 0:
-            v = float(out)
-            return 1e30 if (not np.isfinite(v) or v <= 0) else N * v
-        out_arr = np.asarray(out, dtype=float) * N
-        # Replace non-finite (NaN / inf) with large penalty so optimizer avoids them
-        return np.where(np.isfinite(out_arr), out_arr, 1e30)
+    r2_pure   = res_pure[2]   if res_pure   is not None else float('nan')
+    r2_scaled = res_scaled[2] if res_scaled is not None else float('nan')
 
-    # ── Fit ────────────────────────────────────────────────────────────────────
-    try:
-        popt, pcov = curve_fit(
-            _wrapper,
-            lags_fit,
-            msd_fit,
-            p0=p0_full,
-            bounds=bounds_full,
-            maxfev=10_000,
-        )
-    except Exception as exc:
-        print(f"\u2717 Fitting failed for model '{model}': {exc}")
+    if res_pure is None and res_scaled is None:
+        print(f"✗ Fitting failed for model '{model}'")
         return None
 
-    # ── Uncertainties ──────────────────────────────────────────────────────────
-    # Clip negative diagonal elements (numerical noise) before sqrt
-    perr      = np.sqrt(np.diag(np.clip(pcov, 0.0, None)))
-    all_names = param_names + ['N']
+    # Select winner: higher R² wins; scaled preferred on exact tie
+    if np.isnan(r2_pure) or (np.isfinite(r2_scaled) and r2_scaled >= r2_pure):
+        fit_mode  = 'scaled'
+        popt, perr, r2 = res_scaled
+        all_names = param_names + ['N']
+    else:
+        fit_mode  = 'pure'
+        popt, perr, r2 = res_pure
+        all_names = param_names
 
+    # ── Build param dicts ──────────────────────────────────────────────────────
     params_out = {n: float(popt[i]) for i, n in enumerate(all_names)}
     se_out     = {n: float(perr[i]) for i, n in enumerate(all_names)}
     ci_out     = {
@@ -300,29 +386,58 @@ def fit_msd(
         for i, n in enumerate(all_names)
     }
 
-    # ── R\u00b2 ─────────────────────────────────────────────────────────────────────
-    msd_fitted_arr = np.asarray(_wrapper(lags_fit, *popt), dtype=float)
-    ss_res = float(np.sum((msd_fit - msd_fitted_arr) ** 2))
-    ss_tot = float(np.sum((msd_fit - np.mean(msd_fit)) ** 2))
-    r2     = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+    # ── Evaluate winning curve on full lags_use window ─────────────────────────
+    if fit_mode == 'scaled':
+        def _final(T, *args):
+            phys = args[:-1]
+            N    = args[-1]
+            out  = msd_fn(T, *phys)
+            if np.ndim(out) == 0:
+                v = float(out)
+                return 1e30 if (not np.isfinite(v) or v <= 0) else N * v
+            out_arr = np.asarray(out, dtype=float) * N
+            return np.where(np.isfinite(out_arr), out_arr, 1e30)
+    else:
+        def _final(T, *args):
+            if len(args) == 0:
+                out = msd_fn(T)
+            else:
+                out = msd_fn(T, *args)
+            if np.ndim(out) == 0:
+                v = float(out)
+                return 1e30 if (not np.isfinite(v) or v <= 0) else v
+            out_arr = np.asarray(out, dtype=float)
+            return np.where(np.isfinite(out_arr) & (out_arr > 0), out_arr, 1e30)
+
+    msd_out = np.asarray(_final(lags_use, *popt), dtype=float)
 
     # ── Quality feedback ───────────────────────────────────────────────────────
-    alternatives = [n for n in MODELS if MODELS[n]['status'] == 'available' and n != model]
-    if r2 >= 0.8:
-        print(f"\u2713 Good fit (R\u00b2 = {r2:.4f})")
-    elif r2 >= 0.5:
-        print(f"\u26a0 Moderate fit (R\u00b2 = {r2:.4f}). Results may be less reliable.")
-    else:
-        print(f"\u26a0 Low R\u00b2 ({r2:.4f}). Consider trying other models: {alternatives}")
+    def _r2s(v: float) -> str:
+        return f'{v:.4f}' if np.isfinite(v) else 'failed'
 
-    # Evaluate fitted curve on the full lags_use window (may contain NaN)
-    msd_out = np.asarray(_wrapper(lags_use, *popt), dtype=float)
+    mode_label  = 'N·MSD' if fit_mode == 'scaled' else 'pure MSD'
+    r2_line     = (
+        f"R²(pure)={_r2s(r2_pure)}  "
+        f"R²(N·MSD)={_r2s(r2_scaled)}  "
+        f"→ {mode_label} selected"
+    )
+
+    alternatives = [n for n in MODELS if MODELS[n]['status'] == 'available' and n != model and n != 'dna']
+    if r2 >= 0.8:
+        print(f"✓ Good fit  | {r2_line}")
+    elif r2 >= 0.5:
+        print(f"⚠ Moderate fit  | {r2_line}")
+    else:
+        print(f"⚠ Low R²  | {r2_line}  | Consider: {alternatives}")
 
     return FitResult(
         params=params_out,
         std_errors=se_out,
         confidence_intervals=ci_out,
         r_squared=r2,
+        r_squared_pure=r2_pure,
+        r_squared_scaled=r2_scaled,
+        fit_mode=fit_mode,
         model=model,
         lags_used=lags_use,
         msd_fitted=msd_out,
