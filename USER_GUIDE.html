@@ -194,7 +194,7 @@
   <h1>whitenoise &mdash; User Guide</h1>
   <div class="subtitle">Stochastic White Noise Analysis with Memory (SWNA)</div>
   <div class="author-block">
-    Package version 0.2.0 &middot; Python &ge;3.9 &middot; March 14, 2026
+    Package version 0.3.0 &middot; Python &ge;3.9 &middot; May 16, 2026
   </div>
 </div>
 
@@ -486,7 +486,7 @@ result = wn.analyze('data.csv', model='cosine',
 <h3>AnalysisResult properties</h3>
 <table class="param-table">
   <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-  <tr><td>.regime</td><td>str</td><td>Diffusion regime: <code>'subdiffusive'</code>, <code>'near-Brownian'</code>, <code>'superdiffusive'</code>, <code>'hyperballistic'</code>, or <code>'plateau (DNA)'</code> for the dna model. Returns <code>'N/A'</code> if fit is None.</td></tr>
+  <tr><td>.regime</td><td>str</td><td>Diffusion regime: <code>'subdiffusive'</code>, <code>'near-Brownian'</code>, <code>'superdiffusive'</code>, <code>'hyperballistic'</code>, or <code>'plateau'</code> for the exp_plateau model. Returns <code>'N/A'</code> if fit is None.</td></tr>
   <tr><td>.mu</td><td>float</td><td>The primary memory parameter: &mu; for most models, H for fbm, a for dna. Convenience shortcut into <code>fit.params</code>.</td></tr>
 </table>
 
@@ -678,7 +678,7 @@ wn.plot_msd_empirical(lags, msd, metadata=meta)</pre>
   <tr><td>exponential</td><td>[1.2, 0.1]</td><td>[0.01, 1e-9]</td><td>[5.0, 100.0]</td></tr>
   <tr><td>sine</td><td>[1.2, 0.01]</td><td>[0.01, 1e-9]</td><td>[5.0, 10.0]</td></tr>
   <tr><td>fbm</td><td>[0.6]</td><td>[0.01]</td><td>[2.0]</td></tr>
-  <tr><td>dna</td><td>[5.0, 0.01, 3.0]</td><td>[0.01, 1e-9, 0.01]</td><td>[1000, 100, 1000]</td></tr>
+  <tr><td>exp_plateau</td><td>[5.0, 0.01, 3.0]</td><td>[0.01, 1e-9, 0.01]</td><td>[1000, 100, 1000]</td></tr>
   <tr><td>inc_gamma</td><td>[1.5, 0.1]</td><td>[0.01, 1e-9]</td><td>[10.0, 100.0]</td></tr>
   <tr><td>bessel_jmu_nu</td><td>[1.0, 0.5]</td><td>[0.01, &minus;0.99]</td><td>[10.0, 10.0]</td></tr>
 </table>
@@ -707,11 +707,23 @@ result = wn.fit_msd(lags, msd, model='cosine',
   <tr><td>params</td><td>dict</td><td>Fitted parameter values. Keys depend on model, e.g. <code>{'mu': 1.15, 'beta': 0.08, 'N': 2.3}</code>.</td></tr>
   <tr><td>std_errors</td><td>dict</td><td>Standard errors <code>sqrt(diag(pcov))</code>, same keys as params.</td></tr>
   <tr><td>confidence_intervals</td><td>dict</td><td>95% CIs as (lo, hi) tuples. CI = param &pm; 1.96&times;SE, same keys as params.</td></tr>
-  <tr><td>r_squared</td><td>float</td><td>Coefficient of determination R&sup2; = 1 &minus; SS_res / SS_tot.</td></tr>
+  <tr><td>r_squared</td><td>float</td><td>Best R&sup2; from the winning fit mode (pure or scaled).</td></tr>
+  <tr><td>r_squared_pure</td><td>float</td><td>R&sup2; when fitting <code>msd_theory(T, *params)</code> directly (N=1 fixed). NaN if pure fit failed.</td></tr>
+  <tr><td>r_squared_scaled</td><td>float</td><td>R&sup2; when fitting <code>N&middot;msd_theory(T, *params)</code> with N free. NaN if scaled fit failed.</td></tr>
+  <tr><td>fit_mode</td><td>str</td><td><code>'pure'</code> or <code>'scaled'</code> &mdash; which fitting mode was selected (higher R&sup2; wins).</td></tr>
   <tr><td>model</td><td>str</td><td>Name of the fitted model.</td></tr>
   <tr><td>lags_used</td><td>ndarray</td><td>Lag values after <code>max_lag_fraction</code> truncation.</td></tr>
-  <tr><td>msd_fitted</td><td>ndarray</td><td>Theoretical curve <code>N &middot; msd_theory(lags_used, *physical_params)</code>.</td></tr>
+  <tr><td>msd_fitted</td><td>ndarray</td><td>Theoretical curve evaluated at <code>lags_used</code> using the winning fit mode.</td></tr>
 </table>
+
+<div class="note">
+  <strong>Dual-fit logic:</strong> <code>fit_msd()</code> always tries both fitting modes.
+  <em>Pure</em> mode fits the theoretical MSD directly (N fixed to 1).
+  <em>Scaled</em> mode fits N&middot;MSD_theory (N free), which absorbs data amplitude.
+  The mode with higher R&sup2; is selected and recorded in <code>fit_mode</code>.
+  Both R&sup2; values are always reported in summaries so researchers can see which formulation
+  fits better for their data.
+</div>
 
 <p><strong>.summary()</strong> &mdash; Returns a formatted box-drawing string showing all params, SEs, CIs, and R&sup2;:</p>
 <pre>print(result.fit.summary())
@@ -732,7 +744,7 @@ result = wn.fit_msd(lags, msd, model='cosine',
   <li><strong>cosine, sine:</strong> mu, nu, N</li>
   <li><strong>exponential:</strong> mu, beta, N</li>
   <li><strong>fbm:</strong> H, N</li>
-  <li><strong>dna:</strong> a, b, c, N</li>
+  <li><strong>exp_plateau (alias: dna):</strong> a, b, c, N</li>
   <li><strong>inc_gamma:</strong> nu, mu, N</li>
   <li><strong>bessel_jmu_nu:</strong> mu, nu, N</li>
 </ul>
@@ -744,10 +756,11 @@ result = wn.fit_msd(lags, msd, model='cosine',
 
 <p>
   The MODELS registry contains 19 models (18 theoretical MSD formulas from the SWNA
-  reference literature, plus the DNA plateau model from Violanda et al. 2019).
+  reference literature, plus the <code>exp_plateau</code> model from Violanda et al. 2019).
   Model selection is always <em>manual</em> &mdash; the researcher specifies <code>model=</code>.
   The package never auto-selects. Run <code>wn.list_models()</code> to see all models and
-  their current status.
+  their current status. The name <code>'dna'</code> is a backward-compatible alias for
+  <code>'exp_plateau'</code>.
 </p>
 
 <h3>Available models (fully implemented)</h3>
@@ -799,9 +812,9 @@ result = wn.fit_msd(lags, msd, model='cosine',
     <td>Oscillatory Bessel model</td>
   </tr>
   <tr>
-    <td><code>dna</code></td><td>&mdash;</td><td>a, b, c</td>
+    <td><code>exp_plateau</code></td><td>&mdash;</td><td>a, b, c</td>
     <td>a &minus; c &middot; e<sup>&minus;bL</sup></td>
-    <td>DNA nucleotide separation (Violanda et al. 2019, Phys. Scr. 94, 125006)</td>
+    <td>Purely exponential memory, plateau MSD. First applied to DNA by Violanda et al. (2019, Phys. Scr. 94, 125006). Alias: <code>'dna'</code>.</td>
   </tr>
 </table>
 
@@ -827,7 +840,7 @@ result = wn.fit_msd(lags, msd, model='cosine',
   <tr><td>&nu;</td><td>nu</td><td>cosine, sine, bessel_jmu_nu</td><td>Characteristic frequency (rad per time unit). Controls oscillation period.</td></tr>
   <tr><td>&beta;</td><td>beta</td><td>exponential</td><td>Exponential decay rate (inverse time unit). Controls MSD shape at small lags.</td></tr>
   <tr><td>H</td><td>H</td><td>fbm</td><td>Hurst exponent. H=0.5 &rarr; Brownian, H&lt;0.5 subdiffusive, H&gt;0.5 superdiffusive. Range: (0, 1].</td></tr>
-  <tr><td>a, b, c</td><td>&mdash;</td><td>dna</td><td>a = plateau MSD value; b = saturation rate; c = initial depression (a&gt;c required). Regime is &ldquo;plateau (DNA)&rdquo;.</td></tr>
+  <tr><td>a, b, c</td><td>&mdash;</td><td>exp_plateau</td><td>a = plateau MSD value; b = saturation rate; c = initial depression (a&gt;c required). Regime is &ldquo;plateau&rdquo;. Model alias: <code>'dna'</code>.</td></tr>
   <tr><td>N</td><td>N</td><td>all models</td><td>Normalization scalar. Always fitted alongside physical params. Absorbs data amplitude. Does not affect &mu;.</td></tr>
 </table>
 
@@ -1164,9 +1177,11 @@ print(f'Best model: {best_model}')</pre>
 
 <div class="note">
   <strong>Note on summary_df columns:</strong> The <code>mu</code> column holds &mu; for
-  cosine/sine/exponential, H for fbm, and <code>a</code> for the dna model.
+  cosine/sine/exponential, H for fbm, and <code>a</code> for the exp_plateau model.
   The <code>nu_or_beta</code> column holds &nu; for cosine/sine, &beta; for exponential,
-  and NaN for fbm, dna, and parameter-free models.
+  and NaN for fbm, exp_plateau, and parameter-free models.
+  The columns <code>r_squared_pure</code>, <code>r_squared_scaled</code>, and
+  <code>fit_mode</code> reflect the dual-fit results (see Section&nbsp;8).
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -1324,10 +1339,30 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
   <tr><td><code>wn.genomics.read_fasta</code></td><td><code>read_fasta(path)</code></td><td><code>list[dict]</code></td></tr>
   <tr><td><code>wn.genomics.read_fasta_single</code></td><td><code>read_fasta_single(path)</code></td><td><code>dict</code></td></tr>
   <tr><td><code>wn.genomics.filter_sequence</code></td><td><code>filter_sequence(sequence, keep='ACGT')</code></td><td><code>str</code></td></tr>
-  <tr><td><code>wn.genomics.parse_seqrecord</code></td><td><code>parse_seqrecord(seqrecord)</code></td><td><code>dict</code></td></tr>
   <tr><td><code>wn.genomics.get_transition_distances</code></td><td><code>get_transition_distances(sequence, from_nuc, to_nuc)</code></td><td><code>ndarray[int64]</code></td></tr>
   <tr><td><code>wn.genomics.get_all_transition_distances</code></td><td><code>get_all_transition_distances(sequence, nucleotides='ACGT')</code></td><td><code>dict[(str,str), ndarray]</code></td></tr>
   <tr><td><code>wn.genomics.summarize_matrix</code></td><td><code>summarize_matrix(matrix)</code></td><td><code>None</code> (prints table)</td></tr>
+  <tr><td><code>wn.genomics.extract_pair</code></td><td><code>extract_pair(seq, from_nuc, to_nuc, save_path=None)</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>wn.genomics.compute_pair_msd</code></td><td><code>compute_pair_msd(source, max_lag=1500, save_path=None)</code></td><td><code>(lags, msd)</code></td></tr>
+  <tr><td><code>wn.genomics.fit_pair</code></td><td><code>fit_pair(source, model='exp_plateau', p0=None, &hellip;)</code></td><td><code>FitResult</code></td></tr>
+  <tr><td><code>wn.genomics.plot_pair</code></td><td><code>plot_pair(lags, msd, fit=None, title='', save_path=None)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>wn.genomics.analyze_pair</code></td><td><code>analyze_pair(source, from_nuc, to_nuc, model='exp_plateau', &hellip;)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>wn.genomics.refit_pair</code></td><td><code>refit_pair(msd_csv_path, model='exp_plateau', p0=None, &hellip;)</code></td><td><code>(FitResult, Figure)</code></td></tr>
+</table>
+
+<h3>RadioJOVE (<code>wn.radiojove</code>)</h3>
+<table>
+  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>wn.radiojove.list_burst_csvs</code></td><td><code>list_burst_csvs(folder, pattern='*.csv')</code></td><td><code>list[str]</code></td></tr>
+  <tr><td><code>wn.radiojove.parse_filename_metadata</code></td><td><code>parse_filename_metadata(filename)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>wn.radiojove.read_radiojove_csv</code></td><td><code>read_radiojove_csv(path)</code></td><td><code>(time, intensity, metadata)</code></td></tr>
+  <tr><td><code>wn.radiojove.group_by_cadence</code></td><td><code>group_by_cadence(paths)</code></td><td><code>dict[float, list[str]]</code></td></tr>
+  <tr><td><code>wn.radiojove.zscore_normalize</code></td><td><code>zscore_normalize(intensity)</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>wn.radiojove.resample</code></td><td><code>resample(time, intensity, target_cadence)</code></td><td><code>(time_new, intensity_new)</code></td></tr>
+  <tr><td><code>wn.radiojove.analyze_burst</code></td><td><code>analyze_burst(path, model='exponential', detrend_method='linear', &hellip;)</code></td><td><code>dict</code></td></tr>
+  <tr><td><code>wn.radiojove.plot_burst_msd</code></td><td><code>plot_burst_msd(result, title='', save_path=None)</code></td><td><code>Figure</code></td></tr>
+  <tr><td><code>wn.radiojove.batch_analyze_bursts</code></td><td><code>batch_analyze_bursts(source, model='exponential', &hellip;)</code></td><td><code>pd.DataFrame</code></td></tr>
+  <tr><td><code>wn.radiojove.compare_bursts</code></td><td><code>compare_bursts(paths, model='exponential', &hellip;)</code></td><td><code>ComparisonResult</code></td></tr>
 </table>
 
 <h3>Preprocessing (optional)</h3>
@@ -1385,185 +1420,394 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 <h2>15. Genomics Extension (<code>wn.genomics</code>)</h2>
 
 <p>
-  The <code>wn.genomics</code> submodule bridges standard genomic sequence
-  data (FASTA format from NCBI, BOLD, or any public database) into the
-  whitenoise SWNA pipeline. It implements the nucleotide separation distance
-  approach described in Violanda et al. (2019), extended to include all 16
-  pairwise transition distances.
+  The <code>wn.genomics</code> submodule applies SWNA to genomic DNA sequences using the
+  nucleotide separation distance approach from Violanda et al. (2019). The stochastic
+  variable is the <em>distance between consecutive nucleotide occurrences</em> along the
+  sequence. This distance sequence feeds into the standard SWNA pipeline via the
+  <code>exp_plateau</code> model.
 </p>
 
 <div class="note">
-  <strong>No additional dependencies required.</strong> The genomics submodule
-  uses only NumPy and the Python standard library. BioPython is optional — a
-  convenience adapter is provided for users who already have it.
+  <strong>No additional dependencies required.</strong> Uses only NumPy and the Python
+  standard library. BioPython is optional &mdash; a convenience adapter is provided.
 </div>
 
-<h3>The stochastic variable</h3>
+<div class="note">
+  <strong>Full documentation:</strong> See <code>whitenoise/genomics/GENOMICS_GUIDE.html</code>
+  for the complete step-by-step guide with all options. This section covers the essential API.
+</div>
+
+<h3>Pipeline overview</h3>
+
+<div class="pipeline">
+  <div class="pipe-box">FASTA</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">filter_sequence()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">extract_pair()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">compute_pair_msd()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">fit_pair()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">plot_pair()</div>
+</div>
+
+<p>Or use <code>analyze_pair()</code> for the full pipeline in one call.
+Saved MSD CSVs can be reloaded with <code>refit_pair()</code> to retry fitting without
+recomputing.</p>
+
+<h3>15.1 &middot; Loading FASTA</h3>
+
+<pre>record = wn.genomics.read_fasta_single('chromosome1.fasta')
+seq_raw = record['sequence']
+print(f"Length: {len(seq_raw):,} bp, ambiguous: {record['n_ambiguous']:,}")
+
+# Remove ambiguous bases (W, N, R, Y, etc.)
+seq = wn.genomics.filter_sequence(seq_raw)</pre>
+
+<h3>15.2 &middot; Transition distances</h3>
 
 <p>
-  Following Violanda et al. (2019), the stochastic variable is the
-  <em>separation distance</em> between nucleotides along the genome. For a
-  given pair (from_nuc &rarr; to_nuc):
+  For a pair (from_nuc &rarr; to_nuc), distances are computed along the sequence:
 </p>
 <ul>
-  <li><strong>Same-type</strong> (A&rarr;A, G&rarr;G, etc.): distance between consecutive
-      occurrences of the same nucleotide. Reproduces the paper's method exactly.</li>
-  <li><strong>Cross-type</strong> (A&rarr;C, A&rarr;G, etc.): from each occurrence of
-      <code>from_nuc</code>, the distance to the very next occurrence of
-      <code>to_nuc</code> downstream (nearest-next rule). This is a generalization
-      not in the original paper.</li>
-</ul>
-<p>
-  Across all four nucleotides, this produces a 4&times;4 matrix of 16 distance
-  sequences. Each sequence is the stochastic observable fed into
-  <code>wn.compute_msd()</code> and <code>wn.analyze()</code>.
-</p>
-
-<h3>Supported input formats</h3>
-
-<p>The submodule accepts any standard FASTA file, including:</p>
-<ul>
-  <li>COI barcodes (~658 bp) from NCBI GenBank or BOLD</li>
-  <li>Whole mitochondrial genomes (~15&ndash;20 kb)</li>
-  <li>Complete bacterial/organism genomes (Mbp&ndash;Gbp)</li>
-  <li>Multi-record FASTA files (one record returned per sequence)</li>
+  <li><strong>Same-type</strong> (A&rarr;A, G&rarr;G, &hellip;): consecutive occurrences of the
+      same nucleotide. Reproduces Violanda et al. (2019) exactly.</li>
+  <li><strong>Cross-type</strong> (A&rarr;C, &hellip;): from each occurrence of from_nuc, distance to
+      the nearest downstream to_nuc. Extension not in the original paper.</li>
 </ul>
 
-<h3>read_fasta()</h3>
+<pre># Single pair
+dist = wn.genomics.get_transition_distances(seq, 'A', 'A')
 
-<pre>records = wn.genomics.read_fasta(path)
+# All 16 pairs at once (more efficient than calling 16 times)
+matrix = wn.genomics.get_all_transition_distances(seq)
+wn.genomics.summarize_matrix(matrix)   # prints count table
+dist_AA = matrix[('A', 'A')]</pre>
 
-# Returns a list of dicts, one per FASTA record:
-# {
-#   'id':          str   accession/identifier (first token after '>')
-#   'description': str   full header line
-#   'sequence':    str   uppercase DNA string
-#   'length':      int   total sequence length
-#   'n_ambiguous': int   count of non-ACGT characters (W, N, R, etc.)
-# }</pre>
+<div class="warn">
+  <strong>Model choice for off-diagonal pairs:</strong> The exp_plateau model was derived
+  for same-type (diagonal) distances. Off-diagonal pairs (A&rarr;C, A&rarr;G, &hellip;) often
+  yield low R&sup2; with exp_plateau. Try <code>model='exponential'</code> or
+  <code>model='cosine'</code> for cross-type pairs.
+</div>
+
+<h3>15.3 &middot; Step-by-step pipeline</h3>
+
+<pre>import whitenoise as wn, os
+
+record = wn.genomics.read_fasta_single('chromosome1.fasta')
+seq = wn.genomics.filter_sequence(record['sequence'])
+
+# Step 1: Extract distances (save for later)
+dist = wn.genomics.extract_pair(seq, 'A', 'A', save_path='AA_distances.csv')
+
+# Step 2: Compute MSD (save to avoid recomputing)
+lags, msd = wn.genomics.compute_pair_msd(
+    dist, max_lag=1500, save_path='AA_msd.csv'
+)
+
+# Step 3: Fit
+fit = wn.genomics.fit_pair((lags, msd), model='exp_plateau')
+print(f"R² = {fit.r_squared:.4f}")
+
+# Step 4: Plot
+fig = wn.genomics.plot_pair(lags, msd, fit,
+                            title='A→A | exp_plateau model',
+                            save_path='AA_fit.png')</pre>
 
 <div class="tip">
-  <strong>Ambiguous bases (W, N, R, Y, etc.)</strong> are kept in the sequence
-  and a warning is printed. They are silently skipped during position lookup in the
-  distance functions, so they do not cause errors. Use
-  <code>wn.genomics.filter_sequence(seq)</code> to remove them first if you prefer.
+  <strong>Choosing max_lag:</strong> The exp_plateau model saturates at L &asymp; 3/b.
+  With bacterial reference b &asymp; 0.0024, saturation is near L = 1250.
+  <code>max_lag=1500</code> is a safe default that captures the full curve.
 </div>
 
-<h3>get_transition_distances()</h3>
+<h3>15.4 &middot; Full single-pair pipeline (one call)</h3>
 
-<pre>distances = wn.genomics.get_transition_distances(sequence, from_nuc, to_nuc)
-# Returns: np.ndarray of int64 distances</pre>
+<pre>result = wn.genomics.analyze_pair(
+    source='chromosome1.fasta',
+    from_nuc='A', to_nuc='A',
+    model='exp_plateau',
+    max_lag=1500,
+    save_dir='results/',      # saves distances CSV, MSD CSV, and plot PNG
+)
 
-<p>
-  Extracts the distance array for a single (from_nuc, to_nuc) pair.
-  Pass the result directly to <code>wn.compute_msd()</code> or
-  <code>wn.analyze()</code>.
-</p>
+print(result['fit'].r_squared)
+result['figure'].show()</pre>
 
-<p>
-  <strong>Performance:</strong> fully vectorized using
-  <code>np.frombuffer</code> + <code>np.searchsorted</code>.
-  Complexity is O(N log M) — handles whole bacterial genomes
-  (&gt;2 Mbp) in milliseconds per pair.
-</p>
+<h3>15.5 &middot; Re-fitting from a saved MSD CSV</h3>
 
-<h3>get_all_transition_distances()</h3>
+<pre># Retry with a better initial guess
+fit, fig = wn.genomics.refit_pair(
+    'results/A_A_msd.csv',
+    model='exp_plateau',
+    p0=[27.0, 0.025, 2.0],   # estimates: a=plateau, b=6/L_plateau, c=a-MSD(1)
+    save_path='results/A_A_refit.png',
+)
 
-<pre>matrix = wn.genomics.get_all_transition_distances(sequence)
-# Returns: dict with (from_nuc, to_nuc) tuple keys
-# e.g. matrix[('A', 'C')] -> np.ndarray of distances
+# Try a different model for an off-diagonal pair
+fit, fig = wn.genomics.refit_pair('results/A_C_msd.csv', model='exponential')
 
-wn.genomics.summarize_matrix(matrix)   # prints count table</pre>
+# Fit only first 70% of lags (exclude noisy plateau)
+fit, fig = wn.genomics.refit_pair('results/A_A_msd.csv', max_lag_fraction=0.7)</pre>
 
-<p>Computes all 16 pairs in one call, scanning the sequence only 4 times
-(once per nucleotide). More efficient than calling
-<code>get_transition_distances()</code> 16 times individually.</p>
+<h3>15.6 &middot; The exp_plateau model</h3>
 
-<h3>Complete genomics workflow</h3>
-
-<pre>import whitenoise as wn
-
-# 1. Load FASTA from NCBI or any source
-records = wn.genomics.read_fasta('Synechococcus_elongatus.fasta')
-seq = records[0]['sequence']
-print(f"Loaded {records[0]['id']}: {records[0]['length']} bp")
-
-# 2. Optional: remove ambiguous bases
-seq = wn.genomics.filter_sequence(seq)
-
-# 3. Check all 16 transition pairs
-matrix = wn.genomics.get_all_transition_distances(seq)
-wn.genomics.summarize_matrix(matrix)
-
-# 4. Analyze one pair with SWNA
-distances = matrix[('A', 'A')]   # same-type: reproduces Violanda et al.
-result = wn.analyze(distances, model='dna', label='A->A (S. elongatus)')
-result.summary()
-
-# 5. Compare all 16 pairs
-all_results = {}
-for (from_n, to_n), dist in matrix.items():
-    if len(dist) >= 50:   # skip pairs with too few observations
-        label = f'{from_n}->{to_n}'
-        all_results[label] = dist
-
-comparison = wn.compare(all_results, model='dna')
-comparison.summary_table()
-wn.publish_comparison(comparison)</pre>
-
-<h3>genomics API reference</h3>
+<pre>MSD(L) = a &minus; c &middot; exp(&minus;b &middot; L)</pre>
 
 <table>
-  <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
-  <tr>
-    <td><code>wn.genomics.read_fasta</code></td>
-    <td><code>read_fasta(path)</code></td>
-    <td><code>list[dict]</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.read_fasta_single</code></td>
-    <td><code>read_fasta_single(path)</code></td>
-    <td><code>dict</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.filter_sequence</code></td>
-    <td><code>filter_sequence(sequence, keep='ACGT')</code></td>
-    <td><code>str</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.parse_seqrecord</code></td>
-    <td><code>parse_seqrecord(seqrecord)</code></td>
-    <td><code>dict</code> (BioPython adapter)</td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.get_transition_distances</code></td>
-    <td><code>get_transition_distances(sequence, from_nuc, to_nuc)</code></td>
-    <td><code>ndarray[int64]</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.get_all_transition_distances</code></td>
-    <td><code>get_all_transition_distances(sequence, nucleotides='ACGT')</code></td>
-    <td><code>dict[(str,str), ndarray]</code></td>
-  </tr>
-  <tr>
-    <td><code>wn.genomics.summarize_matrix</code></td>
-    <td><code>summarize_matrix(matrix)</code></td>
-    <td><code>None</code> (prints table)</td>
-  </tr>
+  <tr><th>Parameter</th><th>Role</th><th>Typical range (bacterial)</th></tr>
+  <tr><td><code>a</code></td><td>Plateau height &mdash; MSD approaches a as L &rarr; &infin;</td><td>3&ndash;8</td></tr>
+  <tr><td><code>b</code></td><td>Exponential decay rate &mdash; how fast MSD rises to plateau</td><td>0.001&ndash;0.01</td></tr>
+  <tr><td><code>c</code></td><td>Amplitude of exponential term; must satisfy c &lt; a</td><td>2&ndash;6</td></tr>
+  <tr><td><code>N</code></td><td>Normalization scalar &mdash; fitted automatically</td><td>&sim;1</td></tr>
+</table>
+
+<p><strong>Published reference values</strong> (Violanda et al. 2019, bacterial genomes):
+<code>a &asymp; 5.21</code>, <code>b &asymp; 0.0024</code>, <code>c &asymp; 3.81</code></p>
+
+<div class="note">
+  <strong>No &mu; parameter.</strong> The exp_plateau model describes restricted diffusion
+  (bounded MSD plateau) and classifies as <code>regime = 'plateau'</code>.
+  The backward-compatible alias <code>model='dna'</code> also works.
+</div>
+
+<h3>15.7 &middot; Batch analysis (all 16 pairs)</h3>
+
+<pre>import whitenoise as wn, os
+
+record = wn.genomics.read_fasta_single('chromosome1.fasta')
+seq = wn.genomics.filter_sequence(record['sequence'])
+os.makedirs('results', exist_ok=True)
+
+for nuc in ['A', 'C', 'G', 'T']:
+    dist = wn.genomics.extract_pair(seq, nuc, nuc)
+    lags, msd = wn.genomics.compute_pair_msd(
+        dist, max_lag=1500, save_path=f'results/{nuc}_{nuc}_msd.csv'
+    )
+    fit = wn.genomics.fit_pair((lags, msd), model='exp_plateau')
+    wn.genomics.plot_pair(lags, msd, fit,
+                          title=f'{nuc}→{nuc}',
+                          save_path=f'results/{nuc}_{nuc}_fit.png')</pre>
+
+<h3>15.8 &middot; Genomics API reference</h3>
+
+<table>
+  <tr><th>Function</th><th>Location</th><th>Description</th></tr>
+  <tr><td><code>read_fasta(path)</code></td><td><code>wn.genomics</code></td><td>Load all records from a FASTA file &rarr; list[dict]</td></tr>
+  <tr><td><code>read_fasta_single(path)</code></td><td><code>wn.genomics</code></td><td>Load first record only &rarr; dict</td></tr>
+  <tr><td><code>filter_sequence(seq)</code></td><td><code>wn.genomics</code></td><td>Remove non-ACGT characters &rarr; str</td></tr>
+  <tr><td><code>get_transition_distances(seq, from, to)</code></td><td><code>wn.genomics</code></td><td>Single pair distances &rarr; ndarray</td></tr>
+  <tr><td><code>get_all_transition_distances(seq)</code></td><td><code>wn.genomics</code></td><td>Full 4&times;4 distance matrix &rarr; dict</td></tr>
+  <tr><td><code>summarize_matrix(matrix)</code></td><td><code>wn.genomics</code></td><td>Print count table</td></tr>
+  <tr><td><code>extract_pair(seq, from, to, save_path)</code></td><td><code>wn.genomics</code></td><td>Extract distances + optionally save CSV</td></tr>
+  <tr><td><code>compute_pair_msd(source, max_lag, save_path)</code></td><td><code>wn.genomics</code></td><td>MSD from array or CSV; optional save</td></tr>
+  <tr><td><code>fit_pair(source, model, p0, &hellip;)</code></td><td><code>wn.genomics</code></td><td>Fit from (lags, msd) tuple or MSD CSV &rarr; FitResult</td></tr>
+  <tr><td><code>plot_pair(lags, msd, fit, &hellip;)</code></td><td><code>wn.genomics</code></td><td>Single-pair MSD plot &rarr; Figure</td></tr>
+  <tr><td><code>analyze_pair(source, from, to, &hellip;)</code></td><td><code>wn.genomics</code></td><td>Full single-pair pipeline &rarr; dict</td></tr>
+  <tr><td><code>refit_pair(msd_csv, model, p0, &hellip;)</code></td><td><code>wn.genomics</code></td><td>Reload saved MSD and refit &rarr; (FitResult, Figure)</td></tr>
 </table>
 
 <div class="warn">
-  <strong>Short sequences (COI barcodes, ~658 bp).</strong> Each distance array will
-  contain only ~50&ndash;150 values per pair. MSD plots will be noisy and the
-  plateau behavior (characteristic of the DNA model) is harder to resolve than
-  with whole genomes. This is a data limitation, not a bug. Interpret results from
-  short sequences with caution and consider pooling sequences across samples.
+  <strong>Short sequences (COI barcodes, &sim;658 bp).</strong> Each distance array contains
+  only &sim;50&ndash;150 values per pair. MSD plots will be noisy and the plateau may be hard
+  to resolve. Interpret results with caution and consider pooling sequences across samples.
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  16. VALIDATED BENCHMARKS                                               -->
+<!--  16. RADIOJOVE EXTENSION                                                 -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>16. Validated Benchmarks</h2>
+<h2>16. RadioJOVE Extension (<code>wn.radiojove</code>)</h2>
+
+<p>
+  The <code>wn.radiojove</code> submodule applies SWNA to radio burst observations recorded
+  with a RadioJOVE spectrograph. The stochastic variable is the Z-score normalized intensity
+  of a selected burst region sampled at a fixed cadence (0.1&nbsp;s or 1.0&nbsp;s).
+  The memory parameter &mu; quantifies the dynamical memory structure of the burst.
+</p>
+
+<div class="note">
+  <strong>Full documentation:</strong> See <code>whitenoise/radiojove/RADIOJOVE_GUIDE.html</code>
+  for the complete guide including the preprocessing GUI workflow, multi-resolution comparison,
+  and troubleshooting. This section covers the essential API.
+</div>
+
+<h3>Pipeline overview</h3>
+
+<p><strong>Stage 1 &mdash; Preprocessing (manual GUI):</strong></p>
+<div class="pipeline">
+  <div class="pipe-box optional">JPG spectrograph</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box optional">region selection GUI</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box optional">Z-score export</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">CSV file</div>
+</div>
+
+<p><strong>Stage 2 &mdash; SWNA analysis (this package):</strong></p>
+<div class="pipeline">
+  <div class="pipe-box">read_radiojove_csv()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box optional">detrend() <em>(optional)</em></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">analyze_burst()</div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-box">compare_bursts()</div>
+</div>
+
+<h3>16.1 &middot; CSV format and filename convention</h3>
+
+<p>The GUI exports CSVs with two columns and filenames following this pattern:</p>
+<pre>YYMMDDHHMMSS&lt;Station&gt;_region_&lt;N&gt;_&lt;cadence&gt;s.csv
+
+Example:
+  230728154000Higgins_Home_region_1_0.1s.csv   &larr; 0.1 s cadence
+  230728154000Higgins_Home_region_1_1.0s.csv   &larr; 1.0 s cadence</pre>
+
+<p>Column 1: time in seconds. Column 2: Z-score normalized intensity (mean=0, std=1).</p>
+
+<div class="tip">
+  <strong>Why two cadences?</strong> Running SWNA on both 0.1&nbsp;s and 1.0&nbsp;s files and
+  comparing &mu; values confirms that the memory structure is robust to temporal resolution.
+  Use 1.0&nbsp;s as the primary result and 0.1&nbsp;s as validation. See Section&nbsp;16.5.
+</div>
+
+<h3>16.2 &middot; Reading and organizing data</h3>
+
+<pre>import whitenoise as wn
+
+# Read a single CSV
+time, intensity, meta = wn.radiojove.read_radiojove_csv(
+    '230728154000Higgins_Home_region_1_0.1s.csv'
+)
+print(f"N points : {len(time)}")
+print(f"Cadence  : {meta['cadence_s']} s")
+print(f"Station  : {meta['station']}")
+
+# List all CSVs in a folder
+paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
+
+# Group by cadence
+groups = wn.radiojove.group_by_cadence(paths)
+paths_01s = groups[0.1]   # 0.1-second cadence files
+paths_10s = groups[1.0]   # 1.0-second cadence files</pre>
+
+<h3>16.3 &middot; Single burst analysis</h3>
+
+<pre>out = wn.radiojove.analyze_burst(
+    '230728154000Higgins_Home_region_1_0.1s.csv',
+    model='exponential',
+    detrend_method='linear',    # recommended default
+    output_dir='swna_results/', # saves plot PNG here
+)
+
+result = out['result']
+if result and result.fit:
+    print(f"mu     = {result.fit.params['mu']:.4f}")
+    print(f"R2     = {result.fit.r_squared:.4f}")
+    print(f"regime : {result.regime}")
+
+out['figure'].show()   # dual-panel MSD plot (linear + log-log)</pre>
+
+<div class="note">
+  <strong>Model choice:</strong> Use <code>model='exponential'</code> for Type III solar bursts
+  and most Jovian S-bursts &mdash; these have monotonically growing MSDs. The cosine model
+  fails catastrophically (R&sup2; &asymp; &minus;10<sup>60</sup>) on monotonic MSDs.
+</div>
+
+<h3>16.4 &middot; Batch analysis</h3>
+
+<pre>df = wn.radiojove.batch_analyze_bursts(
+    'Solar/Type 3 Bursts/first trials/',
+    model='exponential',
+    output_dir='swna_results/',
+)
+
+print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])</pre>
+
+<p>You can also pass a specific list of files:</p>
+<pre>df = wn.radiojove.batch_analyze_bursts(paths_01s, model='exponential')</pre>
+
+<table>
+  <tr><th>Column</th><th>Description</th></tr>
+  <tr><td><code>dataset</code></td><td>Filename stem</td></tr>
+  <tr><td><code>mu</code></td><td>Memory parameter &mu;</td></tr>
+  <tr><td><code>mu_ci_low / mu_ci_high</code></td><td>95% CI bounds for &mu;</td></tr>
+  <tr><td><code>r_squared</code></td><td>Best R&sup2; (winning fit mode)</td></tr>
+  <tr><td><code>r_squared_pure</code></td><td>R&sup2; from pure MSD fit (N=1)</td></tr>
+  <tr><td><code>r_squared_scaled</code></td><td>R&sup2; from N&middot;MSD fit</td></tr>
+  <tr><td><code>fit_mode</code></td><td><code>'pure'</code> or <code>'scaled'</code></td></tr>
+  <tr><td><code>regime</code></td><td>Diffusion regime</td></tr>
+</table>
+
+<h3>16.5 &middot; Multi-resolution comparison (0.1&nbsp;s vs 1.0&nbsp;s)</h3>
+
+<pre>import pandas as pd
+
+groups = wn.radiojove.group_by_cadence(paths)
+
+df_01s = wn.radiojove.batch_analyze_bursts(groups[0.1], model='exponential', verbose=False)
+df_10s = wn.radiojove.batch_analyze_bursts(groups[1.0], model='exponential', verbose=False)
+
+df_01s['cadence'] = '0.1s'
+df_10s['cadence'] = '1.0s'
+
+df_all = pd.concat([df_01s, df_10s], ignore_index=True)
+print(df_all[['dataset', 'cadence', 'mu', 'r_squared', 'regime']])</pre>
+
+<div class="tip">
+  If &mu; at 0.1&nbsp;s and 1.0&nbsp;s agree within their 95% confidence intervals, the
+  memory structure is robust. A discrepancy suggests resolution-dependent effects.
+</div>
+
+<h3>16.6 &middot; Comparing bursts</h3>
+
+<pre>cr = wn.radiojove.compare_bursts(groups[0.1], model='exponential')
+
+wn.print_comparison(cr)          # ASCII table
+wn.publish_comparison(cr)        # publication-quality mu bar chart
+
+cr.summary_df.to_csv('comparison.csv', index=False)</pre>
+
+<h3>16.7 &middot; The exponential SWNA model for radiobursts</h3>
+
+<pre>MSD(T, mu, beta) = Gamma(mu) * beta^(-mu) * T^(mu-1) * exp(-beta / T)</pre>
+
+<table>
+  <tr><th>Parameter</th><th>Role</th><th>Typical range (Type III bursts)</th></tr>
+  <tr><td>&mu;</td><td>Memory exponent &mdash; controls MSD growth rate</td><td>1.4&ndash;1.7</td></tr>
+  <tr><td>&beta;</td><td>Exponential decay rate</td><td>10&ndash;100</td></tr>
+  <tr><td>N</td><td>Normalization scalar</td><td>&sim;1</td></tr>
+</table>
+
+<p>
+  Type III solar bursts are driven by semi-relativistic electron beams spiralling along open
+  coronal magnetic field lines, producing positively correlated intensity fluctuations
+  consistent with <strong>&mu; &asymp; 1.4&ndash;1.6 (superdiffusive)</strong>.
+</p>
+
+<h3>16.8 &middot; RadioJOVE API reference</h3>
+
+<table>
+  <tr><th>Function</th><th>Location</th><th>Description</th></tr>
+  <tr><td><code>list_burst_csvs(folder)</code></td><td><code>wn.radiojove</code></td><td>List all CSVs in a folder, sorted</td></tr>
+  <tr><td><code>parse_filename_metadata(filename)</code></td><td><code>wn.radiojove</code></td><td>Extract datetime, station, region, cadence from filename</td></tr>
+  <tr><td><code>read_radiojove_csv(path)</code></td><td><code>wn.radiojove</code></td><td>Read CSV; returns (time, intensity, enriched metadata)</td></tr>
+  <tr><td><code>group_by_cadence(paths)</code></td><td><code>wn.radiojove</code></td><td>Group file list by time cadence &rarr; dict[float, list[str]]</td></tr>
+  <tr><td><code>zscore_normalize(intensity)</code></td><td><code>wn.radiojove</code></td><td>Z-score normalize (only if not already done by GUI)</td></tr>
+  <tr><td><code>resample(time, intensity, cadence)</code></td><td><code>wn.radiojove</code></td><td>Resample to a different cadence via linear interpolation</td></tr>
+  <tr><td><code>analyze_burst(path, model, &hellip;)</code></td><td><code>wn.radiojove</code></td><td>Full SWNA pipeline for one burst CSV &rarr; dict</td></tr>
+  <tr><td><code>plot_burst_msd(result, &hellip;)</code></td><td><code>wn.radiojove</code></td><td>Dual-panel MSD plot (linear + log-log) &rarr; Figure</td></tr>
+  <tr><td><code>batch_analyze_bursts(source, &hellip;)</code></td><td><code>wn.radiojove</code></td><td>Batch analysis; returns summary DataFrame</td></tr>
+  <tr><td><code>compare_bursts(paths, model, &hellip;)</code></td><td><code>wn.radiojove</code></td><td>Multi-burst comparison via <code>wn.compare()</code> &rarr; ComparisonResult</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!--  17. VALIDATED BENCHMARKS                                               -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<h2>17. Validated Benchmarks</h2>
 
 <p>The following published results serve as benchmarks for validating your analysis setup.</p>
 
@@ -1606,17 +1850,17 @@ wn.publish_comparison(comparison)</pre>
   </tr>
   <tr>
     <td>DNA nucleotide separation (bacterial genomes)</td>
-    <td>dna</td>
+    <td>exp_plateau</td>
     <td>a &asymp; 5.21, b &asymp; 0.0024, c &asymp; 3.81</td>
-    <td>plateau (DNA)</td>
+    <td>plateau</td>
     <td>Violanda et al. (2019)</td>
   </tr>
 </table>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  16. KNOWN LIMITATIONS                                                  -->
+<!--  18. KNOWN LIMITATIONS                                                  -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>17. Known Limitations</h2>
+<h2>18. Known Limitations</h2>
 
 <div class="warn">
   <strong>1. Stub models.</strong> Nine models in the MODELS registry raise
@@ -1655,9 +1899,9 @@ wn.publish_comparison(comparison)</pre>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!--  17. CITATION                                                           -->
+<!--  19. CITATION                                                           -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<h2>18. Citation</h2>
+<h2>19. Citation</h2>
 
 <p>If you use this package in published work, please cite:</p>
 
@@ -1670,7 +1914,7 @@ nucleotide distribution in bacterial genomes.
 Physica Scripta, 94, 125006.
 https://doi.org/10.1088/1402-4896/ab3342</pre>
 
-<p>For specific models or applications, also cite the primary application papers listed in Section 15.</p>
+<p>For specific models or applications, also cite the primary application papers listed in Section&nbsp;17 (Validated Benchmarks).</p>
 
 <div class="footer">
   whitenoise v0.2.0 &middot; March 14, 2026
