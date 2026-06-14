@@ -201,9 +201,16 @@ def _fit_pure(
         out = msd_fn(T, *args)
         if np.ndim(out) == 0:
             v = float(out)
-            return 1e30 if (not np.isfinite(v) or v <= 0) else v
+            # Use 0.0 for undefined/negative model values instead of 1e30.
+            # A large sentinel (1e30) creates residuals of order 1e60 when the
+            # cosine model is undefined (cos(νT/2) ≤ 0), which makes the
+            # optimizer unable to converge.  Returning 0.0 is physically
+            # reasonable: the model simply predicts no displacement at those
+            # lags, and the resulting moderate residual lets the optimizer
+            # find good μ and ν on the valid rising portion.
+            return 0.0 if (not np.isfinite(v) or v <= 0) else v
         out_arr = np.asarray(out, dtype=float)
-        return np.where(np.isfinite(out_arr) & (out_arr > 0), out_arr, 1e30)
+        return np.where(np.isfinite(out_arr) & (out_arr > 0), out_arr, 0.0)
 
     try:
         popt, pcov = curve_fit(
@@ -241,9 +248,9 @@ def _fit_scaled(
         out  = msd_fn(T, *phys)
         if np.ndim(out) == 0:
             v = float(out)
-            return 1e30 if (not np.isfinite(v) or v <= 0) else N * v
+            return 0.0 if (not np.isfinite(v) or v <= 0) else N * v
         out_arr = np.asarray(out, dtype=float) * N
-        return np.where(np.isfinite(out_arr), out_arr, 1e30)
+        return np.where(np.isfinite(out_arr) & (out_arr > 0), out_arr, 0.0)
 
     try:
         popt, pcov = curve_fit(
@@ -356,6 +363,34 @@ def fit_msd(
         lb = list(d.get('bounds', ([1e-9] * len(param_names), [1e9] * len(param_names)))[0])
         ub = list(d.get('bounds', ([1e-9] * len(param_names), [1e9] * len(param_names)))[1])
         bounds = (lb, ub)
+
+    # ── Cosine/sine: adaptive ν guess + dynamic ν upper bound ──────────────────
+    #
+    # The cosine model is only valid (positive MSD) where cos(νT/2) > 0,
+    # i.e. T < π/ν.  When ν is too large the optimizer can settle in a
+    # degenerate local minimum where most model predictions collapse to 0.
+    #
+    # Two fixes applied together (following Calotes 2023, §3.1):
+    #
+    # 1. Initial ν seed — start ν so its first cosine zero sits at 2×T_max,
+    #    well outside the data: ν_est = π/(2×T_max).
+    #    This places the optimizer in the basin where the cosine stays near 1
+    #    and the model behaves as a smooth power law over the full lag range.
+    #
+    # 2. Dynamic ν upper bound — cap ν at π/T_max so the cosine first zero
+    #    cannot move inside the lag window during optimisation.
+    #    This turns the physical validity constraint into a hard bound,
+    #    consistent with Calotes who always works in the cos>0 regime.
+    if model in ('cosine', 'sine') and len(lags_fit) > 4:
+        T_max   = float(lags_fit[-1])
+        nu_est  = float(np.pi / (2.0 * T_max))          # first zero at 2×T_max
+        nu_max  = float(np.pi / T_max)                   # first zero exactly at T_max
+        nu_est  = float(np.clip(nu_est, bounds[0][1], nu_max))
+        nu_max  = float(np.clip(nu_max, bounds[0][1], bounds[1][1]))
+        bounds  = (list(bounds[0]), list(bounds[1]))
+        bounds[1][1] = nu_max                            # tighten upper bound for ν
+        bounds  = (bounds[0], bounds[1])
+        p0 = [p0[0], nu_est]
 
     # ── Dual fit ───────────────────────────────────────────────────────────────
     res_pure   = _fit_pure(msd_fn, lags_fit, msd_fit, param_names, p0, bounds)
