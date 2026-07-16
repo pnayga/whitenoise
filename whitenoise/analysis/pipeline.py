@@ -31,7 +31,22 @@ from ..utils.preprocess import detrend, normalize as _normalize_fn
 # 2. exponential — memory-persistence classification via μ directly.
 #    MSD = Γ(μ)·β^(−μ)·T^(μ−1)·e^(−β/T) does not reduce to a clean power law
 #    over the fitting range, so the α-based diffusive labels above do not
-#    apply. μ is interpreted as memory persistence instead.
+#    apply. Instead, classification comes from the power-law scaling
+#    exponent (μ−1)/2 in the memory function
+#    f(t−τ)h(τ) = (t−τ)^((μ−1)/2) · exp(−β/2τ) / τ:
+#
+#      μ = 1  -> exponent (μ−1)/2 = 0, so the power-law term (t−τ)^((μ−1)/2)
+#                disappears; f(t−τ)h(τ) = exp(−β/2τ)/τ. Fluctuation behavior
+#                is dominated purely by the exponential damping term:
+#                a memoryless process.
+#      μ > 1  -> exponent (μ−1)/2 > 0, so (t−τ)^((μ−1)/2) increases as
+#                t−τ increases: the memory effect of an earlier fluctuation
+#                at τ ≪ t is stronger. Non-Markovian, long memory.
+#      μ < 1  -> exponent (μ−1)/2 < 0, so (t−τ)^((μ−1)/2) decreases as
+#                t−τ increases: the memory effect of an earlier fluctuation
+#                at τ ≪ t is weaker (though it strengthens again as τ → t).
+#                Non-Markovian, short memory.
+#
 #    Source: Sithi et al. (2025, Physica Scripta 100, 015243).
 #
 # All other models (fbm, and the stub models) have no automatic
@@ -53,7 +68,10 @@ def _classify_cosine_sine(mu: float) -> str | None:
 
 
 def _classify_exponential(mu: float) -> str | None:
-    """μ-based memory-persistence classification (Sithi et al. 2025)."""
+    """
+    μ-based memory-persistence classification, via the (μ−1)/2 power-law
+    scaling exponent in the memory function (Sithi et al. 2025).
+    """
     if mu is None or mu != mu:  # None or nan
         return None
     if mu == 1:
@@ -69,6 +87,14 @@ def _alpha(fit: FitResult | None, model: str) -> float | None:
     if fit is None or model not in ('cosine', 'sine'):
         return None
     return 2.0 * fit.params.get('mu', float('nan')) - 1.0
+
+
+def _memory_exponent(fit: FitResult | None, model: str) -> float | None:
+    """Return the (μ−1)/2 power-law scaling exponent for the exponential
+    model's memory function, else None."""
+    if fit is None or model != 'exponential':
+        return None
+    return (fit.params.get('mu', float('nan')) - 1.0) / 2.0
 
 
 def _classify(fit: FitResult | None, model: str) -> str | None:
@@ -128,6 +154,16 @@ class AnalysisResult:
     def alpha(self) -> float | None:
         """α = 2μ−1, defined only for cosine/sine models (Elnar et al. 2021)."""
         return _alpha(self.fit, self.model)
+
+    @property
+    def memory_exponent(self) -> float | None:
+        """
+        (μ−1)/2, the power-law scaling exponent in the exponential model's
+        memory function f(t−τ)h(τ) = (t−τ)^((μ−1)/2)·exp(−β/2τ)/τ.
+        Defined only for the exponential model (Sithi et al. 2025); ``None``
+        otherwise.
+        """
+        return _memory_exponent(self.fit, self.model)
 
     @property
     def regime(self) -> str | None:
@@ -206,6 +242,7 @@ class AnalysisResult:
                     print(f' \u03b1 = 2\u03bc\u22121  = {self.alpha:.4f}')
                     print(f' Regime    : {regime_label}  (Elnar et al. 2021)')
                 elif self.model == 'exponential':
+                    print(f' (\u03bc\u22121)/2   = {self.memory_exponent:.4f}')
                     print(f' Memory    : {regime_label}  (Sithi et al. 2025)')
 
         print(SEP_SINGLE)

@@ -410,6 +410,7 @@ def plot_diagnostics(result, show=True) -> matplotlib.figure.Figure:
                 lines.append(f'alpha   = {result.alpha:.4f}')
                 lines.append(f'Regime  : {regime_label}')
             elif result.model == 'exponential':
+                lines.append(f'(mu-1)/2 = {result.memory_exponent:.4f}')
                 lines.append(f'Memory  : {regime_label}')
     else:
         lines.append('Fit     : N/A (fitting failed)')

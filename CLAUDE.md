@@ -273,14 +273,21 @@ law, MSD ≈ c·T^α, with **α = 2μ − 1**. Classification is on α, not μ:
 **2. Exponential model — memory-strength classification, via μ directly.**
 This model's MSD (Γ(μ)·β^(−μ)·T^(μ−1)·e^(−β/T)) does not reduce to a clean
 power law over the fitting range, so the diffusive-regime labels above do
-NOT apply here. Classify directly on μ, using memory-persistence language,
-not diffusive-regime language:
-  - μ = 1   → memoryless (memory function reduces to pure exponential
-              damping)
-  - μ > 1   → non-Markovian, long memory (past fluctuations persist and
-              reinforce)
-  - μ < 1   → non-Markovian, short memory (past fluctuations decay
-              faster / anti-persistent)
+NOT apply here. Classification instead comes from the power-law scaling
+exponent **(μ−1)/2** in the memory function
+f(t−τ)h(τ) = (t−τ)^((μ−1)/2)·exp(−β/2τ)/τ:
+
+  - **μ = 1**: the exponent (μ−1)/2 = 0, so the power-law term
+    (t−τ)^((μ−1)/2) disappears and f(t−τ)h(τ) = exp(−β/2τ)/τ. Fluctuation
+    behavior is dominated purely by the exponential damping term — a
+    **memoryless** process.
+  - **μ > 1**: exponent (μ−1)/2 > 0, so (t−τ)^((μ−1)/2) increases as t−τ
+    increases — the memory effect of an earlier fluctuation at τ ≪ t is
+    stronger. **Non-Markovian, long memory.**
+  - **μ < 1**: exponent (μ−1)/2 < 0, so (t−τ)^((μ−1)/2) decreases as t−τ
+    increases — the memory effect of an earlier fluctuation at τ ≪ t is
+    weaker (though it strengthens again as τ approaches t).
+    **Non-Markovian, short memory.**
 
   Source: Sithi et al. (2025, *Physica Scripta* 100, 015243).
 
@@ -297,9 +304,11 @@ the α-based classifier, exponential routes to the μ-based memory
 classifier, everything else returns `None`. There is no generic
 model-agnostic classification function — do not reintroduce one.
 `AnalysisResult.alpha` exposes α = 2μ−1 for cosine/sine (`None` otherwise).
+`AnalysisResult.memory_exponent` exposes (μ−1)/2 for exponential
+(`None` otherwise).
 
-Raw fitted parameters (μ, α, H, N, R²) are always reported regardless of
-whether a classification applies.
+Raw fitted parameters (μ, α, (μ−1)/2, H, N, R²) are always reported
+regardless of whether a classification applies.
 
 The historical "Prompt 5–7" sections below predate this split scheme and
 describe an earlier single generic μ-only regime table (with labels

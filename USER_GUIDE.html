@@ -240,9 +240,23 @@
   </li>
   <li>
     <strong>Exponential model</strong> does not reduce to a clean power law over the fitting
-    range, so the &alpha;-based labels above do not apply. Instead &mu; is classified
-    directly as memory persistence: &mu; = 1 memoryless, &mu; &gt; 1 non-Markovian long
-    memory, &mu; &lt; 1 non-Markovian short memory.
+    range, so the &alpha;-based labels above do not apply. Instead classification comes from
+    the power-law scaling exponent <strong>(&mu;&minus;1)/2</strong> in the memory function
+    f(t&minus;&tau;)h(&tau;) = (t&minus;&tau;)<sup>(&mu;&minus;1)/2</sup>&middot;e<sup>&minus;&beta;/2&tau;</sup>/&tau;:
+    <ul>
+      <li><strong>&mu; = 1</strong>: exponent (&mu;&minus;1)/2 = 0, so the power-law term
+      disappears and f(t&minus;&tau;)h(&tau;) = e<sup>&minus;&beta;/2&tau;</sup>/&tau; &mdash;
+      fluctuation behavior is dominated purely by the exponential damping term: a
+      <strong>memoryless</strong> process.</li>
+      <li><strong>&mu; &gt; 1</strong>: exponent (&mu;&minus;1)/2 &gt; 0, so
+      (t&minus;&tau;)<sup>(&mu;&minus;1)/2</sup> increases as t&minus;&tau; increases &mdash;
+      the memory effect of an earlier fluctuation at &tau; &laquo; t is stronger.
+      <strong>Non-Markovian, long memory.</strong></li>
+      <li><strong>&mu; &lt; 1</strong>: exponent (&mu;&minus;1)/2 &lt; 0, so
+      (t&minus;&tau;)<sup>(&mu;&minus;1)/2</sup> decreases as t&minus;&tau; increases &mdash;
+      the memory effect of an earlier fluctuation at &tau; &laquo; t is weaker (though it
+      strengthens again as &tau; approaches t). <strong>Non-Markovian, short memory.</strong></li>
+    </ul>
     Source: Sithi et al. (2025, <em>Physica Scripta</em> 100, 015243).
   </li>
   <li>

@@ -176,10 +176,26 @@ def msd_exponential(T, mu: float, beta: float):
         Memory parameter. Unlike the cosine/sine models, this MSD does not
         reduce to a clean power law over the fitting range, so the
         alpha-based diffusive-regime classification does not apply here.
-        Instead, mu is interpreted directly as memory persistence:
-        mu = 1 memoryless, mu > 1 non-Markovian long memory, mu < 1
-        non-Markovian short memory (Sithi et al. 2025, Physica Scripta 100,
-        015243). See ``AnalysisResult.regime``.
+        Instead, mu is interpreted directly as memory persistence, via the
+        power-law scaling exponent (mu - 1) / 2 in the memory function
+        f(t - tau) h(tau) = (t - tau)^((mu-1)/2) * exp(-beta / 2*tau) / tau
+        (Sithi et al. 2025, Physica Scripta 100, 015243):
+
+          mu = 1  -> the power-law term (t-tau)^((mu-1)/2) disappears
+                     (exponent = 0), leaving f(t-tau)h(tau) = exp(-beta/2tau)/tau.
+                     Fluctuation behavior is dominated purely by the
+                     exponential damping term: a memoryless process.
+          mu > 1  -> exponent (mu-1)/2 > 0, so (t-tau)^((mu-1)/2) increases
+                     as t-tau increases: the memory effect of an earlier
+                     fluctuation at tau << t is stronger. Non-Markovian,
+                     long memory.
+          mu < 1  -> exponent (mu-1)/2 < 0, so (t-tau)^((mu-1)/2) decreases
+                     as t-tau increases: the memory effect of an earlier
+                     fluctuation at tau << t is weaker. (As tau approaches
+                     t, the memory effect increases.) Non-Markovian, short
+                     memory.
+
+        See ``AnalysisResult.regime``.
     beta : float
         Exponential decay rate (inverse time unit).
 
@@ -192,7 +208,8 @@ def msd_exponential(T, mu: float, beta: float):
     ----------
     Bernido & Carpio-Bernido (2015), Table 2.1 row 4.
     Sithi et al. (2025), Physica Scripta 100, 015243 — mu-based memory
-    persistence classification.
+    persistence classification via the (mu-1)/2 power-law scaling exponent
+    in the memory function.
     """
     # Step 1: Normalize input — accept scalar, list, or array; remember if scalar
     T_arr, scalar = _to_array(T)
