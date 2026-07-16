@@ -72,7 +72,7 @@ def test_02_summary_df_has_expected_columns(tmp_path):
 
     expected_cols = {
         'dataset_name', 'model', 'mu', 'mu_ci',
-        'nu_or_beta', 'nu_or_beta_ci', 'N', 'r_squared', 'regime',
+        'nu_or_beta', 'nu_or_beta_ci', 'N', 'r_squared',
     }
     actual_cols = set(cr.summary_df.columns)
     missing = expected_cols - actual_cols

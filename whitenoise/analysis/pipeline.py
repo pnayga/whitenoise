@@ -17,57 +17,75 @@ from ..core.fitting import fit_msd, FitResult, _sym
 from ..utils.preprocess import detrend, normalize as _normalize_fn
 
 
-# ── Regime label ───────────────────────────────────────────────────────────────
+# ── Classification (model-family specific — do not merge these schemes) ────────
+#
+# Two distinct, independently-sourced classification schemes apply to two
+# distinct model families. A single generic μ-only classification across all
+# models is NOT scientifically justified and must not be reintroduced.
+#
+# 1. cosine / sine — diffusive-regime classification via α = 2μ − 1.
+#    These models admit a short-time (T ≪ 1) reduction of the MSD to a power
+#    law, MSD ≈ c·T^α. Classification is on α, not μ directly.
+#    Source: Elnar et al. (2021, Climate Dynamics).
+#
+# 2. exponential — memory-persistence classification via μ directly.
+#    MSD = Γ(μ)·β^(−μ)·T^(μ−1)·e^(−β/T) does not reduce to a clean power law
+#    over the fitting range, so the α-based diffusive labels above do not
+#    apply. μ is interpreted as memory persistence instead.
+#    Source: Sithi et al. (2025, Physica Scripta 100, 015243).
+#
+# All other models (fbm, and the stub models) have no automatic
+# classification until their own reduction/source is confirmed.
 
-def _regime(fit: FitResult | None) -> str:
+def _classify_cosine_sine(mu: float) -> str | None:
+    """α = 2μ−1 diffusive-regime classification (Elnar et al. 2021)."""
+    if mu is None or mu != mu:  # None or nan
+        return None
+    alpha = 2.0 * mu - 1.0
+    if alpha < 1:
+        return 'subdiffusive'
+    elif alpha == 1:
+        return 'brownian'
+    elif alpha < 2:
+        return 'superdiffusive'
+    else:
+        return 'hyperballistic'
+
+
+def _classify_exponential(mu: float) -> str | None:
+    """μ-based memory-persistence classification (Sithi et al. 2025)."""
+    if mu is None or mu != mu:  # None or nan
+        return None
+    if mu == 1:
+        return 'memoryless'
+    elif mu > 1:
+        return 'non-Markovian, long memory'
+    else:
+        return 'non-Markovian, short memory'
+
+
+def _alpha(fit: FitResult | None, model: str) -> float | None:
+    """Return α = 2μ−1 for cosine/sine models, else None."""
+    if fit is None or model not in ('cosine', 'sine'):
+        return None
+    return 2.0 * fit.params.get('mu', float('nan')) - 1.0
+
+
+def _classify(fit: FitResult | None, model: str) -> str | None:
     """
-    Return a plain-English diffusion regime label from a FitResult.
+    Dispatch to the correct model-family classification scheme.
 
-    For μ-based models (cosine, sine, exponential, etc.):
-      μ < 0.95          → 'subdiffusive'
-      0.95 ≤ μ ≤ 1.05   → 'near-Brownian'
-      1.05 < μ ≤ 2.0    → 'superdiffusive'
-      μ > 2.0           → 'hyperballistic'
-
-    For fBm (H parameter):
-      H < 0.475         → 'subdiffusive'
-      0.475 ≤ H ≤ 0.525 → 'near-Brownian'
-      H > 0.525         → 'superdiffusive'
-
-    For DNA model (plateau — a, b, c parameters): 'plateau'
+    cosine/sine  -> α-based diffusive regime (Elnar et al. 2021)
+    exponential  -> μ-based memory persistence (Sithi et al. 2025)
+    other models -> None (no classification without a confirmed source)
     """
     if fit is None:
-        return 'N/A'
-
-    params = fit.params
-
-    if 'mu' in params:
-        # μ-based models: cosine, sine, exponential, and most others
-        mu = params['mu']
-        if mu < 0.95:
-            return 'subdiffusive'
-        elif mu <= 1.05:
-            return 'near-Brownian'
-        elif mu <= 2.0:
-            return 'superdiffusive'
-        else:
-            return 'hyperballistic'
-
-    elif 'H' in params:
-        # fBm model — classify by Hurst exponent
-        H = params['H']
-        if H < 0.475:
-            return 'subdiffusive'
-        elif H <= 0.525:
-            return 'near-Brownian'
-        else:
-            return 'superdiffusive'
-
-    elif 'a' in params:
-        # exp_plateau model — purely exponential memory, saturating MSD (restricted diffusion)
-        return 'plateau'
-
-    return 'unknown'
+        return None
+    if model in ('cosine', 'sine'):
+        return _classify_cosine_sine(fit.params.get('mu'))
+    elif model == 'exponential':
+        return _classify_exponential(fit.params.get('mu'))
+    return None
 
 
 # ── AnalysisResult ─────────────────────────────────────────────────────────────
@@ -107,9 +125,24 @@ class AnalysisResult:
     metadata:      dict
 
     @property
-    def regime(self) -> str:
-        """Diffusion regime label derived from the fitted parameters."""
-        return _regime(self.fit)
+    def alpha(self) -> float | None:
+        """α = 2μ−1, defined only for cosine/sine models (Elnar et al. 2021)."""
+        return _alpha(self.fit, self.model)
+
+    @property
+    def regime(self) -> str | None:
+        """
+        Model-family-specific classification label, or ``None`` if the
+        current model has no confirmed classification scheme.
+
+        cosine/sine  : diffusive regime via α = 2μ−1 (Elnar et al. 2021)
+                       -> 'subdiffusive' | 'brownian' | 'superdiffusive' | 'hyperballistic'
+        exponential  : memory persistence via μ (Sithi et al. 2025)
+                       -> 'memoryless' | 'non-Markovian, long memory' |
+                          'non-Markovian, short memory'
+        other models : None
+        """
+        return _classify(self.fit, self.model)
 
     def summary(self) -> None:
         """
@@ -130,7 +163,6 @@ class AnalysisResult:
                ν      = 0.0082  ±  0.0003
                N      = 2.4312  ±  0.0441
              R²        = 0.9823
-             Regime    : superdiffusive
             ──────────────────────────────────────────
              Units     : x=time (months), y=sunspot_number (count)
             ══════════════════════════════════════════
@@ -150,7 +182,6 @@ class AnalysisResult:
         if self.fit is None:
             print(' Parameters: N/A (fitting failed)')
             print(' R\u00b2        : N/A')
-            print(' Regime    : N/A')
         else:
             print(' Parameters:')
             for pname, pval in self.fit.params.items():
@@ -168,7 +199,14 @@ class AnalysisResult:
             scaled_tag = ' \u2190 selected' if self.fit.fit_mode == 'scaled' else ''
             print(f' R\u00b2 (pure MSD)  = {_r2s(r2_pure)}{pure_tag}')
             print(f' R\u00b2 (N\u00b7MSD)     = {_r2s(r2_scaled)}{scaled_tag}')
-            print(f' Regime         : {self.regime}')
+
+            regime_label = self.regime
+            if regime_label is not None:
+                if self.model in ('cosine', 'sine'):
+                    print(f' \u03b1 = 2\u03bc\u22121  = {self.alpha:.4f}')
+                    print(f' Regime    : {regime_label}  (Elnar et al. 2021)')
+                elif self.model == 'exponential':
+                    print(f' Memory    : {regime_label}  (Sithi et al. 2025)')
 
         print(SEP_SINGLE)
         t_label = self.metadata.get('x_label', 'x')
@@ -231,7 +269,7 @@ def analyze(
         Extra keyword arguments forwarded to
         :func:`~whitenoise.core.fitting.fit_msd` (e.g. ``p0``, ``bounds``).
     verbose : bool, default ``True``
-        If ``True``, print ✓ progress lines and the final regime/R² summary.
+        If ``True``, print ✓ progress lines and the final R² summary.
         If ``False``, suppress all output from the pipeline (note: fitting
         quality warnings from fit_msd itself are still printed).
 
@@ -326,11 +364,11 @@ def analyze(
         if fit_result is None:
             print('\u2717 Fitting failed — check data or try a different model.')
         else:
-            regime_str = _regime(fit_result)
-            print(
-                f'\u2713 Done.  R\u00b2 = {fit_result.r_squared:.4f}  '
-                f'|  regime: {regime_str}'
-            )
+            regime_label = _classify(fit_result, model)
+            if regime_label is not None:
+                print(f'✓ Done.  R² = {fit_result.r_squared:.4f}  |  {regime_label}')
+            else:
+                print(f'✓ Done.  R² = {fit_result.r_squared:.4f}')
 
     return AnalysisResult(
         dataset_name=dataset_name,

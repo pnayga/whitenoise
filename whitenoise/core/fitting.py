@@ -370,7 +370,7 @@ def fit_msd(
     # i.e. T < π/ν.  When ν is too large the optimizer can settle in a
     # degenerate local minimum where most model predictions collapse to 0.
     #
-    # Two fixes applied together (following Calotes 2023, §3.1):
+    # Two fixes applied together:
     #
     # 1. Initial ν seed — start ν so its first cosine zero sits at 2×T_max,
     #    well outside the data: ν_est = π/(2×T_max).
@@ -379,8 +379,7 @@ def fit_msd(
     #
     # 2. Dynamic ν upper bound — cap ν at π/T_max so the cosine first zero
     #    cannot move inside the lag window during optimisation.
-    #    This turns the physical validity constraint into a hard bound,
-    #    consistent with Calotes who always works in the cos>0 regime.
+    #    This turns the physical validity constraint into a hard bound.
     if model in ('cosine', 'sine') and len(lags_fit) > 4:
         T_max   = float(lags_fit[-1])
         nu_est  = float(np.pi / (2.0 * T_max))          # first zero at 2×T_max

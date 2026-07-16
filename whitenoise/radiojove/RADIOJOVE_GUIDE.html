@@ -496,7 +496,6 @@ result = out['result']
 if result and result.fit:
     print(f"mu    = {result.fit.params['mu']:.4f}")
     print(f"R2    = {result.fit.r_squared:.4f}")
-    print(f"regime: {result.regime}")
 
 out['figure'].show()     # dual-panel MSD plot (linear + log-log)</pre>
 
@@ -546,7 +545,7 @@ fig.show()</pre>
     output_dir='swna_results/',
 )
 
-print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])</pre>
+print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared']])</pre>
 
 <p>You can also pass a specific list of files:</p>
 <pre>paths_01s = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
@@ -565,7 +564,6 @@ df = wn.radiojove.batch_analyze_bursts(paths_01s, model='exponential')</pre>
   <tr><td><code>mu_ci_high</code></td><td>95% CI upper bound for &mu;</td></tr>
   <tr><td><code>beta</code></td><td>Exponential decay rate &beta; (exponential model)</td></tr>
   <tr><td><code>r_squared</code></td><td>Goodness of fit R&sup2;</td></tr>
-  <tr><td><code>regime</code></td><td>Diffusion regime (see Section&nbsp;8)</td></tr>
 </table>
 
 <div class="tip">
@@ -621,7 +619,7 @@ df_01s['cadence'] = '0.1s'
 df_10s['cadence'] = '1.0s'
 
 df_all = pd.concat([df_01s, df_10s], ignore_index=True)
-print(df_all[['dataset', 'cadence', 'mu', 'r_squared', 'regime']])</pre>
+print(df_all[['dataset', 'cadence', 'mu', 'r_squared']])</pre>
 
 <div class="tip">
   <strong>Interpretation:</strong> If &mu; at 0.1&nbsp;s and 1.0&nbsp;s agree to within their
@@ -653,19 +651,21 @@ print(df_all[['dataset', 'cadence', 'mu', 'r_squared', 'regime']])</pre>
 </div>
 
 <h3>Interpreting &mu;</h3>
-<table>
-  <tr><th>&mu; range</th><th>Regime</th><th>Physical interpretation</th></tr>
-  <tr><td>&mu; &lt; 0.95</td><td>subdiffusive</td><td>Anti-correlated fluctuations; restricted spreading</td></tr>
-  <tr><td>0.95 &le; &mu; &le; 1.05</td><td>near-Brownian</td><td>Weak or no memory; ordinary random walk</td></tr>
-  <tr><td>1.05 &lt; &mu; &le; 2.0</td><td>superdiffusive</td><td>Positively correlated; fast spreading</td></tr>
-  <tr><td>&mu; &gt; 2.0</td><td>hyperballistic</td><td>Strongly persistent; extreme memory</td></tr>
-</table>
+<p>
+  The package always reports &mu; (and its 95% confidence interval) directly. For the
+  <strong>exponential</strong> model (recommended here), the MSD does not reduce to a clean
+  power law, so classification is on &mu; directly as memory persistence, not a diffusive-regime
+  label: &mu; = 1 memoryless, &mu; &gt; 1 non-Markovian long memory (past fluctuations persist
+  and reinforce), &mu; &lt; 1 non-Markovian short memory. Source: Sithi et al. (2025,
+  <em>Physica Scripta</em> 100, 015243). (If you instead fit <code>cosine</code>/<code>sine</code>
+  to a burst, classification there is on &alpha; = 2&mu; &minus; 1 — see the main USER_GUIDE.)
+  &mu; = 1 is always ordinary Brownian motion.
+</p>
 
 <p>
   Type III solar bursts are driven by semi-relativistic electron beams spiralling along open
   coronal magnetic field lines. These beams produce positively correlated, fast-spreading
-  intensity fluctuations — consistent with the observed <strong>&mu; &asymp; 1.4&ndash;1.6
-  (superdiffusive)</strong> regime.
+  intensity fluctuations — consistent with the observed <strong>&mu; &asymp; 1.4&ndash;1.6</strong>.
 </p>
 
 <hr>
@@ -750,7 +750,7 @@ df_10s['cadence'] = '1.0s'
 df_all = pd.concat([df_01s, df_10s], ignore_index=True)
 df_all.to_csv(os.path.join(OUT_DIR, 'swna_summary.csv'), index=False)
 
-cols = ['dataset', 'cadence', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']
+cols = ['dataset', 'cadence', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared']
 print(df_all[cols].to_string(index=False))
 
 # ── Step 4: Compare 0.1s cadence bursts ───────────────────────────────────────

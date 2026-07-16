@@ -110,14 +110,16 @@ wn.plot_diagnostics(result)</pre>
 
 <!-- 4. Memory Parameter mu -->
 <h2>4. Memory Parameter &mu;</h2>
-<table>
-  <tr><th>&mu;</th><th>Regime</th></tr>
-  <tr><td>&lt; 0.95</td><td>Subdiffusive</td></tr>
-  <tr><td>0.95&ndash;1.05</td><td>Near-Brownian</td></tr>
-  <tr><td>1.05&ndash;2.0</td><td>Superdiffusive</td></tr>
-  <tr><td>&gt; 2.0</td><td>Hyperballistic</td></tr>
-</table>
-<p>For fBm: H &lt; 0.5 subdiffusive &nbsp;&middot;&nbsp; H = 0.5 Brownian &nbsp;&middot;&nbsp; H &gt; 0.5 superdiffusive</p>
+<p>
+  The package always reports &mu; (and its 95% confidence interval) directly. Where a
+  classification is available it is model-family specific: <strong>cosine/sine</strong> use
+  &alpha; = 2&mu; &minus; 1 (subdiffusive/Brownian/superdiffusive/hyperballistic; Elnar et al. 2021,
+  <em>Climate Dynamics</em>), <strong>exponential</strong> uses &mu; directly as memory persistence
+  (memoryless/long memory/short memory; Sithi et al. 2025, <em>Physica Scripta</em> 100, 015243),
+  and other models have no classification yet. &mu; = 1 (&alpha; = 1) is always ordinary Brownian
+  motion.
+</p>
+<p>For fBm: H = 0.5 is Brownian motion; H &lt; 0.5 grows slower than T; H &gt; 0.5 grows faster than T. No automatic classification is attached to this model.</p>
 
 <!-- 5. Available Models -->
 <h2 class="section-break">5. Available Models</h2>

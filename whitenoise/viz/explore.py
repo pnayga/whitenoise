@@ -399,11 +399,18 @@ def plot_diagnostics(result, show=True) -> matplotlib.figure.Figure:
     ]
     if result.fit is not None:
         lines.append(f'R\u00b2      : {result.fit.r_squared:.4f}')
-        lines.append(f'Regime  : {result.regime}')
         lines.append('')
         for pname, pval in result.fit.params.items():
             se = result.fit.std_errors.get(pname, float('nan'))
             lines.append(f'{pname:<6} = {pval:.4f} \u00b1 {se:.4f}')
+        regime_label = result.regime
+        if regime_label is not None:
+            lines.append('')
+            if result.model in ('cosine', 'sine'):
+                lines.append(f'alpha   = {result.alpha:.4f}')
+                lines.append(f'Regime  : {regime_label}')
+            elif result.model == 'exponential':
+                lines.append(f'Memory  : {regime_label}')
     else:
         lines.append('Fit     : N/A (fitting failed)')
 

@@ -131,10 +131,14 @@ Extended models (stubbed — NotImplementedError, implement later):
 
 ## Parameters
   μ (mu):   memory parameter
-              μ < 1   subdiffusive
-              μ = 1   Brownian (no memory)
-              μ > 1   superdiffusive
-              μ > 2   hyperballistic
+              μ < 1   MSD grows slower than linear
+              μ = 1   Brownian motion (no memory)
+              μ > 1   MSD grows faster than linear
+
+            Classification of μ is MODEL-FAMILY SPECIFIC. Two independently
+            sourced schemes apply to two different model families — they
+            must never be merged into a single generic μ-only table. See
+            "## Regime / Memory Classification" below for the full spec.
   ν (nu):   characteristic frequency (cosine, sine models)
   β (beta): exponential decay rate (exponential and related models)
   H:        Hurst exponent (fBm, H=0.5 → Brownian)
@@ -222,7 +226,6 @@ All three return ComparisonResult.
   Solar sunspot (exponential): μ ≈ 1.15        (Toledo et al. 2024)
   GBR coral (cosine):          μ ≈ 4.64        (Elnar et al. 2021)
   CO₂ Keeling (cosine):        μ ≈ 0.91–0.97  (Elnar et al. 2024)
-  X-ray binaries (cosine):     μ ∈ [0.50,1.39] (Calotes thesis 2024)
 
 ---
 
@@ -237,6 +240,75 @@ The workshop Colab notebook (NOT in this repo) uses this package:
 CSV files are distributed separately (Google Drive, USB, etc.).
 This package has zero knowledge that a workshop exists.
 ```
+
+---
+
+## Regime / Memory Classification
+
+Regime classification is **never done on raw fitted μ alone across all
+models**. It depends on which model was fit — two independently sourced
+schemes apply to two different model families, and they must not be merged
+into a single generic μ-only table. (An earlier single-table version of
+this classification, keyed only on μ with no model-family distinction, was
+removed for exactly this reason — see git history / prior CLAUDE.md
+revisions if that version is needed for reference.)
+
+**1. Cosine and sine models — diffusive-regime classification, via α.**
+These models admit a short-time (T ≪ 1) reduction of the MSD to a power
+law, MSD ≈ c·T^α, with **α = 2μ − 1**. Classification is on α, not μ:
+  - α < 1        → subdiffusive
+  - α = 1        → Brownian
+  - 1 < α < 2    → superdiffusive
+  - α > 2        → hyperballistic
+
+  Source: Elnar et al. (2021, *Climate Dynamics*). This is the only
+  acceptable source for this classification.
+
+  The Calotes (2024) MS thesis is unpublished and must not be cited
+  anywhere in the package or documentation, for any claim — including
+  X-ray binary μ/ν benchmark values that were previously attributed to
+  it. Those benchmark entries have been removed pending a published
+  replacement source.
+
+**2. Exponential model — memory-strength classification, via μ directly.**
+This model's MSD (Γ(μ)·β^(−μ)·T^(μ−1)·e^(−β/T)) does not reduce to a clean
+power law over the fitting range, so the diffusive-regime labels above do
+NOT apply here. Classify directly on μ, using memory-persistence language,
+not diffusive-regime language:
+  - μ = 1   → memoryless (memory function reduces to pure exponential
+              damping)
+  - μ > 1   → non-Markovian, long memory (past fluctuations persist and
+              reinforce)
+  - μ < 1   → non-Markovian, short memory (past fluctuations decay
+              faster / anti-persistent)
+
+  Source: Sithi et al. (2025, *Physica Scripta* 100, 015243).
+
+**3. All other models** (fbm, and the 12 stub models) — no automatic
+classification until their own reduction/source is confirmed. fbm keeps
+its own plain H=0.5 → Brownian-motion statement (a precise mathematical
+fact, not a disputed classification) but is not given the subdiffusive/
+superdiffusive/hyperballistic vocabulary, since that vocabulary is
+specifically sourced to Elnar et al. (2021) for the cosine/sine α-reduction.
+
+**Implementation** (`whitenoise/analysis/pipeline.py`):
+`AnalysisResult.regime` dispatches on `self.model`: cosine/sine route to
+the α-based classifier, exponential routes to the μ-based memory
+classifier, everything else returns `None`. There is no generic
+model-agnostic classification function — do not reintroduce one.
+`AnalysisResult.alpha` exposes α = 2μ−1 for cosine/sine (`None` otherwise).
+
+Raw fitted parameters (μ, α, H, N, R²) are always reported regardless of
+whether a classification applies.
+
+The historical "Prompt 5–7" sections below predate this split scheme and
+describe an earlier single generic μ-only regime table (with labels
+`subdiffusive`/`near-Brownian`/`superdiffusive`/`hyperballistic` keyed
+directly on μ, and `REGIME_COLORS`). That table conflated the cosine/sine
+and exponential schemes and is not supported by any single source — it has
+been superseded by the split scheme above. Treat any `.regime` /
+`REGIME_COLORS` / μ-only-threshold-table reference in the prompt text below
+as historical record only, not current spec.
 
 ---
 

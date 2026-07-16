@@ -58,9 +58,8 @@ _NOT_IMPL_MSG = (
 
 # ── Priority Model: cosine (Table 2.1 row 10) ─────────────────────────────────
 # Published applications in Bernido group:
-#   Elnar et al. (2021) — GBR coral bleaching, μ ≈ 4.64 (hyperballistic)
-#   Elnar et al. (2024) — CO₂ Keeling curve, μ ≈ 0.91–0.97 (subdiffusive)
-#   Calotes thesis (2024) — X-ray binary light curves, μ ∈ [0.50, 1.39]
+#   Elnar et al. (2021) — GBR coral bleaching, μ ≈ 4.64
+#   Elnar et al. (2024) — CO₂ Keeling curve, μ ≈ 0.91–0.97
 
 def msd_cosine(T, mu: float, nu: float):
     """
@@ -76,8 +75,15 @@ def msd_cosine(T, mu: float, nu: float):
     T : float or np.ndarray
         Time lag(s). Positive values expected.
     mu : float
-        Memory parameter.  mu < 1 subdiffusive, mu = 1 Brownian,
-        mu > 1 superdiffusive.
+        Memory parameter.  mu < 1 indicates slower-than-linear MSD growth,
+        mu = 1 is ordinary Brownian motion, mu > 1 indicates
+        faster-than-linear MSD growth.
+
+        For a short-time (T << 1) diffusive-regime classification, this
+        model reduces to a power law MSD ~ T^alpha with alpha = 2*mu - 1;
+        classification is on alpha, not mu directly (Elnar et al. 2021,
+        Climate Dynamics). See ``AnalysisResult.regime`` /
+        ``AnalysisResult.alpha``.
     nu : float
         Characteristic frequency (rad per time unit).
 
@@ -90,6 +96,9 @@ def msd_cosine(T, mu: float, nu: float):
     References
     ----------
     Bernido & Carpio-Bernido (2015), Table 2.1 row 10.
+    Elnar et al. (2021), Climate Dynamics — alpha = 2*mu - 1 diffusive-regime
+    reduction and classification (subdiffusive/Brownian/superdiffusive/
+    hyperballistic).
     """
     # Step 1: Normalize input — accept scalar, list, or array; remember if scalar
     T_arr, scalar = _to_array(T)
@@ -164,7 +173,13 @@ def msd_exponential(T, mu: float, beta: float):
     T : float or np.ndarray
         Time lag(s). Positive values expected.
     mu : float
-        Memory parameter.
+        Memory parameter. Unlike the cosine/sine models, this MSD does not
+        reduce to a clean power law over the fitting range, so the
+        alpha-based diffusive-regime classification does not apply here.
+        Instead, mu is interpreted directly as memory persistence:
+        mu = 1 memoryless, mu > 1 non-Markovian long memory, mu < 1
+        non-Markovian short memory (Sithi et al. 2025, Physica Scripta 100,
+        015243). See ``AnalysisResult.regime``.
     beta : float
         Exponential decay rate (inverse time unit).
 
@@ -176,6 +191,8 @@ def msd_exponential(T, mu: float, beta: float):
     References
     ----------
     Bernido & Carpio-Bernido (2015), Table 2.1 row 4.
+    Sithi et al. (2025), Physica Scripta 100, 015243 — mu-based memory
+    persistence classification.
     """
     # Step 1: Normalize input — accept scalar, list, or array; remember if scalar
     T_arr, scalar = _to_array(T)
@@ -185,7 +202,7 @@ def msd_exponential(T, mu: float, beta: float):
     #
     #         Γ(μ)       — amplitude prefactor (from the white noise integral)
     #         β^(-μ)     — rescales amplitude by the decay rate β
-    #         T^(μ-1)    — power-law memory: μ>1 superdiffusive, μ<1 subdiffusive
+    #         T^(μ-1)    — power-law memory: μ>1 faster-than-linear growth, μ<1 slower-than-linear
     #         exp(-β/T)  — suppresses MSD at very small T (short-lag regularization)
     val = (
         gamma(mu)
@@ -238,7 +255,10 @@ def msd_sine(T, mu: float, nu: float):
     ----------
     T : float or np.ndarray
     mu : float
-        Memory parameter.
+        Memory parameter. As with the cosine model, the short-time
+        reduction MSD ~ T^alpha with alpha = 2*mu - 1 applies, and
+        classification is on alpha (Elnar et al. 2021, Climate Dynamics).
+        See ``AnalysisResult.regime`` / ``AnalysisResult.alpha``.
     nu : float
         Characteristic frequency.
 
@@ -250,6 +270,8 @@ def msd_sine(T, mu: float, nu: float):
     References
     ----------
     Bernido & Carpio-Bernido (2015), Table 2.1 row 9.
+    Elnar et al. (2021), Climate Dynamics — alpha = 2*mu - 1 diffusive-regime
+    reduction and classification.
     """
     # Step 1: Normalize input — accept scalar, list, or array; remember if scalar
     T_arr, scalar = _to_array(T)
@@ -321,8 +343,8 @@ def msd_fbm(T, H: float):
     H : float
         Hurst exponent.
         H = 0.5  -> ordinary Brownian motion (MSD = T).
-        H > 0.5  -> superdiffusive (persistent).
-        H < 0.5  -> subdiffusive (anti-persistent).
+        H > 0.5  -> MSD grows faster than T (persistent).
+        H < 0.5  -> MSD grows slower than T (anti-persistent).
 
     Returns
     -------
@@ -337,8 +359,8 @@ def msd_fbm(T, H: float):
 
     # Step 2: Evaluate MSD(T) = T^(2H)
     #         H = 0.5 → T^1 = T (ordinary Brownian motion)
-    #         H > 0.5 → grows faster than T (superdiffusive / persistent)
-    #         H < 0.5 → grows slower than T (subdiffusive / anti-persistent)
+    #         H > 0.5 → grows faster than T (persistent)
+    #         H < 0.5 → grows slower than T (anti-persistent)
     val = T_arr ** (2.0 * H)
 
     # Step 3: Replace any non-positive or non-finite values with NaN, return result
@@ -885,7 +907,7 @@ def pdf_bessel_jmu_nu(dx, T: float, mu: float, nu: float) -> np.ndarray:
 # ── MODELS registry ───────────────────────────────────────────────────────────
 
 MODELS: dict[str, dict] = {
-    # fBm — general subdiffusive/superdiffusive benchmark; no specific
+    # fBm — general MSD ~ T^(2H) benchmark; no specific
     # Bernido-group publication listed, but widely used in diffusion literature.
     'fbm': {
         'msd':         msd_fbm,
@@ -983,9 +1005,8 @@ MODELS: dict[str, dict] = {
         'reference':   'Table 2.1 row 9, Bernido & Carpio-Bernido (2015)',
     },
     # cosine — used in:
-    #   Elnar et al. (2021): GBR coral bleaching, mu ≈ 4.64 (hyperballistic)
-    #   Elnar et al. (2024): CO2 Keeling curve, mu ≈ 0.91–0.97 (subdiffusive)
-    #   Calotes thesis (2024): X-ray binary light curves, mu ∈ [0.50, 1.39]
+    #   Elnar et al. (2021): GBR coral bleaching, mu ≈ 4.64
+    #   Elnar et al. (2024): CO2 Keeling curve, mu ≈ 0.91–0.97
     'cosine': {
         'msd':         msd_cosine,
         'pdf':         pdf_cosine,

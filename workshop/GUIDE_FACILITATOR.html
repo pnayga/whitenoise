@@ -131,7 +131,7 @@
     <tr><td>0 – 10 min</td><td>Setup &amp; install</td><td>Help stragglers with pip install; verify imports work</td></tr>
     <tr><td>10 – 20 min</td><td>CSV format &amp; <code>read_csv()</code></td><td>Show V1–V4 warnings live with a bad CSV</td></tr>
     <tr><td>20 – 35 min</td><td>Pipeline Steps A–F (earthquake data)</td><td>Walk through slowly; check everyone sees the MSD plot</td></tr>
-    <tr><td>35 – 45 min</td><td>Model selection &amp; R²</td><td>Explain μ regimes table; demonstrate trying a wrong model</td></tr>
+    <tr><td>35 – 45 min</td><td>Model selection &amp; R²</td><td>Explain what μ means; demonstrate trying a wrong model</td></tr>
     <tr><td>45 – 55 min</td><td>Compare &amp; batch</td><td>Use both earthquake + sunspot datasets</td></tr>
     <tr><td>55 – 65 min</td><td>DNA model demo</td><td>Highlight restricted diffusion; note no μ for DNA model</td></tr>
     <tr><td>65 – 80 min</td><td>Participants' own data</td><td>Roam and assist individually</td></tr>
@@ -188,7 +188,7 @@
 <div class="sig">wn.analyze(source, model='cosine', label='', max_lag=None, max_lag_fraction=1.0, verbose=True) → AnalysisResult</div>
 <ul>
   <li><code>source</code>: CSV path string OR numpy array (array requires <code>label=</code>)</li>
-  <li>Returns <code>AnalysisResult</code> with: <code>.summary()</code>, <code>.fit</code>, <code>.regime</code>, <code>.mu</code>, <code>.to_csv()</code>, <code>.values</code>, <code>.lags</code></li>
+  <li>Returns <code>AnalysisResult</code> with: <code>.summary()</code>, <code>.fit</code>, <code>.mu</code>, <code>.to_csv()</code>, <code>.values</code>, <code>.lags</code></li>
 </ul>
 
 <div class="sig">wn.compare(datasets, model='cosine') → ComparisonResult</div>
@@ -265,7 +265,7 @@
       <td><code>dna</code></td>
       <td>a, b, c, N</td>
       <td>N·(a − c·e<sup>−bL</sup>)</td>
-      <td>Restricted diffusion; no μ or regime</td>
+      <td>Restricted diffusion; no μ parameter</td>
     </tr>
     <tr>
       <td>12 stubs</td>
@@ -280,22 +280,26 @@
   <strong>Facilitator tip:</strong> Start participants with <code>'exponential'</code> — it converges reliably for most inter-event time datasets. Introduce <code>'cosine'</code> only after they've seen a successful fit.
 </div>
 
-<!-- Section 5: μ Regime Table -->
-<h2>5. Memory Parameter μ — Full Regime Table</h2>
+<!-- Section 5: Memory Parameter μ -->
+<h2>5. Memory Parameter μ</h2>
 
-<table>
-  <thead>
-    <tr><th>μ range</th><th>Regime</th><th>Plain-language description</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>μ &lt; 0.95</td><td>SUBDIFFUSIVE</td><td>Past fluctuations resist change — slow spreading</td></tr>
-    <tr><td>0.95 – 1.05</td><td>NEAR-BROWNIAN</td><td>Weak or no memory — near-ordinary random walk</td></tr>
-    <tr><td>1.05 – 2.0</td><td>SUPERDIFFUSIVE</td><td>Past fluctuations reinforce future ones — fast spreading</td></tr>
-    <tr><td>μ &gt; 2.0</td><td>HYPERBALLISTIC</td><td>Extreme memory — strongly persistent dynamics</td></tr>
-  </tbody>
-</table>
+<p>
+  The package always reports μ (and its 95% confidence interval) directly. Where a classification
+  is available, it is <strong>model-family specific</strong> — two independently sourced schemes,
+  never merged into a single generic μ-only table:
+</p>
+<ul>
+  <li><strong>cosine / sine</strong> — short-time reduction MSD ≈ c·T<sup>α</sup>, α = 2μ − 1;
+  classify on α: subdiffusive (α&lt;1), Brownian (α=1), superdiffusive (1&lt;α&lt;2),
+  hyperballistic (α&gt;2). Source: Elnar et al. (2021, <em>Climate Dynamics</em>).</li>
+  <li><strong>exponential</strong> — does not reduce to a power law; classify on μ directly as
+  memory persistence: memoryless (μ=1), non-Markovian long memory (μ&gt;1), non-Markovian short
+  memory (μ&lt;1). Source: Sithi et al. (2025, <em>Physica Scripta</em> 100, 015243).</li>
+  <li><strong>other models</strong> — no automatic classification yet.</li>
+</ul>
+<p>Facilitators should always present μ (and α, where applicable) as continuous values alongside any classification, not the classification alone.</p>
 
-<p><strong>For <code>fbm</code> model:</strong> H &lt; 0.475 → subdiffusive; 0.475–0.525 → near-Brownian; H &gt; 0.525 → superdiffusive.</p>
+<p><strong>For <code>fbm</code> model:</strong> H = 0.5 is Brownian motion; H &lt; 0.5 grows slower than T; H &gt; 0.5 grows faster than T. No automatic classification is attached to fbm.</p>
 
 <!-- Section 6: Validated Benchmarks -->
 <h2>6. Validated Benchmarks</h2>
@@ -330,12 +334,6 @@
       <td>dna</td>
       <td>a ≈ 5.21, b ≈ 0.0024, c ≈ 3.81</td>
       <td>Violanda et al. 2019</td>
-    </tr>
-    <tr>
-      <td>X-ray binaries</td>
-      <td>cosine</td>
-      <td>μ ∈ [0.50, 1.39]</td>
-      <td>Calotes thesis 2024</td>
     </tr>
   </tbody>
 </table>
@@ -408,7 +406,6 @@
 <div class="warn">
   <strong>Key difference:</strong> The <code>'dna'</code> model does <em>not</em> extract a memory parameter μ.
   It fits a <strong>restricted diffusion / plateau</strong> model: MSD saturates to a finite value at large lag.
-  There is no regime classification (subdiffusive / superdiffusive) for this model.
 </div>
 
 <p><strong>MSD formula:</strong> <code>MSD(L) = N · (a − c · e<sup>−bL</sup>)</code></p>
@@ -467,7 +464,7 @@ value, value</code></pre>
     <tr><td><code>wn.compute_msd(values)</code></td><td>Compute MSD → (lags, msd)</td></tr>
     <tr><td><code>wn.plot_msd_empirical(lags, msd, metadata=meta)</code></td><td>Plot MSD scatter</td></tr>
     <tr><td><code>wn.analyze(path, model='exponential')</code></td><td>Full pipeline → AnalysisResult</td></tr>
-    <tr><td><code>result.summary()</code></td><td>Print μ, R², regime</td></tr>
+    <tr><td><code>result.summary()</code></td><td>Print μ, R²</td></tr>
     <tr><td><code>wn.plot_diagnostics(result)</code></td><td>2×2 diagnostic figure</td></tr>
     <tr><td><code>wn.compare({...}, model='...')</code></td><td>Compare datasets → ComparisonResult</td></tr>
     <tr><td><code>wn.batch_analyze(folder, model='...')</code></td><td>Batch folder → ComparisonResult</td></tr>

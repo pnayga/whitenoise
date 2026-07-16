@@ -17,7 +17,7 @@ Typical workflow::
         model='exponential',
     )
     out['figure'].show()
-    print(out['result'].regime)
+    print(out['result'].fit.params.get('mu'))
 
     # Batch — whole folder
     df = wn.radiojove.batch_analyze_bursts(
@@ -25,7 +25,7 @@ Typical workflow::
         model='exponential',
         output_dir='swna_results/',
     )
-    print(df[['dataset', 'mu', 'r_squared', 'regime']])
+    print(df[['dataset', 'mu', 'r_squared']])
 
     # Compare bursts at the same cadence
     paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')
@@ -37,15 +37,29 @@ Model guidance
 --------------
 - **exponential** (recommended for Type III solar bursts):
   MSD grows monotonically — matches fast-rise, slow-decay burst profile.
-  μ > 1 indicates superdiffusive spreading (typical for Type III bursts).
+  μ > 1 indicates faster-than-linear MSD growth (typical for Type III bursts).
+  Classification for this model is μ-based memory persistence — see
+  "Classification" below.
 
 - **cosine**: MSD oscillates — use if you observe periodic fluctuations.
   (Rarely appropriate for radio bursts; fails on monotonic MSD.)
 
 - **fbm**: Fractional Brownian motion. Hurst exponent H instead of μ.
-  H = 0.5 → Brownian; H > 0.5 → superdiffusive.
+  H = 0.5 → Brownian; H > 0.5 → faster-than-linear MSD growth.
+  No automatic classification is attached to this model.
 
 Run ``wn.list_models()`` to see all available models.
+
+Classification
+--------------
+``result.regime`` is model-family-specific — the two schemes are not
+interchangeable and must not be conflated:
+
+- cosine/sine: diffusive regime via α = 2μ−1
+  (Elnar et al. 2021, Climate Dynamics).
+- exponential: memory persistence via μ directly
+  (Sithi et al. 2025, Physica Scripta 100, 015243).
+- All other models: no classification (``result.regime`` is ``None``).
 """
 
 from __future__ import annotations
@@ -62,13 +76,6 @@ import matplotlib.pyplot as plt
 _EMPIRICAL   = '#2C3E50'
 _THEORETICAL = '#E74C3C'
 _SUBTLE      = '#BDC3C7'
-
-_REGIME_COLORS = {
-    'subdiffusive':   '#3498DB',
-    'near-Brownian':  '#2ECC71',
-    'superdiffusive': '#F39C12',
-    'hyperballistic': '#E74C3C',
-}
 
 
 # ── analyze_burst ─────────────────────────────────────────────────────────────
@@ -105,7 +112,7 @@ def analyze_burst(
         If provided, the MSD plot PNG is saved here as
         ``<dataset>_msd.png``.  Directory is created if it does not exist.
     verbose : bool, default True
-        Print μ, R², and regime after fitting.
+        Print μ and R² after fitting.
 
     Returns
     -------
@@ -121,8 +128,8 @@ def analyze_burst(
     Examples
     --------
     >>> out = wn.radiojove.analyze_burst('burst_region_1_0.1s.csv')
-    >>> print(out['result'].regime)
-    superdiffusive
+    >>> print(out['result'].fit.params.get('mu'))
+    1.34
 
     >>> # Save the plot automatically
     >>> out = wn.radiojove.analyze_burst(
@@ -163,10 +170,13 @@ def analyze_burst(
 
         def _r2s(v): return f'{v:.4f}' if v == v else 'failed'
         mu_str = f'mu={mu:.4f} (95% CI: {lo:.4f}-{hi:.4f})' if mu == mu else ''
+        regime_label = result.regime
+        regime_str = f'  |  {regime_label}' if regime_label is not None else ''
         print(
             f'  {mu_str}'
             f'  |  R2(pure)={_r2s(r2_pure)}  R2(N·MSD)={_r2s(r2_scaled)}'
-            f'  [{mode_lbl} selected]  |  {result.regime.upper()}'
+            f'  [{mode_lbl} selected]'
+            f'{regime_str}'
         )
 
     fig = plot_burst_msd(
@@ -227,7 +237,7 @@ def batch_analyze_bursts(
         One row per analyzed file with columns:
         ``dataset``, ``filename``, ``model``, ``n_points``,
         ``mu``, ``mu_ci_low``, ``mu_ci_high``, ``beta`` (or ``nu``/``H``),
-        ``r_squared``, ``regime``.
+        ``r_squared``.
 
     Examples
     --------
@@ -237,7 +247,7 @@ def batch_analyze_bursts(
     ...     model='exponential',
     ...     output_dir='swna_results/',
     ... )
-    >>> print(df[['dataset', 'mu', 'regime']])
+    >>> print(df[['dataset', 'mu']])
 
     >>> # Analyze a specific subset
     >>> selected = ['region_1_0.1s.csv', 'region_2_0.1s.csv']
@@ -375,8 +385,10 @@ def plot_burst_msd(
     # ── Suptitle ──────────────────────────────────────────────────────────────
     mu  = result.fit.params.get('mu', float('nan'))
     r2  = result.fit.r_squared
-    regime = result.regime.upper()
-    label_parts = [f'μ = {mu:.4f}', f'R² = {r2:.4f}', regime]
+    label_parts = [f'μ = {mu:.4f}', f'R² = {r2:.4f}']
+    regime_label = result.regime
+    if regime_label is not None:
+        label_parts.append(regime_label)
     if title:
         label_parts.insert(0, title)
     fig.suptitle('  ·  '.join(label_parts), fontsize=9, y=1.02)
@@ -469,7 +481,7 @@ def _build_row(result, stem: str, model: str, path: str) -> 'dict | None':
             'mu_ci_low':  float('nan'),
             'mu_ci_high': float('nan'),
             'r_squared':  float('nan'),
-            'regime':     'failed',
+            'regime':     None,
         }
 
     mu = result.fit.params.get('mu', float('nan'))
@@ -491,6 +503,9 @@ def _build_row(result, stem: str, model: str, path: str) -> 'dict | None':
         'r_squared_pure':   round(r2_pure,   4) if math.isfinite(r2_pure)   else float('nan'),
         'r_squared_scaled': round(r2_scaled, 4) if math.isfinite(r2_scaled) else float('nan'),
         'fit_mode':         fit_mode,
+        # Model-family-specific classification (None if the model has no
+        # confirmed scheme): cosine/sine -> alpha-based (Elnar et al. 2021),
+        # exponential -> mu-based memory persistence (Sithi et al. 2025).
         'regime':           result.regime,
     }
 

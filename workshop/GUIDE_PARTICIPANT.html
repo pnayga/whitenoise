@@ -234,21 +234,24 @@ batch.to_csv('batch_results.csv')</code></pre>
 
 <p>The central result of each analysis is the <strong>memory parameter μ</strong>, extracted by fitting the MSD curve.</p>
 
-<table>
-  <thead>
-    <tr><th>μ range</th><th>Regime</th><th>What it means</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>μ &lt; 0.95</td><td>Subdiffusive</td><td>System resists spreading — fluctuations slow down over time</td></tr>
-    <tr><td>0.95 – 1.05</td><td>Near-Brownian</td><td>Weak or no memory — behaves like an ordinary random walk</td></tr>
-    <tr><td>1.05 – 2.0</td><td>Superdiffusive</td><td>Fluctuations reinforce each other — fast spreading</td></tr>
-    <tr><td>μ &gt; 2.0</td><td>Hyperballistic</td><td>Extremely persistent dynamics — very strong memory</td></tr>
-  </tbody>
-</table>
+<p>
+  The package always reports μ (and its 95% confidence interval) directly. Where a classification
+  is available, it depends on which model you fit — the two schemes are not interchangeable:
+</p>
+<ul>
+  <li><strong>cosine / sine:</strong> classified via α = 2μ − 1 (subdiffusive / Brownian /
+  superdiffusive / hyperballistic). Source: Elnar et al. (2021, <em>Climate Dynamics</em>).</li>
+  <li><strong>exponential:</strong> classified via μ directly, as memory persistence
+  (memoryless / long memory / short memory). Source: Sithi et al. (2025,
+  <em>Physica Scripta</em> 100, 015243).</li>
+  <li><strong>other models:</strong> no classification yet.</li>
+</ul>
+<p>μ = 1 (α = 1) is always ordinary Brownian motion.</p>
 
 <div class="note">
   <strong>fBm model:</strong> Reports the Hurst exponent <em>H</em> instead of μ.
-  H = 0.5 → Brownian; H &lt; 0.5 → subdiffusive; H &gt; 0.5 → superdiffusive.
+  H = 0.5 is ordinary Brownian motion; H &lt; 0.5 grows slower than T; H &gt; 0.5 grows faster
+  than T. No automatic classification is attached to this model.
 </div>
 
 <!-- Section 5: Available Models -->

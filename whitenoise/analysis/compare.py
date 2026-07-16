@@ -44,7 +44,7 @@ def _nan_row(dataset_name: str, model: str) -> dict:
         'r_squared_pure':  _NAN,
         'r_squared_scaled': _NAN,
         'fit_mode':        'N/A',
-        'regime':          'N/A',
+        'regime':          None,
     }
 
 
@@ -57,7 +57,6 @@ def _result_row(ar: AnalysisResult) -> dict:
     row: dict = {
         'dataset_name': ar.dataset_name,
         'model':        ar.model,
-        'regime':       ar.regime,
     }
 
     if ar.fit is None:
@@ -68,6 +67,7 @@ def _result_row(ar: AnalysisResult) -> dict:
             'nu_or_beta_ci': 'N/A',
             'N':             _NAN,
             'r_squared':     _NAN,
+            'regime':        None,
         })
         return row
 
@@ -99,6 +99,10 @@ def _result_row(ar: AnalysisResult) -> dict:
     row['r_squared_pure']  = getattr(ar.fit, 'r_squared_pure',   _NAN)
     row['r_squared_scaled'] = getattr(ar.fit, 'r_squared_scaled', _NAN)
     row['fit_mode']        = getattr(ar.fit, 'fit_mode',          'scaled')
+    # Model-family-specific classification (None for models without a
+    # confirmed scheme). cosine/sine -> alpha-based (Elnar et al. 2021);
+    # exponential -> mu-based memory persistence (Sithi et al. 2025).
+    row['regime']          = ar.regime
 
     return row
 
@@ -119,6 +123,10 @@ class ComparisonResult:
         One row per path/model combination (including failures as NaN rows).
         Columns: dataset_name, model, mu, mu_ci, nu_or_beta, nu_or_beta_ci,
         N, r_squared, regime.
+        ``regime`` is model-family-specific and ``None`` for models without
+        a confirmed classification scheme: alpha-based diffusive regime for
+        cosine/sine (Elnar et al. 2021), mu-based memory persistence for
+        exponential (Sithi et al. 2025).
     """
 
     def __init__(
@@ -210,7 +218,7 @@ def compare(
             results.append(ar)
             row = _result_row(ar)
             r2_str = f"{ar.fit.r_squared:.4f}" if ar.fit is not None else 'N/A'
-            print(f'  [{i + 1}/{n}] {label} \u2192 R\u00b2={r2_str}, regime={ar.regime}')
+            print(f'  [{i + 1}/{n}] {label} \u2192 R\u00b2={r2_str}')
         except Exception as exc:
             print(f'  [{i + 1}/{n}] {label} \u2192 ERROR: {exc}')
             row = _nan_row(label, model)
@@ -253,7 +261,7 @@ def print_comparison(cr: ComparisonResult) -> None:
         ('mu/H/a',    8),
         ('nu/beta',   9),
         ('R\u00b2',           8),
-        ('Regime',   14),
+        ('Regime',   24),
     ]
 
     sep   = '+' + '+'.join('-' * (w + 2) for _, w in cols) + '+'
@@ -270,11 +278,12 @@ def print_comparison(cr: ComparisonResult) -> None:
         mu_val   = row['mu']
         nb_val   = row['nu_or_beta']
         r2_val   = row['r_squared']
-        regime   = str(row['regime'])
 
         mu_str = f'{mu_val:.4f}' if pd.notna(mu_val) else 'N/A'
         nb_str = f'{nb_val:.4f}' if pd.notna(nb_val) else 'N/A'
         r2_str = f'{r2_val:.4f}' if pd.notna(r2_val) else 'N/A'
+        regime_val = row['regime']
+        regime_str = str(regime_val) if pd.notna(regime_val) and regime_val is not None else '—'
 
         cells = [
             (name,    16),
@@ -282,7 +291,7 @@ def print_comparison(cr: ComparisonResult) -> None:
             (mu_str,   8),
             (nb_str,   9),
             (r2_str,   8),
-            (regime,  14),
+            (regime_str, 24),
         ]
         line = '|' + '|'.join(f' {v:<{w}} ' for v, w in cells) + '|'
         print(line)

@@ -220,16 +220,38 @@
 <p>
   Fitting a theoretical SWNA model to the empirical MSD yields the <strong>memory parameter
   &mu;</strong>, which quantifies the strength and direction of memory in the system.
-  The four diffusion regimes are:
 </p>
 
-<table>
-  <tr><th>Regime</th><th>Criterion (non-fBm models)</th><th>fBm criterion (H)</th><th>Physical interpretation</th></tr>
-  <tr><td><strong>Subdiffusive</strong></td><td>&mu; &lt; 0.95</td><td>H &lt; 0.475</td><td>Past fluctuations resist change &mdash; slow spreading</td></tr>
-  <tr><td><strong>Near-Brownian</strong></td><td>0.95 &le; &mu; &le; 1.05</td><td>0.475 &le; H &le; 0.525</td><td>Weak or no memory &mdash; ordinary random walk</td></tr>
-  <tr><td><strong>Superdiffusive</strong></td><td>1.05 &lt; &mu; &le; 2.0</td><td>H &gt; 0.525</td><td>Past reinforces future &mdash; fast spreading</td></tr>
-  <tr><td><strong>Hyperballistic</strong></td><td>&mu; &gt; 2.0</td><td>&mdash;</td><td>Extreme persistence &mdash; strongly correlated dynamics</td></tr>
-</table>
+<p>
+  The package always reports &mu; (and its 95% confidence interval) directly. Where a
+  <code>result.regime</code> classification is available, it is <strong>model-family
+  specific</strong> &mdash; two independently sourced schemes apply to two different model
+  families, and they are never merged into a single generic &mu;-only table:
+</p>
+
+<ul>
+  <li>
+    <strong>Cosine / sine models</strong> admit a short-time (T &laquo; 1) reduction of the
+    MSD to a power law, MSD &asymp; c&middot;T<sup>&alpha;</sup>, with
+    <strong>&alpha; = 2&mu; &minus; 1</strong>. Classification is on &alpha;, not &mu;
+    directly: &alpha; &lt; 1 subdiffusive, &alpha; = 1 Brownian, 1 &lt; &alpha; &lt; 2
+    superdiffusive, &alpha; &gt; 2 hyperballistic.
+    Source: Elnar et al. (2021, <em>Climate Dynamics</em>).
+  </li>
+  <li>
+    <strong>Exponential model</strong> does not reduce to a clean power law over the fitting
+    range, so the &alpha;-based labels above do not apply. Instead &mu; is classified
+    directly as memory persistence: &mu; = 1 memoryless, &mu; &gt; 1 non-Markovian long
+    memory, &mu; &lt; 1 non-Markovian short memory.
+    Source: Sithi et al. (2025, <em>Physica Scripta</em> 100, 015243).
+  </li>
+  <li>
+    <strong>All other models</strong> (fBm and the stub models) have no automatic
+    classification (<code>result.regime</code> is <code>None</code>) until their own
+    reduction/source is confirmed. &mu; = 1 (or H = 0.5 for fBm) is always ordinary Brownian
+    motion as a plain mathematical fact, independent of any classification scheme.
+  </li>
+</ul>
 
 <div class="note">
   <strong>Scope:</strong> The package accepts any sequential 1D observable &mdash; not just
@@ -442,7 +464,7 @@ results[1][2]['y_name']                # 'temperature'</pre>
   <tr><td>normalize</td><td>bool</td><td><code>False</code></td><td>If True, z-score normalizes values after detrending and before MSD.</td></tr>
   <tr><td>max_lag_fraction</td><td>float</td><td><code>1.0</code></td><td>Fraction of lags [0, 1] to use in fitting. Default 1.0 uses all N//2 lags.</td></tr>
   <tr><td>fit_kwargs</td><td>dict or None</td><td><code>None</code></td><td>Extra keyword arguments forwarded to <code>fit_msd()</code>, e.g. <code>{'p0': [1.5, 0.01], 'bounds': &hellip;}</code>.</td></tr>
-  <tr><td>verbose</td><td>bool</td><td><code>True</code></td><td>If True, print &#10003; progress lines and final regime/R&sup2; summary. Fitting quality warnings are always printed regardless.</td></tr>
+  <tr><td>verbose</td><td>bool</td><td><code>True</code></td><td>If True, print &#10003; progress lines and final R&sup2; summary. Fitting quality warnings are always printed regardless.</td></tr>
 </table>
 
 <p><strong>Returns:</strong> <code>AnalysisResult</code></p>
@@ -486,7 +508,6 @@ result = wn.analyze('data.csv', model='cosine',
 <h3>AnalysisResult properties</h3>
 <table class="param-table">
   <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-  <tr><td>.regime</td><td>str</td><td>Diffusion regime: <code>'subdiffusive'</code>, <code>'near-Brownian'</code>, <code>'superdiffusive'</code>, <code>'hyperballistic'</code>, or <code>'plateau'</code> for the exp_plateau model. Returns <code>'N/A'</code> if fit is None.</td></tr>
   <tr><td>.mu</td><td>float</td><td>The primary memory parameter: &mu; for most models, H for fbm, a for dna. Convenience shortcut into <code>fit.params</code>.</td></tr>
 </table>
 
@@ -506,12 +527,11 @@ result = wn.analyze('data.csv', model='cosine',
    &#946;      = 0.1000  &#177;  0.0030
    N      = 2.4312  &#177;  0.0441
  R&#178;        = 0.9823
- Regime    : superdiffusive
 &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
  Units     : x=time (months), y=sunspot_number (count)
 &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;</pre>
 
-<p><strong>.to_dict()</strong> &mdash; Returns a flat dict with all results (label, model, mu, r_squared, regime, n_points, all parameter values, standard errors, and confidence interval bounds). Useful for aggregating results manually.</p>
+<p><strong>.to_dict()</strong> &mdash; Returns a flat dict with all results (label, model, mu, r_squared, n_points, all parameter values, standard errors, and confidence interval bounds). Useful for aggregating results manually.</p>
 
 <p><strong>.to_csv(path)</strong> &mdash; Writes <code>to_dict()</code> as a single-row CSV with header. Prints <code>&#10003; Saved to {path}</code>.</p>
 
@@ -519,7 +539,7 @@ result = wn.analyze('data.csv', model='cosine',
 
 import pandas as pd
 df = pd.read_csv('/tmp/my_result.csv')
-print(df[['mu', 'r_squared', 'regime']])</pre>
+print(df[['mu', 'r_squared']])</pre>
 
 <h3>Shortcut plot methods on AnalysisResult</h3>
 <p>These delegate to the viz functions described in Section 10.</p>
@@ -794,7 +814,7 @@ result = wn.fit_msd(lags, msd, model='cosine',
   <tr>
     <td><code>cosine</code></td><td>10</td><td>&mu;, &nu;</td>
     <td>&radic;&pi; &middot; &Gamma;(&mu;) &middot; cos(&nu;T/2) &middot; J<sub>&mu;&minus;1/2</sub>(&nu;T/2) &middot; (T/&nu;)<sup>&mu;&minus;1/2</sup></td>
-    <td>GBR coral (Elnar et al. 2021, &mu;&asymp;4.64); CO&sub2; (Elnar et al. 2024, &mu;&asymp;0.91&ndash;0.97); X-ray binaries (Calotes 2024)</td>
+    <td>GBR coral (Elnar et al. 2021, &mu;&asymp;4.64); CO&sub2; (Elnar et al. 2024, &mu;&asymp;0.91&ndash;0.97)</td>
   </tr>
   <tr>
     <td><code>inc_gamma</code></td><td>14</td><td>&nu;, &mu;</td>
@@ -836,11 +856,11 @@ result = wn.fit_msd(lags, msd, model='cosine',
 <h3>Parameter reference</h3>
 <table>
   <tr><th>Symbol</th><th>Name</th><th>Models</th><th>Physical meaning</th></tr>
-  <tr><td>&mu;</td><td>mu</td><td>cosine, sine, exponential, bessel_jmu_nu</td><td>Memory parameter. &mu;&lt;1 subdiffusive, &mu;=1 Brownian, &mu;&gt;1 superdiffusive, &mu;&gt;2 hyperballistic.</td></tr>
+  <tr><td>&mu;</td><td>mu</td><td>cosine, sine, exponential, bessel_jmu_nu</td><td>Memory parameter. &mu;=1 is ordinary Brownian motion; &mu;&lt;1 indicates slower-than-linear MSD growth, &mu;&gt;1 indicates faster-than-linear MSD growth.</td></tr>
   <tr><td>&nu;</td><td>nu</td><td>cosine, sine, bessel_jmu_nu</td><td>Characteristic frequency (rad per time unit). Controls oscillation period.</td></tr>
   <tr><td>&beta;</td><td>beta</td><td>exponential</td><td>Exponential decay rate (inverse time unit). Controls MSD shape at small lags.</td></tr>
-  <tr><td>H</td><td>H</td><td>fbm</td><td>Hurst exponent. H=0.5 &rarr; Brownian, H&lt;0.5 subdiffusive, H&gt;0.5 superdiffusive. Range: (0, 1].</td></tr>
-  <tr><td>a, b, c</td><td>&mdash;</td><td>exp_plateau</td><td>a = plateau MSD value; b = saturation rate; c = initial depression (a&gt;c required). Regime is &ldquo;plateau&rdquo;. Model alias: <code>'dna'</code>.</td></tr>
+  <tr><td>H</td><td>H</td><td>fbm</td><td>Hurst exponent. H=0.5 is ordinary Brownian motion; H&lt;0.5 MSD grows slower than T, H&gt;0.5 MSD grows faster than T. Range: (0, 1].</td></tr>
+  <tr><td>a, b, c</td><td>&mdash;</td><td>exp_plateau</td><td>a = plateau MSD value; b = saturation rate; c = initial depression (a&gt;c required). Restricted (saturating) diffusion. Model alias: <code>'dna'</code>.</td></tr>
   <tr><td>N</td><td>N</td><td>all models</td><td>Normalization scalar. Always fitted alongside physical params. Absorbs data amplitude. Does not affect &mu;.</td></tr>
 </table>
 
@@ -1028,7 +1048,7 @@ fig = wn.publish_comparison(comp, save_path='comparison.pdf')</pre>
 <p>The <code>result.plot_all()</code> shortcut calls <code>wn.plot_all(result)</code> from <code>viz/publish.py</code>:</p>
 <code class="sig">plot_all(result, show=True) -&gt; Figure</code>
 
-<p>Three-panel figure (15&times;4.5): [time series | MSD fit | PDF]. Supertitle includes dataset name, model, &mu;, and regime. Returns Figure.</p>
+<p>Three-panel figure (15&times;4.5): [time series | MSD fit | PDF]. Supertitle includes dataset name, model, and &mu;. Returns Figure.</p>
 
 <pre>fig = result.plot_all(show=False)
 fig.savefig('full_result.png', dpi=150, bbox_inches='tight')</pre>
@@ -1080,7 +1100,7 @@ wn.publish_comparison(comp)</pre>
 <p>
   Each dataset is analyzed with <code>verbose=False</code> internally (progress lines are
   suppressed). <code>compare()</code> prints a one-line summary per dataset:
-  <code>[i/n] label &rarr; R&sup2;=&hellip;, regime=&hellip;</code>
+  <code>[i/n] label &rarr; R&sup2;=&hellip;</code>
 </p>
 
 <h3>batch_analyze()</h3>
@@ -1170,7 +1190,7 @@ print(f'Best model: {best_model}')</pre>
   <tr><th>Field / Method</th><th>Type</th><th>Description</th></tr>
   <tr><td>results</td><td>list[AnalysisResult]</td><td>Successfully analyzed results (failed runs are excluded from this list but appear as NaN rows in summary_df).</td></tr>
   <tr><td>models_used</td><td>list[str]</td><td>Distinct model names used across all runs.</td></tr>
-  <tr><td>summary_df</td><td>pd.DataFrame</td><td>One row per dataset/model. Columns: <code>dataset_name</code>, <code>model</code>, <code>mu</code>, <code>mu_ci</code>, <code>nu_or_beta</code>, <code>nu_or_beta_ci</code>, <code>N</code>, <code>r_squared</code>, <code>regime</code>.</td></tr>
+  <tr><td>summary_df</td><td>pd.DataFrame</td><td>One row per dataset/model. Columns: <code>dataset_name</code>, <code>model</code>, <code>mu</code>, <code>mu_ci</code>, <code>nu_or_beta</code>, <code>nu_or_beta_ci</code>, <code>N</code>, <code>r_squared</code>.</td></tr>
   <tr><td>.to_csv(path)</td><td>method</td><td>Save <code>summary_df</code> to CSV. Prints &#10003;.</td></tr>
   <tr><td>.to_excel(path)</td><td>method</td><td>Save <code>summary_df</code> to Excel. Prints &#9888; if openpyxl not installed.</td></tr>
 </table>
@@ -1306,7 +1326,7 @@ for label, path in systems.items():
     results.append(d)
 
 df = pd.DataFrame(results)
-print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
+print(df[['label', 'mu', 'r_squared']])</pre>
 
 <h3>Methodological note: fitting method</h3>
 <div class="warn">
@@ -1387,7 +1407,7 @@ print(df[['label', 'mu', 'r_squared', 'regime']])</pre>
 <table>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
   <tr><td><code>analyze</code></td><td><code>analyze(source, model='cosine', label='', time=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, verbose=True)</code></td><td><code>AnalysisResult</code></td></tr>
-  <tr><td><code>AnalysisResult</code></td><td>dataclass</td><td>dataset_name, model, fit, lags, msd_empirical, values, time, metadata; .regime, .mu, .summary(), .to_dict(), .to_csv()</td></tr>
+  <tr><td><code>AnalysisResult</code></td><td>dataclass</td><td>dataset_name, model, fit, lags, msd_empirical, values, time, metadata; .mu, .summary(), .to_dict(), .to_csv()</td></tr>
   <tr><td><code>compare</code></td><td><code>compare(datasets, model='cosine', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
   <tr><td><code>batch_analyze</code></td><td><code>batch_analyze(source, model='cosine', pattern='*.csv', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, n_jobs=1)</code></td><td><code>ComparisonResult</code></td></tr>
   <tr><td><code>batch_model_search</code></td><td><code>batch_model_search(path, models=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
@@ -1569,7 +1589,7 @@ fit, fig = wn.genomics.refit_pair('results/A_A_msd.csv', max_lag_fraction=0.7)</
 
 <div class="note">
   <strong>No &mu; parameter.</strong> The exp_plateau model describes restricted diffusion
-  (bounded MSD plateau) and classifies as <code>regime = 'plateau'</code>.
+  (bounded MSD plateau) via the a, b, c parameters instead.
   The backward-compatible alias <code>model='dna'</code> also works.
 </div>
 
@@ -1707,7 +1727,6 @@ result = out['result']
 if result and result.fit:
     print(f"mu     = {result.fit.params['mu']:.4f}")
     print(f"R2     = {result.fit.r_squared:.4f}")
-    print(f"regime : {result.regime}")
 
 out['figure'].show()   # dual-panel MSD plot (linear + log-log)</pre>
 
@@ -1725,7 +1744,7 @@ out['figure'].show()   # dual-panel MSD plot (linear + log-log)</pre>
     output_dir='swna_results/',
 )
 
-print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])</pre>
+print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared']])</pre>
 
 <p>You can also pass a specific list of files:</p>
 <pre>df = wn.radiojove.batch_analyze_bursts(paths_01s, model='exponential')</pre>
@@ -1739,7 +1758,6 @@ print(df[['dataset', 'mu', 'mu_ci_low', 'mu_ci_high', 'r_squared', 'regime']])</
   <tr><td><code>r_squared_pure</code></td><td>R&sup2; from pure MSD fit (N=1)</td></tr>
   <tr><td><code>r_squared_scaled</code></td><td>R&sup2; from N&middot;MSD fit</td></tr>
   <tr><td><code>fit_mode</code></td><td><code>'pure'</code> or <code>'scaled'</code></td></tr>
-  <tr><td><code>regime</code></td><td>Diffusion regime</td></tr>
 </table>
 
 <h3>16.5 &middot; Multi-resolution comparison (0.1&nbsp;s vs 1.0&nbsp;s)</h3>
@@ -1755,7 +1773,7 @@ df_01s['cadence'] = '0.1s'
 df_10s['cadence'] = '1.0s'
 
 df_all = pd.concat([df_01s, df_10s], ignore_index=True)
-print(df_all[['dataset', 'cadence', 'mu', 'r_squared', 'regime']])</pre>
+print(df_all[['dataset', 'cadence', 'mu', 'r_squared']])</pre>
 
 <div class="tip">
   If &mu; at 0.1&nbsp;s and 1.0&nbsp;s agree within their 95% confidence intervals, the
@@ -1812,47 +1830,35 @@ cr.summary_df.to_csv('comparison.csv', index=False)</pre>
 <p>The following published results serve as benchmarks for validating your analysis setup.</p>
 
 <table>
-  <tr><th>System</th><th>Model</th><th>&mu; (published)</th><th>Regime</th><th>Reference</th></tr>
+  <tr><th>System</th><th>Model</th><th>&mu; (published)</th><th>Reference</th></tr>
   <tr>
     <td>Philippine earthquakes (inter-event times)</td>
     <td>exponential</td>
     <td>&mu; &asymp; 1.00&ndash;1.19</td>
-    <td>near-Brownian to superdiffusive</td>
     <td>Roque et al. (2024)</td>
   </tr>
   <tr>
     <td>Solar sunspot number</td>
     <td>exponential</td>
     <td>&mu; &asymp; 1.15</td>
-    <td>superdiffusive</td>
     <td>Toledo et al. (2024)</td>
   </tr>
   <tr>
     <td>Great Barrier Reef coral bleaching</td>
     <td>cosine</td>
     <td>&mu; &asymp; 4.64</td>
-    <td>hyperballistic</td>
     <td>Elnar et al. (2021)</td>
   </tr>
   <tr>
     <td>CO&sub2; Keeling curve (Mauna Loa)</td>
     <td>cosine</td>
     <td>&mu; &asymp; 0.91&ndash;0.97</td>
-    <td>subdiffusive</td>
     <td>Elnar et al. (2024)</td>
-  </tr>
-  <tr>
-    <td>X-ray binary light curves</td>
-    <td>cosine</td>
-    <td>&mu; &isin; [0.50, 1.39]</td>
-    <td>subdiffusive to superdiffusive</td>
-    <td>Calotes thesis (2024)</td>
   </tr>
   <tr>
     <td>DNA nucleotide separation (bacterial genomes)</td>
     <td>exp_plateau</td>
     <td>a &asymp; 5.21, b &asymp; 0.0024, c &asymp; 3.81</td>
-    <td>plateau</td>
     <td>Violanda et al. (2019)</td>
   </tr>
 </table>

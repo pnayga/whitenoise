@@ -15,7 +15,7 @@
 #
 #   # Batch-analyze a folder of CSVs
 #   df = wn.radiojove.batch_analyze_bursts('Solar/Type 3 Bursts/first trials/')
-#   print(df[['dataset', 'mu', 'regime']])
+#   print(df[['dataset', 'mu']])
 #
 #   # Group files by cadence and compare
 #   paths = wn.radiojove.list_burst_csvs('Solar/Type 3 Bursts/first trials/')

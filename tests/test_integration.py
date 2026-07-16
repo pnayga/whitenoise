@@ -93,7 +93,7 @@ def test_03_compare_across_datasets(tmp_path):
     assert len(cr.summary_df) == 3, \
         f'Expected 3 rows, got {len(cr.summary_df)}'
 
-    required_cols = {'dataset_name', 'model', 'mu', 'r_squared', 'regime'}
+    required_cols = {'dataset_name', 'model', 'mu', 'r_squared'}
     missing = required_cols - set(cr.summary_df.columns)
     assert not missing, f'Missing columns: {missing}'
 
