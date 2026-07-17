@@ -179,7 +179,7 @@ def msd_exponential(T, mu: float, beta: float):
         Instead, mu is interpreted directly as memory persistence, via the
         power-law scaling exponent (mu - 1) / 2 in the memory function
         f(t - tau) h(tau) = (t - tau)^((mu-1)/2) * exp(-beta / 2*tau) / tau
-        (Sithi et al. 2025, Physica Scripta 100, 015243):
+        (Tey et al. 2024, Physica Scripta 100, 015243):
 
           mu = 1  -> the power-law term (t-tau)^((mu-1)/2) disappears
                      (exponent = 0), leaving f(t-tau)h(tau) = exp(-beta/2tau)/tau.
@@ -207,7 +207,7 @@ def msd_exponential(T, mu: float, beta: float):
     References
     ----------
     Bernido & Carpio-Bernido (2015), Table 2.1 row 4.
-    Sithi et al. (2025), Physica Scripta 100, 015243 — mu-based memory
+    Tey et al. (2024), Physica Scripta 100, 015243 — mu-based memory
     persistence classification via the (mu-1)/2 power-law scaling exponent
     in the memory function.
     """

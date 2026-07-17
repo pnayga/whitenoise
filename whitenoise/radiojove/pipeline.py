@@ -58,7 +58,7 @@ interchangeable and must not be conflated:
 - cosine/sine: diffusive regime via α = 2μ−1
   (Elnar et al. 2021, Climate Dynamics).
 - exponential: memory persistence via μ directly
-  (Sithi et al. 2025, Physica Scripta 100, 015243).
+  (Tey et al. 2024, Physica Scripta 100, 015243).
 - All other models: no classification (``result.regime`` is ``None``).
 """
 
@@ -505,7 +505,7 @@ def _build_row(result, stem: str, model: str, path: str) -> 'dict | None':
         'fit_mode':         fit_mode,
         # Model-family-specific classification (None if the model has no
         # confirmed scheme): cosine/sine -> alpha-based (Elnar et al. 2021),
-        # exponential -> mu-based memory persistence (Sithi et al. 2025).
+        # exponential -> mu-based memory persistence (Tey et al. 2024).
         'regime':           result.regime,
     }
 

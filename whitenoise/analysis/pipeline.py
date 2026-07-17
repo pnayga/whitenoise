@@ -47,7 +47,7 @@ from ..utils.preprocess import detrend, normalize as _normalize_fn
 #                at τ ≪ t is weaker (though it strengthens again as τ → t).
 #                Non-Markovian, short memory.
 #
-#    Source: Sithi et al. (2025, Physica Scripta 100, 015243).
+#    Source: Tey et al. (2024, Physica Scripta 100, 015243).
 #
 # All other models (fbm, and the stub models) have no automatic
 # classification until their own reduction/source is confirmed.
@@ -70,7 +70,7 @@ def _classify_cosine_sine(mu: float) -> str | None:
 def _classify_exponential(mu: float) -> str | None:
     """
     μ-based memory-persistence classification, via the (μ−1)/2 power-law
-    scaling exponent in the memory function (Sithi et al. 2025).
+    scaling exponent in the memory function (Tey et al. 2024).
     """
     if mu is None or mu != mu:  # None or nan
         return None
@@ -102,7 +102,7 @@ def _classify(fit: FitResult | None, model: str) -> str | None:
     Dispatch to the correct model-family classification scheme.
 
     cosine/sine  -> α-based diffusive regime (Elnar et al. 2021)
-    exponential  -> μ-based memory persistence (Sithi et al. 2025)
+    exponential  -> μ-based memory persistence (Tey et al. 2024)
     other models -> None (no classification without a confirmed source)
     """
     if fit is None:
@@ -160,7 +160,7 @@ class AnalysisResult:
         """
         (μ−1)/2, the power-law scaling exponent in the exponential model's
         memory function f(t−τ)h(τ) = (t−τ)^((μ−1)/2)·exp(−β/2τ)/τ.
-        Defined only for the exponential model (Sithi et al. 2025); ``None``
+        Defined only for the exponential model (Tey et al. 2024); ``None``
         otherwise.
         """
         return _memory_exponent(self.fit, self.model)
@@ -173,7 +173,7 @@ class AnalysisResult:
 
         cosine/sine  : diffusive regime via α = 2μ−1 (Elnar et al. 2021)
                        -> 'subdiffusive' | 'brownian' | 'superdiffusive' | 'hyperballistic'
-        exponential  : memory persistence via μ (Sithi et al. 2025)
+        exponential  : memory persistence via μ (Tey et al. 2024)
                        -> 'memoryless' | 'non-Markovian, long memory' |
                           'non-Markovian, short memory'
         other models : None
@@ -243,7 +243,7 @@ class AnalysisResult:
                     print(f' Regime    : {regime_label}  (Elnar et al. 2021)')
                 elif self.model == 'exponential':
                     print(f' (\u03bc\u22121)/2   = {self.memory_exponent:.4f}')
-                    print(f' Memory    : {regime_label}  (Sithi et al. 2025)')
+                    print(f' Memory    : {regime_label}  (Tey et al. 2024)')
 
         print(SEP_SINGLE)
         t_label = self.metadata.get('x_label', 'x')

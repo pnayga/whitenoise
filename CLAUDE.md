@@ -289,7 +289,7 @@ f(t−τ)h(τ) = (t−τ)^((μ−1)/2)·exp(−β/2τ)/τ:
     weaker (though it strengthens again as τ approaches t).
     **Non-Markovian, short memory.**
 
-  Source: Sithi et al. (2025, *Physica Scripta* 100, 015243).
+  Source: Tey et al. (2024, *Physica Scripta* 100, 015243).
 
 **3. All other models** (fbm, and the 12 stub models) — no automatic
 classification until their own reduction/source is confirmed. fbm keeps

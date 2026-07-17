@@ -101,7 +101,7 @@ def _result_row(ar: AnalysisResult) -> dict:
     row['fit_mode']        = getattr(ar.fit, 'fit_mode',          'scaled')
     # Model-family-specific classification (None for models without a
     # confirmed scheme). cosine/sine -> alpha-based (Elnar et al. 2021);
-    # exponential -> mu-based memory persistence (Sithi et al. 2025).
+    # exponential -> mu-based memory persistence (Tey et al. 2024).
     row['regime']          = ar.regime
 
     return row
@@ -126,7 +126,7 @@ class ComparisonResult:
         ``regime`` is model-family-specific and ``None`` for models without
         a confirmed classification scheme: alpha-based diffusive regime for
         cosine/sine (Elnar et al. 2021), mu-based memory persistence for
-        exponential (Sithi et al. 2025).
+        exponential (Tey et al. 2024).
     """
 
     def __init__(
