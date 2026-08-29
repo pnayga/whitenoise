@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>whitenoise — Exoplanet Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      padding: 36px 44px;
+      max-width: 950px;
+      margin: 0 auto;
+      line-height: 1.55;
+    }
+
+    /* ── Title block ── */
+    .title-block { margin-bottom: 28px; }
+    h1 {
+      font-size: 22pt;
+      letter-spacing: 0.5px;
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .subtitle { font-size: 10pt; color: #555; margin-bottom: 4px; }
+    .author-block { font-size: 9.5pt; color: #777; margin-top: 2px; }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 13pt;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+      border-left: 5px solid #1B3A6B;
+      padding-left: 10px;
+    }
+    h3 {
+      font-size: 11pt;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      color: #2c3e50;
+    }
+
+    /* ── Callout boxes ── */
+    .note {
+      background: #eef4fb;
+      border-left: 4px solid #1B3A6B;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fff8e1;
+      border-left: 4px solid #e67e22;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+    .tip {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      border-radius: 3px;
+      padding: 10px 14px;
+      font-size: 10pt;
+      margin: 12px 0;
+    }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      overflow-x: auto;
+      margin: 10px 0 16px 0;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 10px 0 20px 0;
+    }
+    th {
+      background: #1B3A6B;
+      color: white;
+      padding: 7px 10px;
+      text-align: left;
+      font-weight: bold;
+      font-family: 'Arial', sans-serif;
+      font-size: 9.5pt;
+    }
+    td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f9f9f9; }
+
+    /* ── Function signature blocks ── */
+    .sig {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10pt;
+      background: #1B3A6B;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 4px;
+      display: block;
+      margin: 8px 0 10px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    .pipe-step {
+      background: #1B3A6B;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+      font-family: 'Consolas', monospace;
+    }
+    .pipe-manual {
+      background: #7f8c8d;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+      font-family: 'Consolas', monospace;
+    }
+    .pipe-arrow { font-size: 14pt; color: #888; }
+    .pipe-save {
+      background: #27ae60;
+      color: white;
+      padding: 4px 9px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      font-family: 'Consolas', monospace;
+    }
+
+    /* ── Lists ── */
+    ul, ol { margin: 8px 0 12px 22px; }
+    li { margin-bottom: 4px; }
+
+    p { margin: 8px 0; }
+
+    /* ── Section divider ── */
+    hr { border: none; border-top: 1px solid #ddd; margin: 28px 0; }
+
+    /* ── Print ── */
+    @media print {
+      body { padding: 0; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Title ──────────────────────────────────────────────────────────────── -->
+<div class="title-block">
+  <h1>whitenoise — Exoplanet Guide</h1>
+  <div class="subtitle">SWNA on TESS Transit Light Curves &middot; <code>wn.exoplanet</code> submodule</div>
+  <div class="author-block">Framework: Bernido &amp; Carpio-Bernido (2015) &middot; World Scientific</div>
+</div>
+
+<!-- ── Overview ───────────────────────────────────────────────────────────── -->
+<h2>Overview</h2>
+<p>
+  This guide covers applying Stochastic White Noise Analysis (SWNA) to exoplanet transit
+  photometry from the <strong>TESS</strong> mission. The stochastic variable is the
+  <strong>normalized flux</strong> within a window centred on a transit, sampled at the
+  TESS SPOC 2-minute cadence. The memory parameter &mu; extracted by SWNA characterizes the
+  noise regime of the transit-window flux — the same physical quantity computed for
+  RadioJOVE bursts and genomic distance sequences, applied here to photometric time series.
+</p>
+
+<p>The full pipeline has two stages:</p>
+
+<p><strong>Stage 1 — Preprocessing (light curve &rarr; clean transit-window CSV):</strong></p>
+<div class="pipeline">
+  <span class="pipe-step">download_transit_lc()</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">find_empirical_midpoint()</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">extract_transit_window()</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-save">CSV file</span>
+</div>
+
+<p><strong>Stage 2 — SWNA analysis (automated, using this package):</strong></p>
+<div class="pipeline">
+  <span class="pipe-step">analyze_transit()</span>
+  <span class="pipe-save">plot + CSV</span>
+  <span class="pipe-arrow">&rarr;</span>
+  <span class="pipe-step">batch_analyze_transits()</span>
+  <span class="pipe-save">summary DataFrame</span>
+</div>
+
+<p>
+  Use <code>analyze_transit()</code> for a single transit or <code>batch_analyze_transits()</code>
+  to process an entire <code>pipeline/&lt;Planet&gt;/</code> folder tree at once. All functions
+  are accessible via <code>wn.exoplanet.*</code>.
+</p>
+
+<hr>
+
+<!-- ── 1. Setup ────────────────────────────────────────────────────────────── -->
+<h2>1 &middot; Setup</h2>
+<pre>import whitenoise as wn
+
+# Verify the submodule is available
+print(wn.__version__)
+print(dir(wn.exoplanet))</pre>
+
+<div class="note">
+  <strong>Path note:</strong> If whitenoise is installed via <code>pip install -e .</code> from
+  the package root, no path configuration is needed. If running from a project that embeds
+  the package, add to the top of your script:
+  <pre style="margin-top:8px">import sys, os
+sys.path.insert(0, 'path/to/whitenoise')</pre>
+</div>
+
+<div class="note">
+  <strong>Optional dependency:</strong> Downloading light curves requires <code>lightkurve</code>,
+  which is <em>not</em> a core whitenoise dependency. Install it with:
+  <pre style="margin-top:8px">pip install whitenoise-swna[exoplanet]</pre>
+  Everything downstream of a raw <code>(time, flux)</code> array — window extraction, CSV I/O,
+  SWNA analysis — has no lightkurve dependency at all.
+</div>
+
+<hr>
+
+<!-- ── 2. Stage 1: Preprocessing Pipeline ─────────────────────────────────── -->
+<h2>2 &middot; Stage 1 — From Light Curve to Transit-Window CSV</h2>
+
+<h3>Step 1 — Download and clean a light curve</h3>
+<span class="sig">wn.exoplanet.download_transit_lc(target, cadence=120, period_days=None, ...)  &rarr;  (time, flux, metadata)</span>
+
+<pre>time, flux, meta = wn.exoplanet.download_transit_lc('WASP-078', period_days=2.175)
+print(f"Sector {meta['sector']}: {len(time)} points, ~{meta['n_transits']:.1f} transits")</pre>
+
+<p>
+  This downloads every available TESS SPOC sector for <em>target</em>, cleans each with
+  <code>clean_lc()</code> (NaN removal, sigma-clipping, median normalization), and returns the
+  sector with the most estimated transits (longest baseline &divide; <em>period_days</em>).
+</p>
+
+<p>If you already have a <code>lightkurve.LightCurve</code> object (e.g. from your own search/download call), clean it directly:</p>
+<span class="sig">wn.exoplanet.clean_lc(lc, sigma=3.0)  &rarr;  (time, flux)</span>
+<pre>import lightkurve as lk
+sr = lk.search_lightcurve('WASP-078', mission='TESS', cadence=120, author='SPOC')
+lc_collection = sr.download_all(quality_bitmask='default')
+time, flux = wn.exoplanet.clean_lc(lc_collection[0])</pre>
+
+<h3>Step 2 — Estimate the transit duration (T14)</h3>
+<span class="sig">wn.exoplanet.estimate_T14(P_days, Rs, Rp, a_AU, inc_deg=90.0)  &rarr;  float</span>
+
+<pre>T14_d = wn.exoplanet.estimate_T14(
+    P_days=2.175,   # orbital period (days)
+    Rs=2.350,       # stellar radius (solar radii)
+    Rp=2.060,       # planet radius (Jupiter radii)
+    a_AU=0.03670,   # semi-major axis (AU)
+)
+print(f'T14 = {T14_d*24:.2f} hours')</pre>
+
+<p>
+  With the default <code>inc_deg=90.0</code> (central transit, impact parameter b=0), this
+  reduces to the standard <code>T14 = (P/&pi;)&middot;arcsin((R<sub>s</sub>+R<sub>p</sub>)/a)</code>
+  formula. Pass the catalog inclination for a non-central-transit estimate.
+</p>
+
+<h3>Step 3 — Find the empirical transit midpoint</h3>
+<span class="sig">wn.exoplanet.find_empirical_midpoint(t, f, t_lo, t_hi, T14_d)  &rarr;  (t_mid, depth, snr, method)</span>
+
+<pre>t_mid, depth, snr, method = wn.exoplanet.find_empirical_midpoint(
+    time, flux, t_lo=1234.5, t_hi=1234.7, T14_d=T14_d,
+)
+print(f't_mid={t_mid:.6f}  depth={depth:.5f}  SNR={snr:.1f}  [{method}]')</pre>
+
+<p>
+  Locates a transit midpoint within <code>[t_lo, t_hi]</code> without a forward model, using a
+  three-step hybrid: a sliding-window scan (500 candidates, robust down to SNR&nbsp;&asymp;&nbsp;1),
+  parabolic refinement for sub-cadence precision, and a T14-informed flux-weighted centroid.
+  The three estimates are blended by SNR — see the function docstring for the exact blend rule.
+</p>
+
+<div class="note">
+  <strong>No forward model needed:</strong> Unlike a batman/chi-squared transit fit, this
+  approach makes no assumption about limb darkening or transit shape — it only needs a rough
+  search window and the expected duration T14. It is intentionally simple and robust rather
+  than maximally precise.
+</div>
+
+<h3>Step 4 — Extract a gap-filled transit window</h3>
+<span class="sig">wn.exoplanet.extract_transit_window(time, flux, t_mid, T14_d, window_periods=1.5, ...)  &rarr;  dict | None</span>
+
+<pre>window = wn.exoplanet.extract_transit_window(time, flux, t_mid, T14_d)
+if window is None:
+    print('rejected: out of bounds, too few points, or low coverage')
+else:
+    print(f"{len(window['time'])} points, {window['n_filled']} NN-filled, "
+          f"coverage={window['coverage']:.2f}")</pre>
+
+<p>
+  Cuts out the window <code>t_mid &plusmn; window_periods&middot;T14_d</code> (the default
+  <code>window_periods=1.5</code> gives the "3T" window used throughout this guide), fills
+  small gaps (&le; <code>max_fill_gap_min</code>, default 60&nbsp;min) with nearest-neighbour
+  flux, and returns <code>None</code> if the window falls outside the light curve, has fewer
+  than <code>min_points</code> (default 5), or covers less than <code>min_coverage</code>
+  (default 50%) of the expected uniform-cadence grid.
+</p>
+
+<table>
+  <tr><th>Return key</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>t_lo</code>, <code>t_hi</code></td><td>float</td><td>Window bounds (days)</td></tr>
+  <tr><td><code>time</code>, <code>flux</code></td><td>np.ndarray</td><td>Gap-filled arrays within the window</td></tr>
+  <tr><td><code>is_filled</code></td><td>np.ndarray[bool]</td><td><code>True</code> for NN-filled points</td></tr>
+  <tr><td><code>gap_info</code></td><td>list</td><td><code>(t_start, t_end, gap_minutes)</code> per real gap</td></tr>
+  <tr><td><code>coverage</code></td><td>float</td><td>Fraction of expected uniform-cadence points present</td></tr>
+  <tr><td><code>n_filled</code></td><td>int</td><td>Number of NN-filled points</td></tr>
+</table>
+
+<h3>Step 5 — Write the whitenoise-format CSV</h3>
+<span class="sig">wn.exoplanet.write_pipeline_csv(time, flux, t_mid, out_path)  &rarr;  str</span>
+
+<pre>wn.exoplanet.write_pipeline_csv(
+    window['time'], window['flux'], t_mid,
+    'pipeline/WASP-078/WASP-078_T01.csv',
+)</pre>
+
+<p>Output format (2 columns, no comments — this is exactly what <code>wn.analyze()</code> reads):</p>
+<pre>time_min_from_mid,flux
+-45.200000,0.99980000
+-43.200000,0.99975000
+...</pre>
+
+<div class="warn">
+  <strong>No metadata comments in this file.</strong> <code>wn.read_csv()</code> does not
+  support <code>#</code>-commented header lines, so <code>write_pipeline_csv()</code> writes
+  a strictly 2-column file. Track provenance (planet, sector, midpoint-finding method, SNR)
+  separately — e.g. as one row per transit in your own DataFrame/CSV — rather than embedding
+  it in the pipeline CSV.
+</div>
+
+<h3>Reading it back / listing a folder</h3>
+<span class="sig">wn.exoplanet.read_pipeline_csv(path)  &rarr;  (time_min_from_mid, flux)</span>
+<span class="sig">wn.exoplanet.list_transit_csvs(folder, pattern='*.csv')  &rarr;  list[str]</span>
+
+<pre>t_min, flux = wn.exoplanet.read_pipeline_csv('pipeline/WASP-078/WASP-078_T01.csv')
+paths = wn.exoplanet.list_transit_csvs('pipeline/WASP-078/')</pre>
+
+<hr>
+
+<!-- ── 3. Single Transit Analysis — Step by Step ──────────────────────────── -->
+<h2>3 &middot; Single Transit Analysis — Step by Step</h2>
+
+<p>Use this approach when you want to inspect each stage individually.</p>
+
+<h3>Step 1 — Read the CSV</h3>
+<pre>t_min, flux = wn.exoplanet.read_pipeline_csv('pipeline/WASP-078/WASP-078_T01.csv')</pre>
+
+<h3>Step 2 — Compute MSD</h3>
+<pre>lags, msd = wn.compute_msd(flux)
+print(f"MSD: {len(lags)} lags, MSD[1]={msd[0]:.6f}, MSD[-1]={msd[-1]:.6f}")</pre>
+
+<div class="note">
+  <strong>No detrending:</strong> Transit-window studies in this package typically use
+  <code>detrend_method=None</code> — the window is short enough (a few hours) that instrumental
+  trends are negligible relative to the transit signal itself.
+</div>
+
+<h3>Step 3 — Fit a model</h3>
+<pre>fit = wn.fit_msd(lags, msd, model='exponential')
+if fit:
+    print(fit.summary())</pre>
+
+<h3>Step 4 — Plot</h3>
+<pre>fig = wn.plot_msd(result)  # or wn.plot_diagnostics(result) for the full 2x2 panel
+fig.savefig('transit_msd.png', dpi=150, bbox_inches='tight')</pre>
+
+<hr>
+
+<!-- ── 4. Full Single-Transit Pipeline (One Call) ─────────────────────────── -->
+<h2>4 &middot; Full Single-Transit Pipeline (One Call)</h2>
+
+<span class="sig">wn.exoplanet.analyze_transit(time, flux, t_mid, T14_d, model='exponential',
+                     detrend_method=None, csv_path=None, output_dir=None,
+                     dataset_name='transit', verbose=True)  &rarr;  dict</span>
+
+<p>
+  Runs the full chain — window extraction, optional CSV export, <code>wn.analyze()</code>,
+  and a diagnostic plot — in a single call.
+</p>
+
+<pre>out = wn.exoplanet.analyze_transit(
+    time, flux, t_mid, T14_d,
+    model='exponential',
+    csv_path='pipeline/WASP-078/WASP-078_T01.csv',
+    output_dir='results/swna/',
+    dataset_name='WASP-078_T01',
+)
+
+result = out['result']
+if result and result.fit:
+    print(f"mu = {result.fit.params['mu']:.4f}")
+    print(f"R2 = {result.fit.r_squared:.4f}")
+
+out['figure']       # diagnostic plot (wn.plot_diagnostics output)
+out['window']        # dict from extract_transit_window(), or None if rejected
+out['row']            # summary dict for building a DataFrame</pre>
+
+<table>
+  <tr><th>Return key</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>window</code></td><td>dict | None</td><td>Output of <code>extract_transit_window()</code></td></tr>
+  <tr><td><code>result</code></td><td>AnalysisResult | None</td><td>Full SWNA result (<code>None</code> if extraction/fitting failed)</td></tr>
+  <tr><td><code>figure</code></td><td>Figure | None</td><td>Diagnostic plot (<code>wn.plot_diagnostics</code> output)</td></tr>
+  <tr><td><code>row</code></td><td>dict | None</td><td>Summary row for DataFrame construction</td></tr>
+</table>
+
+<div class="note">
+  <strong>csv_path is optional.</strong> If omitted, the extracted window is analyzed via a
+  temporary file that is deleted afterward — useful for quick exploration without writing
+  permanent pipeline CSVs.
+</div>
+
+<hr>
+
+<!-- ── 5. Batch Analysis ───────────────────────────────────────────────────── -->
+<h2>5 &middot; Batch Analysis</h2>
+
+<span class="sig">wn.exoplanet.batch_analyze_transits(pipeline_dir, planets=None,
+                            models=('cosine', 'exponential'), detrend_method=None,
+                            output_dir=None, verbose=True)  &rarr;  pd.DataFrame</span>
+
+<p>
+  Walks a <code>pipeline_dir/&lt;Planet&gt;/&lt;Planet&gt;_T##.csv</code> tree — one subfolder
+  per planet, each containing 2-column transit CSVs written by
+  <code>write_pipeline_csv()</code> — running every requested model on every transit and
+  saving per-transit diagnostic plots plus a summary CSV/Excel.
+</p>
+
+<pre>df = wn.exoplanet.batch_analyze_transits(
+    'data/selected_transits/pipeline/',
+    models=('cosine', 'exponential'),
+    output_dir='results/swna/',
+)
+
+print(df[['planet', 'transit', 'model', 'mu', 'r_squared', 'regime']])</pre>
+
+<p>Restrict to specific planets:</p>
+<pre>df = wn.exoplanet.batch_analyze_transits(
+    'data/selected_transits/pipeline/',
+    planets=['WASP-078', 'WASP-072'],
+    models=('exponential',),
+)</pre>
+
+<table>
+  <tr><th>DataFrame column</th><th>Description</th></tr>
+  <tr><td><code>planet</code></td><td>Subfolder name</td></tr>
+  <tr><td><code>transit</code></td><td>CSV filename stem</td></tr>
+  <tr><td><code>model</code></td><td>SWNA model used</td></tr>
+  <tr><td><code>r_squared</code></td><td>Goodness of fit R&sup2;</td></tr>
+  <tr><td><code>regime</code></td><td>Model-family classification (see &sect;7)</td></tr>
+  <tr><td><code>mu</code>, <code>beta</code>/<code>nu</code>/<code>H</code>, <code>N</code></td><td>Fitted parameters (vary by model)</td></tr>
+</table>
+
+<hr>
+
+<!-- ── 6. Complete Workflow Example ───────────────────────────────────────── -->
+<h2>6 &middot; Complete Workflow Example</h2>
+
+<pre>import whitenoise as wn
+
+# ── Configuration ──────────────────────────────────────────────────────────────
+TARGET   = 'WASP-078'
+P_DAYS   = 2.175
+T14_d    = wn.exoplanet.estimate_T14(P_days=P_DAYS, Rs=2.350, Rp=2.060, a_AU=0.03670)
+OUT_DIR  = 'results/swna/'
+
+# ── Step 1: download and clean ────────────────────────────────────────────────
+time, flux, meta = wn.exoplanet.download_transit_lc(TARGET, period_days=P_DAYS)
+print(f"Sector {meta['sector']}, {len(time)} points")
+
+# ── Step 2: find each expected transit and extract a window ──────────────────
+n = 0
+for t_mid_guess in expected_midpoints:   # from your own ephemeris
+    t_lo, t_hi = t_mid_guess - P_DAYS/4, t_mid_guess + P_DAYS/4
+    t_mid, depth, snr, method = wn.exoplanet.find_empirical_midpoint(time, flux, t_lo, t_hi, T14_d)
+    if t_mid is None:
+        continue
+    n += 1
+    wn.exoplanet.analyze_transit(
+        time, flux, t_mid, T14_d,
+        model='exponential',
+        csv_path=f'data/pipeline/{TARGET}/{TARGET}_T{n:02d}.csv',
+        output_dir=OUT_DIR,
+        dataset_name=f'{TARGET}_T{n:02d}',
+    )
+
+# ── Step 3: batch summary across every planet folder ──────────────────────────
+df = wn.exoplanet.batch_analyze_transits(
+    'data/pipeline/',
+    models=('cosine', 'exponential'),
+    output_dir=OUT_DIR,
+)
+print(df[['planet', 'transit', 'model', 'mu', 'r_squared', 'regime']])</pre>
+
+<hr>
+
+<!-- ── 7. Choosing a Model ────────────────────────────────────────────────── -->
+<h2>7 &middot; Choosing a Model</h2>
+
+<div class="warn">
+  <strong>The cosine model fits poorly on transit MSD curves.</strong> Transit-window flux MSD
+  saturates at high lags — the cosine model's oscillatory form cannot follow that saturation,
+  producing very negative R&sup2; on the pure-MSD fit (the N&middot;MSD-scaled R&sup2; is
+  usually still reported, but treat cosine results for transits as a secondary comparison, not
+  the primary result). Use <code>model='exponential'</code> for the primary analysis.
+</div>
+
+<table>
+  <tr><th>Model</th><th>Role</th><th>Use for transits?</th></tr>
+  <tr><td><code>exponential</code></td><td>Monotonically saturating MSD, &mu;-based memory classification</td><td>Recommended (primary)</td></tr>
+  <tr><td><code>cosine</code></td><td>Oscillating MSD, &alpha;-based diffusive classification</td><td>Secondary comparison only</td></tr>
+</table>
+
+<h3>Interpreting &mu; (exponential model)</h3>
+<p>
+  Classification comes from the power-law scaling exponent <strong>(&mu;&minus;1)/2</strong>:
+  &mu; = 1 (exponent = 0) is memoryless; &mu; &gt; 1 (exponent &gt; 0) is non-Markovian long
+  memory; &mu; &lt; 1 (exponent &lt; 0) is non-Markovian short memory. Source: Tey et al.
+  (2024, <em>Physica Scripta</em> 100, 015243).
+</p>
+
+<hr>
+
+<!-- ── 8. When the Fit is Poor ─────────────────────────────────────────────── -->
+<h2>8 &middot; When the Fit is Poor</h2>
+
+<h3>Symptom: window is rejected (<code>extract_transit_window</code> returns <code>None</code>)</h3>
+<p>Check, in order: is <code>t_mid &plusmn; window_periods&middot;T14_d</code> within the light
+curve's time range? Are there fewer than <code>min_points</code> observed points in the window
+(short baseline, or too small a <code>window_periods</code>)? Is coverage below
+<code>min_coverage</code> after gap-filling (a real gap wider than <code>max_fill_gap_min</code>
+sits inside the window)? Widen <code>max_fill_gap_min</code> cautiously — gaps that are too
+wide to fill meaningfully should stay excluded.</p>
+
+<h3>Symptom: <code>find_empirical_midpoint</code> returns <code>None</code> (method <code>'TOO_FEW'</code> or <code>'SCAN_FAILED'</code>)</h3>
+<p>The search window <code>[t_lo, t_hi]</code> has fewer than 5 observed points, or every
+scan candidate has fewer than 3 points in its &plusmn;T14/2 sub-window. Widen the search window
+or confirm the light curve actually covers the expected transit time.</p>
+
+<h3>Symptom: R&sup2; is very negative on the pure-MSD fit</h3>
+<p>
+  This is expected for the <code>cosine</code> model on transit data (see &sect;7) — check
+  the N&middot;MSD-scaled R&sup2; instead, or switch to <code>model='exponential'</code>.
+</p>
+
+<h3>Symptom: good shape but low R&sup2;</h3>
+<p>The optimizer found a local minimum. Inspect the MSD plot and supply custom initial
+parameters via <code>wn.fit_msd(lags, msd, model='exponential', p0=[mu_guess, beta_guess])</code>.</p>
+
+<hr>
+
+<!-- ── 9. Function Reference ──────────────────────────────────────────────── -->
+<h2>9 &middot; Function Reference</h2>
+
+<table>
+  <tr><th>Function</th><th>Location</th><th>Description</th></tr>
+  <tr><td><code>estimate_T14(P_days, Rs, Rp, a_AU, inc_deg=90.0)</code></td><td><code>wn.exoplanet</code></td><td>Total transit duration (days)</td></tr>
+  <tr><td><code>window_has_gap(time, t_lo, t_hi, max_gap_min=5.0)</code></td><td><code>wn.exoplanet</code></td><td>Check for a gap wider than threshold in a window</td></tr>
+  <tr><td><code>fill_gaps_nn(time, flux, t_lo, t_hi, ...)</code></td><td><code>wn.exoplanet</code></td><td>Nearest-neighbour gap-fill on a uniform-cadence grid</td></tr>
+  <tr><td><code>find_empirical_midpoint(t, f, t_lo, t_hi, T14_d)</code></td><td><code>wn.exoplanet</code></td><td>Locate a transit midpoint without a forward model</td></tr>
+  <tr><td><code>extract_transit_window(time, flux, t_mid, T14_d, ...)</code></td><td><code>wn.exoplanet</code></td><td>Windowed, gap-filled, quality-gated transit extraction</td></tr>
+  <tr><td><code>clean_lc(lc, sigma=3.0)</code></td><td><code>wn.exoplanet</code></td><td>lightkurve LightCurve &rarr; clean (time, flux) arrays</td></tr>
+  <tr><td><code>download_transit_lc(target, cadence=120, ...)</code></td><td><code>wn.exoplanet</code></td><td>Download + clean the best TESS SPOC sector for a target</td></tr>
+  <tr><td><code>write_pipeline_csv(time, flux, t_mid, out_path)</code></td><td><code>wn.exoplanet</code></td><td>Write the 2-column pipeline CSV format</td></tr>
+  <tr><td><code>read_pipeline_csv(path)</code></td><td><code>wn.exoplanet</code></td><td>Read a pipeline CSV back into arrays</td></tr>
+  <tr><td><code>list_transit_csvs(folder)</code></td><td><code>wn.exoplanet</code></td><td>List all pipeline CSVs in a folder, sorted</td></tr>
+  <tr><td><code>analyze_transit(time, flux, t_mid, T14_d, ...)</code></td><td><code>wn.exoplanet</code></td><td>Full SWNA pipeline for one transit</td></tr>
+  <tr><td><code>batch_analyze_transits(pipeline_dir, ...)</code></td><td><code>wn.exoplanet</code></td><td>Batch analysis over a planet-folder tree</td></tr>
+  <tr><td><code>compute_msd(x)</code></td><td><code>wn</code></td><td>Empirical MSD (lags 1 to N/2)</td></tr>
+  <tr><td><code>fit_msd(lags, msd, model)</code></td><td><code>wn</code></td><td>Fit any SWNA model; returns FitResult</td></tr>
+  <tr><td><code>list_models()</code></td><td><code>wn</code></td><td>Print all 16 SWNA models and status</td></tr>
+  <tr><td><code>plot_diagnostics(result)</code></td><td><code>wn</code></td><td>2&times;2 diagnostic figure: time series, MSD, PDF, params</td></tr>
+</table>
+
+<hr>
+<p style="font-size:9pt; color:#888; text-align:center;">
+  whitenoise &middot; Exoplanet SWNA Guide &middot;
+  Framework: Bernido C C, Carpio-Bernido M V (2015). <em>Methods and Applications of White Noise Analysis in Interdisciplinary Sciences.</em> World Scientific.
+</p>
+
+</body>
+</html>

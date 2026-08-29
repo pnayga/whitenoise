@@ -15,8 +15,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-excel = ["openpyxl>=3.0"]
-dev   = ["pytest>=7.0"]
+excel     = ["openpyxl>=3.0"]
+exoplanet = ["lightkurve>=2.4"]
+dev       = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]

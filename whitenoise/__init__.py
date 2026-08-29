@@ -15,6 +15,7 @@ from .viz.publish import publish_comparison
 
 from . import genomics
 from . import radiojove
+from . import exoplanet
 
 __version__ = '0.1.0'
 __all__ = [
