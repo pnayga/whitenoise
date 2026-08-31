@@ -287,7 +287,7 @@ pip install whitenoise-swna  # once published to PyPI</pre>
 
 <pre>import whitenoise as wn    # standard import alias used throughout this guide
 
-print(wn.__version__)      # '0.2.0'</pre>
+print(wn.__version__)      # '0.1.0'</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  3. QUICKSTART                                                          -->
@@ -298,8 +298,8 @@ print(wn.__version__)      # '0.2.0'</pre>
 
 # --- Analyze a single CSV ---
 result = wn.analyze('sunspot.csv', model='exponential')
-result.summary()           # prints formatted parameter table
-result.plot_all()          # three-panel figure: series, MSD, PDF
+result.summary()              # prints formatted parameter table
+wn.plot_diagnostics(result)   # four-panel figure: series, MSD, PDF, params
 
 # --- Inspect data before fitting ---
 time, values, meta = wn.read_csv('sunspot.csv')
@@ -321,7 +321,7 @@ wn.publish_comparison(comparison)
 
 # --- Batch process a folder ---
 batch = wn.batch_analyze('data/xray_binaries/', model='cosine')
-batch.to_csv('results.csv')
+wn.export_summary(batch, 'results.csv')
 
 # --- Try all models on one file ---
 search = wn.batch_model_search('sunspot.csv')
@@ -366,15 +366,15 @@ print(search.summary_df[['model', 'r_squared']].to_string())</pre>
 
 <h3>Automatic validation warnings (non-fatal)</h3>
 <p>
-  On read, the package checks four conditions and prints a <code>&#9888;</code> warning if triggered.
-  Execution always continues &mdash; none of these stop the pipeline.
+  On read, the package runs <strong>3</strong> checks and prints a <code>&#9888;</code> warning
+  if triggered. Execution always continues &mdash; none of these stop the pipeline; there is no
+  check for non-monotonic time values.
 </p>
 <table>
-  <tr><th>Code</th><th>Condition</th><th>Warning message</th></tr>
-  <tr><td>V1</td><td>Time column not strictly increasing</td><td>&#9888; Time column is not strictly increasing. Check your data order.</td></tr>
-  <tr><td>V2</td><td>Column 1 name not in known index names (e.g. not &ldquo;time&rdquo;, &ldquo;index&rdquo;, &ldquo;step&rdquo;, &ldquo;lag&rdquo;, &ldquo;year&rdquo;, etc.)</td><td>&#9888; Column 1 name &lsquo;&hellip;&rsquo; is not a recognized index name. Check column order.</td></tr>
-  <tr><td>V3</td><td>Unit implies non-negative values (count, flux, probability, ppm, &hellip;) but negative values found</td><td>&#9888; Negative values found in &lsquo;&hellip;&rsquo; with unit &lsquo;&hellip;&rsquo;. Expected non-negative values.</td></tr>
-  <tr><td>V4</td><td>Std of column 1 &gt; 1000 &times; |mean| &mdash; possible column swap</td><td>&#9888; Column 1 values look unusually variable. Are the columns swapped?</td></tr>
+  <tr><th>Code</th><th>Condition</th><th>Warning (paraphrased)</th></tr>
+  <tr><td>V1</td><td>Column 1 spread is unusually large relative to its mean (<code>std &gt; 100 &times; |mean|</code>) &mdash; possible column swap.</td><td>&#9888; Column order warning: column 1 ('{x_name}') has unusually large spread&hellip;</td></tr>
+  <tr><td>V2</td><td>Column 1 name is not a commonly recognized time/index name (e.g. not <code>time</code>, <code>t</code>, <code>index</code>, <code>step</code>, <code>lag</code>, <code>year</code>, <code>date</code>, &hellip;). This is informational only &mdash; column&nbsp;1 doesn't have to be time (it can be distance, frequency, voltage, etc.), so this warning is expected and safe to ignore for non-time data.</td><td>&#9888; Column 1 name warning: '{x_name}' is not a commonly recognized time or index name&hellip;</td></tr>
+  <tr><td>V3</td><td>Column 2's unit implies non-negative values (e.g. <code>count</code>, <code>flux</code>, <code>ppm</code>, <code>probability</code>, &hellip;) but negative values were found.</td><td>&#9888; Value range warning: column '{y_name}' has unit '{y_unit}' which typically implies non-negative values, but N negative value(s) were found&hellip;</td></tr>
 </table>
 
 <h3>read_csv()</h3>
@@ -520,14 +520,29 @@ result = wn.analyze('data.csv', model='cosine',
 </table>
 
 <h3>AnalysisResult properties</h3>
+<p>
+  Classification (<code>.alpha</code>, <code>.memory_exponent</code>, <code>.regime</code>) is
+  <strong>model-family specific</strong> &mdash; only one of the first two is ever non-<code>None</code>
+  for a given result, and <code>.regime</code> itself is <code>None</code> for models with no
+  confirmed classification scheme. See Section&nbsp;1 for the full rationale and citations.
+</p>
 <table class="param-table">
   <tr><th>Property</th><th>Type</th><th>Description</th></tr>
-  <tr><td>.mu</td><td>float</td><td>The primary memory parameter: &mu; for most models, H for fbm, a for dna. Convenience shortcut into <code>fit.params</code>.</td></tr>
+  <tr><td>.alpha</td><td>float or None</td><td>&alpha; = 2&mu;&minus;1, the short-time power-law exponent. Defined only for <code>cosine</code>/<code>sine</code> (Elnar et al. 2021); <code>None</code> for all other models.</td></tr>
+  <tr><td>.memory_exponent</td><td>float or None</td><td>(&mu;&minus;1)/2, the power-law scaling exponent in the exponential model's memory function. Defined only for <code>exponential</code> (Tey et al. 2024); <code>None</code> for all other models.</td></tr>
+  <tr><td>.regime</td><td>str or None</td><td>Classification label dispatched by model: <code>'subdiffusive'</code>/<code>'brownian'</code>/<code>'superdiffusive'</code>/<code>'hyperballistic'</code> for cosine/sine (via <code>.alpha</code>); <code>'memoryless'</code>/<code>'non-Markovian, long memory'</code>/<code>'non-Markovian, short memory'</code> for exponential (via <code>.memory_exponent</code>); <code>None</code> for fbm and all stub models.</td></tr>
 </table>
+
+<div class="note">
+  <strong>No <code>.mu</code> shortcut.</strong> There is no convenience property for the primary
+  memory parameter &mdash; read it from <code>result.fit.params['mu']</code> (or
+  <code>result.fit.params['H']</code> for fbm, <code>result.fit.params['a']</code> for
+  exp_plateau). See the <code>FitResult</code> table in Section&nbsp;8.
+</div>
 
 <h3>AnalysisResult methods</h3>
 
-<p><strong>.summary()</strong> &mdash; Prints a formatted analysis summary block to stdout:</p>
+<p><strong>.summary()</strong> &mdash; Prints a formatted analysis summary block to stdout (returns <code>None</code>). Real example, exponential model:</p>
 <pre>&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
  SWNA Analysis Summary
 &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
@@ -540,26 +555,31 @@ result = wn.analyze('data.csv', model='cosine',
    &#956;      = 1.1500  &#177;  0.0082
    &#946;      = 0.1000  &#177;  0.0030
    N      = 2.4312  &#177;  0.0441
- R&#178;        = 0.9823
+ R&#178; (pure MSD)  = 0.6924
+ R&#178; (N&middot;MSD)     = 0.9195 &#8592; selected
+ (&#956;&minus;1)/2   = 0.0750
+ Memory    : non-Markovian, long memory  (Tey et al. 2024)
 &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
  Units     : x=time (months), y=sunspot_number (count)
 &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;</pre>
 
-<p><strong>.to_dict()</strong> &mdash; Returns a flat dict with all results (label, model, mu, r_squared, n_points, all parameter values, standard errors, and confidence interval bounds). Useful for aggregating results manually.</p>
+<p>
+  Always prints R&sup2; for <strong>both</strong> fit modes (pure MSD, N&middot;MSD) with the
+  selected mode flagged &mdash; see the dual-fit note in Section&nbsp;8. The &alpha;/regime or
+  (&mu;&minus;1)/2/memory lines only appear when the fitted model has a classification scheme
+  (cosine/sine or exponential); they are omitted entirely for fbm and stub models.
+</p>
 
-<p><strong>.to_csv(path)</strong> &mdash; Writes <code>to_dict()</code> as a single-row CSV with header. Prints <code>&#10003; Saved to {path}</code>.</p>
-
-<pre>result.to_csv('/tmp/my_result.csv')
-
-import pandas as pd
-df = pd.read_csv('/tmp/my_result.csv')
-print(df[['mu', 'r_squared']])</pre>
-
-<h3>Shortcut plot methods on AnalysisResult</h3>
-<p>These delegate to the viz functions described in Section 10.</p>
-<pre>result.plot_all(show=True)    # three-panel: series | MSD | PDF  (from viz/publish.py)
-result.plot_msd(show=True)    # MSD scatter + fitted curve overlay
-result.plot_pdf(show=True)    # displacement histogram + theoretical PDF</pre>
+<div class="warn">
+  <strong>No export/plot shortcuts on AnalysisResult.</strong> <code>AnalysisResult</code> has
+  no <code>.to_dict()</code>, <code>.to_csv()</code>, <code>.plot_all()</code>,
+  <code>.plot_msd()</code>, or <code>.plot_pdf()</code> methods &mdash; <code>.summary()</code>
+  is the only method. To export or plot a result, call the standalone functions instead:
+<pre>wn.export_csv(result, 'my_result.csv')   # see Section 12
+wn.plot_msd(result)                       # see Section 10
+wn.plot_pdf(result)
+wn.plot_diagnostics(result)               # 4-panel: series, MSD, PDF, params</pre>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  7. PREPROCESSING                                                       -->
@@ -613,11 +633,58 @@ time, co2, meta = wn.read_csv('co2.csv')
 fluct = wn.detrend(co2, method='polynomial', poly_order=2)
 result = wn.analyze(fluct, model='cosine', label='CO2 fluctuations')</pre>
 
-<p>There are also two advanced detrending functions not exposed in the standard pipeline but available in <code>utils/preprocess.py</code>:</p>
-<ul>
-  <li><code>detrend_psd(values, threshold=0.5)</code> &mdash; Removes dominant periodic components via Power Spectral Density analysis (PSD filtering). Useful for data with strong deterministic periodic cycles.</li>
-  <li><code>detrend_fingerprint(values, cycle_length=None, trough_indices=None)</code> &mdash; Cycle averaging (&ldquo;fingerprinting&rdquo;) detrending: aligns repeated cycles at their maxima, averages them, then subtracts. Useful when cycles have similar shapes but vary in timing.</li>
-</ul>
+<p>
+  There are also two advanced detrending functions, both exported at <code>wn.*</code> like
+  <code>detrend()</code> but <strong>not</strong> reachable via <code>analyze(detrend_method=...)</code>
+  &mdash; call them manually before <code>analyze()</code>, same as <code>detrend()</code> itself.
+</p>
+
+<h3>detrend_psd()</h3>
+<code class="sig">detrend_psd(values, threshold=0.5) -&gt; np.ndarray</code>
+
+<p>
+  Removes dominant periodic components via Power Spectral Density analysis: (1) FFT the
+  signal, (2) normalize the PSD so the dominant peak = 1.0, (3) zero out frequency bins whose
+  normalized power exceeds <code>threshold</code>, (4) inverse FFT. Useful for data with strong
+  deterministic periodic cycles (e.g. predator&ndash;prey population oscillations).
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Input time series.</td></tr>
+  <tr><td>threshold</td><td>float</td><td><code>0.5</code></td><td>Normalized PSD cutoff (0&ndash;1). Components above this are removed. Lower = more aggressive filtering. Typical choices: 0.2, 0.3, 0.5, 1.0.</td></tr>
+</table>
+
+<p><strong>Returns:</strong> ndarray same length as input.</p>
+
+<pre># Algae predator-prey data — remove dominant cycle
+fluct = wn.detrend_psd(algae_values, threshold=0.3)
+result = wn.analyze(fluct, model='cosine', label='Algae fluctuations')</pre>
+
+<h3>detrend_fingerprint()</h3>
+<code class="sig">detrend_fingerprint(values, cycle_length=None, trough_indices=None) -&gt; np.ndarray</code>
+
+<p>
+  Cycle averaging (&ldquo;fingerprinting&rdquo;): (1) segment the signal at cycle troughs,
+  (2) align all segments at their maxima by zero-padding the start, (3) equalize segment
+  lengths by zero-padding the end, (4) compute the fingerprint as the mean of all padded
+  segments, (5) subtract the fingerprint from each original segment (padding excluded).
+  Useful when cycles have similar shapes but vary in timing/period.
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>Input time series with a dominant repeating cycle.</td></tr>
+  <tr><td>cycle_length</td><td>int or None</td><td><code>None</code></td><td>If given, splits the signal into equal-length chunks of this size. Simplest option when cycles are uniform.</td></tr>
+  <tr><td>trough_indices</td><td>list[int] or None</td><td><code>None</code></td><td>Explicit cycle-boundary indices. If neither this nor <code>cycle_length</code> is given, troughs are auto-detected via <code>scipy.signal.find_peaks</code>.</td></tr>
+</table>
+
+<p><strong>Returns:</strong> ndarray same length as input.</p>
+<p><strong>Raises:</strong> <code>ValueError</code> with <code>&#10007;</code> prefix if no valid cycles can be identified.</p>
+
+<pre># Algae predator-prey — repeating predator-prey cycle
+fluct = wn.detrend_fingerprint(algae_values, cycle_length=20)
+result = wn.analyze(fluct, model='cosine', label='Algae residuals')</pre>
 
 <h3>normalize()</h3>
 <code class="sig">normalize(values, method='zscore') -&gt; np.ndarray</code>
@@ -1008,64 +1075,50 @@ fig.savefig('diagnostics.png', dpi=150, bbox_inches='tight')</pre>
 
 <h3>Publication plots &mdash; viz/publish.py</h3>
 <p>
-  Publication-quality plots apply strict rcParams: serif font, inward ticks on all sides,
-  dpi=150. All functions return a <code>matplotlib.figure.Figure</code>. All accept
-  <code>show=True</code>.
+  This module has exactly <strong>one</strong> function in the public <code>wn.*</code>
+  namespace: <code>publish_comparison()</code>. It applies publication rcParams (serif font,
+  inward ticks, dpi=150) and is the only plotting function with a built-in
+  <code>save_path=</code> parameter.
 </p>
 
-<div class="tip">
-  <strong>Saving publication figures:</strong> Use <code>save_path=</code> in all publish
-  functions. The format is inferred from the extension: .pdf, .png, .svg, .eps, or .jpg.
-  The directory is created automatically if it does not exist.
+<div class="warn">
+  <strong><code>wn.publish_msd</code>, <code>wn.publish_pdf</code>, and
+  <code>wn.plot_all</code> do not exist.</strong>
+  <code>publish_msd()</code>/<code>publish_pdf()</code> are defined in
+  <code>viz/publish.py</code> but are thin, deprecated aliases &mdash;
+  <code>publish_msd(result, **kwargs)</code> just calls
+  <code>plot_msd(result, **kwargs)</code>, which only accepts <code>ax=</code>/<code>show=</code>
+  (no <code>palette</code>, <code>figsize</code>, or <code>save_path</code>). They are also
+  <strong>not imported into <code>whitenoise/__init__.py</code></strong>, so
+  <code>wn.publish_msd(...)</code> raises <code>AttributeError</code> regardless. There is also
+  no <code>plot_all()</code> function anywhere in the package, and no
+  <code>result.plot_all()</code>/<code>result.plot_msd()</code>/<code>result.plot_pdf()</code>
+  shortcut methods on <code>AnalysisResult</code>.
+  <br><br>
+  For an MSD or PDF plot, use <code>wn.plot_msd(result)</code> / <code>wn.plot_pdf(result)</code>
+  from Section&nbsp;10 (styled with the default exploratory palette) and save the returned
+  <code>Figure</code> yourself with <code>fig.savefig(...)</code>. For the full multi-panel
+  view, use <code>wn.plot_diagnostics(result)</code>.
 </div>
-
-<h3>publish_msd()</h3>
-<code class="sig">publish_msd(result, palette='default', figsize=(5, 4), save_path=None, show=True) -&gt; Figure</code>
-
-<p>Publication-quality MSD plot: empirical scatter + fitted curve.</p>
-
-<table class="param-table">
-  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
-  <tr><td>result</td><td>AnalysisResult</td><td><em>required</em></td><td>Output of <code>analyze()</code>.</td></tr>
-  <tr><td>palette</td><td>str</td><td><code>'default'</code></td><td><code>'default'</code> (dark navy/red) or <code>'colorblind'</code> (blue/orange).</td></tr>
-  <tr><td>figsize</td><td>tuple</td><td><code>(5, 4)</code></td><td>Figure size in inches.</td></tr>
-  <tr><td>save_path</td><td>str or None</td><td><code>None</code></td><td>If provided, saves figure. Format inferred from extension.</td></tr>
-  <tr><td>show</td><td>bool</td><td><code>True</code></td><td>If True, call plt.show().</td></tr>
-</table>
-
-<pre>fig = wn.publish_msd(result, palette='default', save_path='msd_plot.pdf')</pre>
-
-<h3>publish_pdf()</h3>
-<code class="sig">publish_pdf(result, lag_index=None, palette='default', figsize=(5, 4), save_path=None, show=True) -&gt; Figure</code>
-
-<p>Publication-quality displacement PDF plot. Lag selection works identically to <code>plot_pdf()</code>. <code>lag_index</code> defaults to <code>len(lags) // 10</code>.</p>
-
-<pre>fig = wn.publish_pdf(result, save_path='pdf_plot.svg')</pre>
 
 <h3>publish_comparison()</h3>
 <code class="sig">publish_comparison(cr, palette='default', figsize=None, save_path=None, show=True) -&gt; Figure</code>
 
-<p>Publication-quality &mu; comparison bar chart with 95% CI error bars. One bar per system; auto-sized figure if <code>figsize=None</code>.</p>
+<p>Publication-quality &mu; comparison bar chart with 95% CI error bars. One horizontal bar per system, auto-sized figure if <code>figsize=None</code>.</p>
 
 <table class="param-table">
   <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
   <tr><td>cr</td><td>ComparisonResult</td><td><em>required</em></td><td>Output of <code>compare()</code> or <code>batch_analyze()</code>.</td></tr>
   <tr><td>palette</td><td>str</td><td><code>'default'</code></td><td><code>'default'</code> or <code>'colorblind'</code>.</td></tr>
-  <tr><td>figsize</td><td>tuple or None</td><td><code>None</code></td><td>Figure size. Auto-sized based on number of systems if None.</td></tr>
-  <tr><td>save_path</td><td>str or None</td><td><code>None</code></td><td>Save path. Format inferred from extension.</td></tr>
+  <tr><td>figsize</td><td>tuple or None</td><td><code>None</code></td><td>Figure size. Defaults to <code>(7, max(3, 0.5*n_systems + 1.5))</code> if None.</td></tr>
+  <tr><td>save_path</td><td>str or None</td><td><code>None</code></td><td>If provided, saves the figure (format inferred from extension: pdf/png/svg/eps/jpg; unrecognized extensions default to pdf). Directory created automatically.</td></tr>
+  <tr><td>show</td><td>bool</td><td><code>True</code></td><td>If True, call plt.show().</td></tr>
 </table>
+
+<p><strong>Raises:</strong> <code>ValueError</code> if <code>palette</code> is not <code>'default'</code> or <code>'colorblind'</code>.</p>
 
 <pre>comp = wn.compare({'A': 'a.csv', 'B': 'b.csv'}, model='cosine')
 fig = wn.publish_comparison(comp, save_path='comparison.pdf')</pre>
-
-<h3>plot_all() (on AnalysisResult or via wn.plot_all)</h3>
-<p>The <code>result.plot_all()</code> shortcut calls <code>wn.plot_all(result)</code> from <code>viz/publish.py</code>:</p>
-<code class="sig">plot_all(result, show=True) -&gt; Figure</code>
-
-<p>Three-panel figure (15&times;4.5): [time series | MSD fit | PDF]. Supertitle includes dataset name, model, and &mu;. Returns Figure.</p>
-
-<pre>fig = result.plot_all(show=False)
-fig.savefig('full_result.png', dpi=150, bbox_inches='tight')</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  11. MULTI-DATASET ANALYSIS                                             -->
@@ -1117,6 +1170,24 @@ wn.publish_comparison(comp)</pre>
   <code>[i/n] label &rarr; R&sup2;=&hellip;</code>
 </p>
 
+<h3>print_comparison()</h3>
+<code class="sig">print_comparison(cr: ComparisonResult) -&gt; None</code>
+
+<p>
+  Prints a formatted ASCII table from any <code>ComparisonResult</code> (output of
+  <code>compare()</code>, <code>batch_analyze()</code>, or <code>batch_model_search()</code>).
+  Dataset names longer than 16 characters are truncated with <code>...</code>. Returns
+  <code>None</code> &mdash; this only prints, it does not return the table as a string.
+</p>
+
+<pre>wn.print_comparison(comp)
+# +------------------+-----------+----------+-----------+----------+--------------------------+
+# | Dataset          | Model     | mu/H/a   | nu/beta   | R&sup2;       | Regime                   |
+# +------------------+-----------+----------+-----------+----------+--------------------------+
+# | A                | cosine    | 0.9241   | 0.0000    | 0.9746   | subdiffusive             |
+# | B                | cosine    | 1.0682   | 0.0000    | 0.9649   | superdiffusive           |
+# +------------------+-----------+----------+-----------+----------+--------------------------+</pre>
+
 <h3>batch_analyze()</h3>
 <code class="sig">batch_analyze(source, model='cosine', pattern='*.csv', detrend_method=None,
               normalize=False, max_lag_fraction=1.0, fit_kwargs=None, n_jobs=1)
@@ -1164,7 +1235,7 @@ batch = wn.batch_analyze('climate.csv', model='cosine')
 batch = wn.batch_analyze('data/', model='cosine', n_jobs=4)
 
 print(batch.summary_df)
-batch.to_csv('batch_results.csv')</pre>
+wn.export_summary(batch, 'batch_results.csv')</pre>
 
 <h3>batch_model_search()</h3>
 <code class="sig">batch_model_search(path, models=None, detrend_method=None, normalize=False,
@@ -1200,14 +1271,26 @@ print(f'Best model: {best_model}')</pre>
 </div>
 
 <h3>ComparisonResult</h3>
+<p>
+  <code>ComparisonResult</code> is a plain container &mdash; it has <strong>no methods at all</strong>,
+  only three attributes:
+</p>
 <table class="param-table">
-  <tr><th>Field / Method</th><th>Type</th><th>Description</th></tr>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
   <tr><td>results</td><td>list[AnalysisResult]</td><td>Successfully analyzed results (failed runs are excluded from this list but appear as NaN rows in summary_df).</td></tr>
   <tr><td>models_used</td><td>list[str]</td><td>Distinct model names used across all runs.</td></tr>
-  <tr><td>summary_df</td><td>pd.DataFrame</td><td>One row per dataset/model. Columns: <code>dataset_name</code>, <code>model</code>, <code>mu</code>, <code>mu_ci</code>, <code>nu_or_beta</code>, <code>nu_or_beta_ci</code>, <code>N</code>, <code>r_squared</code>.</td></tr>
-  <tr><td>.to_csv(path)</td><td>method</td><td>Save <code>summary_df</code> to CSV. Prints &#10003;.</td></tr>
-  <tr><td>.to_excel(path)</td><td>method</td><td>Save <code>summary_df</code> to Excel. Prints &#9888; if openpyxl not installed.</td></tr>
+  <tr><td>summary_df</td><td>pd.DataFrame</td><td>One row per dataset/model. Columns: <code>dataset_name</code>, <code>model</code>, <code>mu</code>, <code>mu_ci</code>, <code>nu_or_beta</code>, <code>nu_or_beta_ci</code>, <code>N</code>, <code>r_squared</code>, <code>r_squared_pure</code>, <code>r_squared_scaled</code>, <code>fit_mode</code>, <code>regime</code>.</td></tr>
 </table>
+
+<div class="warn">
+  <strong>No <code>.to_csv()</code> / <code>.to_excel()</code> methods.</strong> To save a
+  <code>ComparisonResult</code>, use the standalone <code>export_summary()</code> function
+  (Section&nbsp;12) &mdash; <code>wn.export_csv()</code> does <strong>not</strong> accept a
+  <code>ComparisonResult</code> (it only handles <code>AnalysisResult</code>) and will raise
+  <code>AttributeError</code> if you pass one.
+<pre>wn.export_summary(comparison, 'results.csv')   # correct
+wn.export_csv(comparison, 'results.csv')       # WRONG — AttributeError</pre>
+</div>
 
 <div class="note">
   <strong>Note on summary_df columns:</strong> The <code>mu</code> column holds &mu; for
@@ -1216,6 +1299,8 @@ print(f'Best model: {best_model}')</pre>
   and NaN for fbm, exp_plateau, and parameter-free models.
   The columns <code>r_squared_pure</code>, <code>r_squared_scaled</code>, and
   <code>fit_mode</code> reflect the dual-fit results (see Section&nbsp;8).
+  <code>regime</code> is the model-family classification label (see Section&nbsp;1) and is
+  <code>None</code> for models without a confirmed scheme.
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -1224,32 +1309,113 @@ print(f'Best model: {best_model}')</pre>
 <h2>12. Export</h2>
 
 <h3>export_csv()</h3>
-<code class="sig">export_csv(result, path: str) -&gt; None</code>
+<code class="sig">export_csv(result: AnalysisResult, path: str) -&gt; None</code>
 
 <p>
-  Save an <code>AnalysisResult</code> or <code>ComparisonResult</code> to CSV.
-  <code>AnalysisResult</code> &rarr; single-row CSV from <code>result.to_dict()</code>.
-  <code>ComparisonResult</code> &rarr; multi-row CSV from <code>result.summary_df</code>.
-  Prints <code>&#10003; Saved to {path}</code>.
+  Save an <code>AnalysisResult</code>'s MSD data to a 3-column CSV:
+  <code>lag, msd_empirical, msd_fitted</code>. <code>msd_fitted</code> is the theoretical curve
+  evaluated at each lag (rows outside the fitting window, or where the model returns a
+  non-finite value, are written as <code>NaN</code>). Prints <code>&#128190; Saved to {path}</code>.
 </p>
 
-<pre>wn.export_csv(result, 'sunspot_result.csv')
-wn.export_csv(comparison, 'all_results.csv')</pre>
+<div class="warn">
+  <strong>Takes only <code>AnalysisResult</code>, not <code>ComparisonResult</code>.</strong>
+  There is no type dispatch inside <code>export_csv()</code> &mdash; passing a
+  <code>ComparisonResult</code> raises <code>AttributeError</code> (it has no <code>.fit</code>/
+  <code>.lags</code>/<code>.msd_empirical</code>). Use <code>export_summary()</code> below for
+  <code>ComparisonResult</code> instead.
+</div>
+
+<pre>wn.export_csv(result, 'sunspot_msd.csv')
+# lag,msd_empirical,msd_fitted
+# 1.0,0.12345,0.11980
+# 2.0,0.24100,0.23750
+# ...</pre>
 
 <h3>export_summary()</h3>
-<code class="sig">export_summary(cr, path: str) -&gt; None</code>
+<code class="sig">export_summary(cr: ComparisonResult, path: str) -&gt; None</code>
 
-<p>Save <code>ComparisonResult.summary_df</code> to CSV. Equivalent to <code>cr.to_csv(path)</code>.</p>
+<p>Save <code>ComparisonResult.summary_df</code> to CSV (no index column). This is the correct way to export a <code>compare()</code>/<code>batch_analyze()</code>/<code>batch_model_search()</code> result.</p>
 
 <pre>wn.export_summary(comparison, 'summary.csv')</pre>
 
-<h3>Saving plots</h3>
-<pre># From publish functions
-wn.publish_msd(result, save_path='figure1.pdf')
+<h3>export_series()</h3>
+<code class="sig">export_series(values, path, label='value', unit='', time=None,
+              time_label='index', time_unit='step') -&gt; None</code>
 
-# From any matplotlib Figure
-fig = wn.plot_all(result, show=False)
-fig.savefig('figure2.png', dpi=300, bbox_inches='tight')</pre>
+<p>
+  Save a 1-D observable or preprocessed array to a whitenoise-format 2-column CSV
+  (<code>{time_label} [{time_unit}], {label} [{unit}]</code>), reloadable directly with
+  <code>read_csv()</code> to re-enter the pipeline without recomputing. Useful for
+  checkpointing data before <code>compute_msd()</code> &mdash; e.g. after detrending, or after
+  extracting genomic transition distances.
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>values</td><td>array-like (1D)</td><td><em>required</em></td><td>The observable values to save.</td></tr>
+  <tr><td>path</td><td>str</td><td><em>required</em></td><td>Destination file path.</td></tr>
+  <tr><td>label</td><td>str</td><td><code>'value'</code></td><td>Column name for the values.</td></tr>
+  <tr><td>unit</td><td>str</td><td><code>''</code></td><td>Unit string for the values column (empty = unitless).</td></tr>
+  <tr><td>time</td><td>array-like or None</td><td><code>None</code></td><td>Index/time axis. Defaults to <code>[0, 1, ..., N-1]</code>.</td></tr>
+  <tr><td>time_label</td><td>str</td><td><code>'index'</code></td><td>Column name for the time/index column.</td></tr>
+  <tr><td>time_unit</td><td>str</td><td><code>'step'</code></td><td>Unit string for the time/index column.</td></tr>
+</table>
+
+<pre>fluct = wn.detrend(values, method='moving_average', window=11)
+wn.export_series(fluct, 'sunspot_fluct.csv', label='sunspot_fluctuation', unit='count')
+
+# Reload later and skip straight to compute_msd:
+_, fluct, _ = wn.read_csv('sunspot_fluct.csv')
+lags, msd = wn.compute_msd(fluct)</pre>
+
+<div class="note">
+  <strong>Large arrays — recompute, don't save.</strong> For very large derived arrays
+  (e.g. tens of millions of genomic nucleotide-separation distances), reloading a saved CSV can
+  be slower than just recomputing from the source. Rule of thumb: if
+  <code>len(values) &gt; 1_000_000</code>, recompute instead of round-tripping through CSV. Use
+  <code>export_msd()</code> below to checkpoint the (much smaller) MSD arrays instead.
+</div>
+
+<h3>export_msd()</h3>
+<code class="sig">export_msd(lags, msd, path, label='msd') -&gt; None</code>
+
+<p>
+  Save <code>(lags, msd)</code> from <code>compute_msd()</code> to a 2-column
+  <code>lag [step], {label} []</code> CSV, reloadable with <code>read_csv()</code> and passed
+  directly to <code>fit_msd()</code> &mdash; lets you try different models without recomputing
+  the MSD.
+</p>
+
+<table class="param-table">
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td>lags</td><td>array-like (1D)</td><td><em>required</em></td><td>Lag values from <code>compute_msd()</code>.</td></tr>
+  <tr><td>msd</td><td>array-like (1D)</td><td><em>required</em></td><td>Empirical MSD values from <code>compute_msd()</code>.</td></tr>
+  <tr><td>path</td><td>str</td><td><em>required</em></td><td>Destination file path.</td></tr>
+  <tr><td>label</td><td>str</td><td><code>'msd'</code></td><td>Column name for the MSD values.</td></tr>
+</table>
+
+<pre>lags, msd = wn.compute_msd(distances, max_lag=1500)
+wn.export_msd(lags, msd, 'msd_A_A.csv')
+
+# Reload later and fit a different model:
+lags, msd, _ = wn.read_csv('msd_A_A.csv')
+fit = wn.fit_msd(lags, msd, model='exponential')</pre>
+
+<h3>Saving plots</h3>
+<p>
+  None of the exploratory or publication plot functions have a <code>save_path</code>
+  parameter (that parameter only exists on <code>publish_comparison()</code>) &mdash; save any
+  returned <code>Figure</code> manually with <code>fig.savefig()</code>:
+</p>
+<pre>fig = wn.plot_diagnostics(result, show=False)
+fig.savefig('diagnostics.png', dpi=150, bbox_inches='tight')
+
+fig = wn.plot_msd(result, show=False)
+fig.savefig('msd.pdf', bbox_inches='tight')
+
+# publish_comparison() is the one exception — it has save_path= built in:
+fig = wn.publish_comparison(comparison, save_path='comparison.pdf')</pre>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  13. ADVANCED USAGE                                                     -->
@@ -1321,10 +1487,15 @@ matplotlib.use('Agg')   # must be set BEFORE importing whitenoise viz functions
 import whitenoise as wn
 
 result = wn.analyze('sunspot.csv', model='exponential')
-fig = result.plot_all(show=False)
+fig = wn.plot_diagnostics(result, show=False)
 fig.savefig('output.png', dpi=150, bbox_inches='tight')</pre>
 
 <h3>Building a summary DataFrame manually</h3>
+<p>
+  <code>AnalysisResult</code> has no <code>.to_dict()</code> &mdash; pull the fields you want
+  directly from <code>result.fit.params</code>/<code>.confidence_intervals</code>, or just use
+  <code>wn.compare()</code> (Section&nbsp;11), which builds <code>summary_df</code> for you.
+</p>
 <pre>import whitenoise as wn
 import pandas as pd
 
@@ -1335,12 +1506,15 @@ systems = {
 results = []
 for label, path in systems.items():
     r = wn.analyze(path, model='exponential', verbose=False)
-    d = r.to_dict()
-    d['label'] = label
-    results.append(d)
+    row = {'label': label, 'mu': r.fit.params['mu'], 'r_squared': r.fit.r_squared}
+    results.append(row)
 
 df = pd.DataFrame(results)
-print(df[['label', 'mu', 'r_squared']])</pre>
+print(df[['label', 'mu', 'r_squared']])
+
+# Equivalent, built-in:
+comp = wn.compare(systems, model='exponential')
+print(comp.summary_df[['dataset_name', 'mu', 'r_squared']])</pre>
 
 <h3>Methodological note: fitting method</h3>
 <div class="warn">
@@ -1363,8 +1537,10 @@ print(df[['label', 'mu', 'r_squared']])</pre>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
   <tr><td><code>read_csv</code></td><td><code>read_csv(path) </code></td><td><code>tuple[ndarray, ndarray, dict]</code></td></tr>
   <tr><td><code>read_csv_multi</code></td><td><code>read_csv_multi(path)</code></td><td><code>list[tuple[ndarray, ndarray, dict]]</code></td></tr>
-  <tr><td><code>export_csv</code></td><td><code>export_csv(result, path)</code></td><td><code>None</code></td></tr>
-  <tr><td><code>export_summary</code></td><td><code>export_summary(cr, path)</code></td><td><code>None</code></td></tr>
+  <tr><td><code>export_csv</code></td><td><code>export_csv(result, path)</code></td><td><code>None</code> (AnalysisResult only)</td></tr>
+  <tr><td><code>export_summary</code></td><td><code>export_summary(cr, path)</code></td><td><code>None</code> (ComparisonResult only)</td></tr>
+  <tr><td><code>export_series</code></td><td><code>export_series(values, path, label='value', unit='', time=None, time_label='index', time_unit='step')</code></td><td><code>None</code></td></tr>
+  <tr><td><code>export_msd</code></td><td><code>export_msd(lags, msd, path, label='msd')</code></td><td><code>None</code></td></tr>
 </table>
 
 <h3>Genomics (<code>wn.genomics</code>)</h3>
@@ -1403,6 +1579,8 @@ print(df[['label', 'mu', 'r_squared']])</pre>
 <table>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
   <tr><td><code>detrend</code></td><td><code>detrend(values, method='linear', poly_order=1, window=7)</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>detrend_psd</code></td><td><code>detrend_psd(values, threshold=0.5)</code></td><td><code>ndarray</code></td></tr>
+  <tr><td><code>detrend_fingerprint</code></td><td><code>detrend_fingerprint(values, cycle_length=None, trough_indices=None)</code></td><td><code>ndarray</code></td></tr>
   <tr><td><code>normalize</code></td><td><code>normalize(values, method='zscore')</code></td><td><code>ndarray</code></td></tr>
   <tr><td><code>smooth</code></td><td><code>smooth(values, window=5, method='moving_average')</code></td><td><code>ndarray</code></td></tr>
 </table>
@@ -1414,18 +1592,19 @@ print(df[['label', 'mu', 'r_squared']])</pre>
   <tr><td><code>fit_msd</code></td><td><code>fit_msd(lags, msd_empirical, model='cosine', p0=None, bounds=None, max_lag_fraction=1.0)</code></td><td><code>FitResult | None</code></td></tr>
   <tr><td><code>list_models</code></td><td><code>list_models()</code></td><td><code>None</code> (prints table)</td></tr>
   <tr><td><code>get_model</code></td><td><code>get_model(name)</code></td><td><code>dict</code></td></tr>
-  <tr><td><code>FitResult</code></td><td>dataclass</td><td>params, std_errors, confidence_intervals, r_squared, model, lags_used, msd_fitted; method .summary()</td></tr>
+  <tr><td><code>FitResult</code></td><td>dataclass</td><td>params, std_errors, confidence_intervals, r_squared, r_squared_pure, r_squared_scaled, fit_mode, model, lags_used, msd_fitted; method .summary() -&gt; str</td></tr>
 </table>
 
 <h3>Analysis</h3>
 <table>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
   <tr><td><code>analyze</code></td><td><code>analyze(source, model='cosine', label='', time=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, verbose=True)</code></td><td><code>AnalysisResult</code></td></tr>
-  <tr><td><code>AnalysisResult</code></td><td>dataclass</td><td>dataset_name, model, fit, lags, msd_empirical, values, time, metadata; .mu, .summary(), .to_dict(), .to_csv()</td></tr>
+  <tr><td><code>AnalysisResult</code></td><td>dataclass</td><td>dataset_name, model, fit, lags, msd_empirical, values, time, metadata; properties .alpha, .memory_exponent, .regime (all model-family-specific, see Section&nbsp;1); method .summary() -&gt; None (prints). No .mu, .to_dict(), .to_csv(), or plot shortcuts.</td></tr>
   <tr><td><code>compare</code></td><td><code>compare(datasets, model='cosine', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
+  <tr><td><code>print_comparison</code></td><td><code>print_comparison(cr)</code></td><td><code>None</code> (prints ASCII table)</td></tr>
   <tr><td><code>batch_analyze</code></td><td><code>batch_analyze(source, model='cosine', pattern='*.csv', detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None, n_jobs=1)</code></td><td><code>ComparisonResult</code></td></tr>
   <tr><td><code>batch_model_search</code></td><td><code>batch_model_search(path, models=None, detrend_method=None, normalize=False, max_lag_fraction=1.0, fit_kwargs=None)</code></td><td><code>ComparisonResult</code></td></tr>
-  <tr><td><code>ComparisonResult</code></td><td>class</td><td>results, models_used, summary_df; .to_csv(), .to_excel()</td></tr>
+  <tr><td><code>ComparisonResult</code></td><td>class</td><td>results, models_used, summary_df. No methods &mdash; use <code>export_summary()</code> to save.</td></tr>
 </table>
 
 <h3>Exploratory Plots (viz/explore.py)</h3>
@@ -1442,11 +1621,14 @@ print(df[['label', 'mu', 'r_squared']])</pre>
 <h3>Publication Plots (viz/publish.py)</h3>
 <table>
   <tr><th>Function</th><th>Signature</th><th>Returns</th></tr>
-  <tr><td><code>publish_msd</code></td><td><code>publish_msd(result, palette='default', figsize=(5,4), save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
-  <tr><td><code>publish_pdf</code></td><td><code>publish_pdf(result, lag_index=None, palette='default', figsize=(5,4), save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
   <tr><td><code>publish_comparison</code></td><td><code>publish_comparison(cr, palette='default', figsize=None, save_path=None, show=True)</code></td><td><code>Figure</code></td></tr>
-  <tr><td><code>plot_all</code></td><td><code>plot_all(result, show=True)</code></td><td><code>Figure</code> (three-panel)</td></tr>
 </table>
+<p>
+  This is the only function this module exports to <code>wn.*</code>. There is no
+  <code>plot_all()</code> anywhere in the package. <code>publish_msd</code>/<code>publish_pdf</code>
+  exist in the source but are unexported deprecated aliases with no extra parameters &mdash; use
+  <code>plot_msd()</code>/<code>plot_pdf()</code> from the Exploratory Plots table above instead.
+</p>
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 <!--  15. GENOMICS EXTENSION                                                  -->

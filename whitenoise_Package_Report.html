@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>whitenoise — Package Description</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px 40px;
+  }
+  h1 { font-size: 19pt; color: #1B3A6B; margin-bottom: 3px; }
+  .subtitle { font-size: 11pt; color: #555; margin-bottom: 14px; }
+  h2 {
+    font-size: 12.5pt; color: #1B3A6B; margin: 16px 0 6px 0;
+    border-bottom: 1.5px solid #1B3A6B; padding-bottom: 2px;
+  }
+  h3 { font-size: 10.5pt; color: #2c3e50; margin: 10px 0 4px 0; }
+  p { margin: 5px 0; text-align: justify; }
+  ul, ol { margin: 4px 0 6px 20px; }
+  li { margin: 2px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 10px 0; font-size: 9.3pt; }
+  th { background: #1B3A6B; color: #fff; padding: 4px 7px; text-align: left; font-weight: bold; }
+  td { padding: 3.5px 7px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+  code { font-family: Consolas, monospace; font-size: 9pt; background: #f0f2f5; padding: 0px 3px; border-radius: 2px; }
+  .eq {
+    font-family: Consolas, monospace; font-size: 9.5pt; background: #f4f4f4;
+    border-left: 3px solid #1B3A6B; padding: 6px 10px; margin: 6px 0;
+  }
+  .header-block { border-bottom: 2px solid #1B3A6B; padding-bottom: 10px; margin-bottom: 12px; }
+  .section-break { page-break-before: always; }
+  .cols { display: flex; gap: 18px; }
+  .cols > div { flex: 1; }
+  @media print {
+    body { padding: 0; }
+    .section-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header-block">
+  <h1>whitenoise</h1>
+  <div class="subtitle">A Python Package for Stochastic White Noise Analysis (SWNA) with Memory</div>
+</div>
+
+<h2>1. What the Package Does</h2>
+<p>
+  <strong>whitenoise</strong> is a research software package that quantifies <em>memory</em>
+  in fluctuating time-series data — that is, whether past fluctuations in a system influence
+  its future behavior, and how strongly. It implements Stochastic White Noise Analysis (SWNA),
+  a framework in which an observable is modeled as a stochastic integral driven by white noise
+  and shaped by a memory kernel:
+</p>
+<div class="eq">x(T) = x&#8320; + &#8747;&#8320;<sup>T</sup> f(T&minus;t) &middot; h(t) &middot; &omega;(t) dt</div>
+<p>
+  Different choices of the memory kernel <code>f&middot;h</code> correspond to different physical
+  memory behaviors (oscillatory, exponential, self-similar, restricted, etc.). The package fits
+  these theoretical kernels to the <strong>Mean Square Displacement (MSD)</strong> computed from
+  real data, extracting a <strong>memory parameter &mu;</strong> together with 95% confidence
+  intervals. The magnitude and structure of &mu; indicate how strongly a system "remembers" its
+  own past — information not directly visible from the raw time series.
+</p>
+<p>
+  The package accepts <em>any</em> sequential one-dimensional observable — not only time series
+  in the literal sense. The independent variable can be time, an occurrence index, a genomic
+  base-pair position, or any other ordered quantity, provided it is stored as a two-column CSV
+  file (<code>independent_variable [unit], observable [unit]</code>).
+</p>
+
+<h2>2. Analysis Pipeline</h2>
+<p>The package runs one consistent pipeline regardless of the dataset or model chosen:</p>
+<div class="cols">
+<div>
+<ol>
+  <li><strong>Read</strong> — parse the CSV, auto-detect column names/units, run automatic data-quality checks (e.g. possible column swap, unexpected negative values).</li>
+  <li><strong>Preprocess</strong> <em>(optional)</em> — detrend (linear/polynomial/moving-average/power-spectral-density/cycle-averaging), normalize, or smooth the series to isolate fluctuations from deterministic trends.</li>
+  <li><strong>Compute MSD</strong> — the empirical Mean Square Displacement is calculated at each time lag.</li>
+</ol>
+</div>
+<div>
+<ol start="4">
+  <li><strong>Fit</strong> — a theoretical MSD formula is least-squares fitted to the empirical MSD, using a dual-fit strategy (with and without a free normalization scalar) so the better-fitting formulation is automatically reported.</li>
+  <li><strong>Report</strong> — fitted parameters, standard errors, 95% confidence intervals, and goodness-of-fit (R&sup2;) are returned, printed, and optionally exported to CSV.</li>
+  <li><strong>Visualize</strong> — diagnostic and publication-quality plots (raw series, MSD fit overlay, displacement probability distribution) are generated automatically.</li>
+</ol>
+</div>
+</div>
+<p>
+  Model selection is always explicit and researcher-controlled — the package never silently
+  auto-selects a model. A batch mode can try every available model on one dataset and rank the
+  results by goodness-of-fit, to help narrow down which memory behavior best matches new data.
+</p>
+
+<h2>3. Theoretical Models Implemented</h2>
+<p>
+  The package's model registry currently contains <strong>19 theoretical MSD formulas</strong>
+  drawn from the SWNA reference literature. <strong>10 are fully implemented</strong> and ready
+  to fit; the remaining 9 are registered as placeholders for future implementation (the package
+  reports their status transparently rather than silently omitting them).
+</p>
+<table>
+  <tr><th>Model</th><th>Parameters</th><th>Behavior captured</th></tr>
+  <tr><td>Exponential</td><td>&mu;, &beta;</td><td>Monotonically growing MSD with exponential damping — fast-rise, memory-driven processes.</td></tr>
+  <tr><td>Cosine / Sine</td><td>&mu;, &nu;</td><td>Oscillatory MSD growth — periodic or quasi-periodic systems.</td></tr>
+  <tr><td>Fractional Brownian Motion</td><td>H (Hurst exponent)</td><td>Self-similar processes; H&nbsp;=&nbsp;0.5 recovers ordinary Brownian motion.</td></tr>
+  <tr><td>Restricted diffusion (plateau)</td><td>a, b, c</td><td>MSD that saturates at a plateau rather than growing indefinitely — bounded/confined fluctuations.</td></tr>
+  <tr><td>Incomplete-gamma, Bessel-function forms, &hellip;</td><td>model-specific</td><td>Additional memory shapes for specialized fluctuation behaviors.</td></tr>
+</table>
+<p>
+  For the oscillatory models, the short-time behavior reduces to a power law
+  (MSD&nbsp;&asymp;&nbsp;<em>c&middot;T<sup>&alpha;</sup></em>, with &alpha;&nbsp;=&nbsp;2&mu;&minus;1),
+  which the package uses to classify the fitted result along a standard diffusive spectrum
+  (sub-diffusive / Brownian / super-diffusive / hyperballistic). For the exponential model, whose
+  MSD does not reduce to a clean power law, the package instead classifies &mu; directly as a
+  memory-persistence indicator (memoryless / long-memory / short-memory). The two schemes are
+  kept strictly separate and are only applied to the model family each is derived for — the
+  package does not apply a single generic threshold table across all models.
+</p>
+
+<h2>4. Validated Applications</h2>
+<p>
+  The fitting pipeline has been validated by reproducing memory-parameter estimates for several
+  real, published datasets spanning different scientific domains:
+</p>
+<table>
+  <tr><th>Domain</th><th>Dataset type</th><th>Model used</th><th>Result range</th></tr>
+  <tr><td>Seismology</td><td>Earthquake inter-event times</td><td>Exponential</td><td>&mu; &asymp; 1.00&ndash;1.19</td></tr>
+  <tr><td>Solar physics</td><td>Sunspot number cycles</td><td>Exponential</td><td>&mu; &asymp; 1.15</td></tr>
+  <tr><td>Marine ecology</td><td>Coral reef bleaching records</td><td>Cosine</td><td>&mu; &asymp; 4.64</td></tr>
+  <tr><td>Atmospheric science</td><td>Atmospheric CO&#8322; concentration (Keeling curve)</td><td>Cosine</td><td>&mu; &asymp; 0.91&ndash;0.97</td></tr>
+  <tr><td>Genomics</td><td>Nucleotide-separation distances in bacterial genome sequences</td><td>Restricted diffusion (plateau)</td><td>plateau &asymp; 5.2</td></tr>
+  <tr><td>Radio astronomy</td><td>Solar/Jovian radio burst intensity fluctuations</td><td>Exponential</td><td>&mu; &asymp; 1.4&ndash;1.6</td></tr>
+</table>
+
+<h2>5. Package Structure and Extensions</h2>
+<p>
+  The core package (<code>whitenoise</code>) provides the general-purpose pipeline described
+  above, along with an automated test suite (78 tests covering data I/O, MSD computation,
+  model fitting, analysis orchestration, comparison/batch tools, and visualization). Two
+  domain-specific extensions are built on top of the same core engine:
+</p>
+<h3>Genomics extension</h3>
+<p>
+  Applies SWNA to DNA sequence data by treating the distance between consecutive occurrences
+  of a nucleotide pair (e.g. A&rarr;A, A&rarr;T) along a genome as the fluctuating observable.
+  Includes FASTA file reading, nucleotide transition-distance extraction for all 16 base-pair
+  combinations, and a dedicated restricted-diffusion model fit to characterize genomic memory
+  structure.
+</p>
+<h3>Radio astronomy extension (RadioJOVE)</h3>
+<p>
+  Applies SWNA to radio burst observations (e.g. solar Type III bursts, Jovian S-bursts)
+  recorded with amateur/citizen-science radio spectrographs. Provides burst-specific CSV
+  parsing, cadence-aware batch analysis of multiple burst regions, and comparison tools to
+  contrast memory behavior across bursts recorded at different times or stations.
+</p>
+
+<h2>6. Key Capabilities Summary</h2>
+<table>
+  <tr><th>Capability</th><th>Description</th></tr>
+  <tr><td>Input</td><td>Any 2-column (or multi-column, for batch mode) CSV with a self-describing <code>name [unit]</code> header; automatic unit-aware axis labeling and data-quality warnings.</td></tr>
+  <tr><td>Preprocessing</td><td>5 detrending methods, 4 normalization methods, 2 smoothing methods — all optional and manually invoked.</td></tr>
+  <tr><td>Fitting</td><td>Nonlinear least-squares fitting with automatic dual-mode comparison, 95% confidence intervals, and goodness-of-fit reporting for every parameter.</td></tr>
+  <tr><td>Multi-dataset comparison</td><td>Side-by-side comparison of memory parameters across multiple datasets or multiple candidate models, with ranked summary tables.</td></tr>
+  <tr><td>Batch processing</td><td>Whole-folder or multi-column-file batch analysis, with optional parallel execution.</td></tr>
+  <tr><td>Visualization</td><td>Exploratory (fast, annotated) and publication-quality (styled, exportable) plotting for raw series, MSD fits, and displacement distributions.</td></tr>
+  <tr><td>Export</td><td>CSV export of fitted MSD curves, comparison summaries, and checkpointed intermediate data at any pipeline stage.</td></tr>
+  <tr><td>Extensibility</td><td>A shared core pipeline reused unmodified by both domain-specific extensions (genomics, radio astronomy), demonstrating the framework's applicability beyond its original design domain.</td></tr>
+</table>
+
+<p style="margin-top:14px; font-size:9pt; color:#777;">
+  whitenoise v0.1.0 &middot; Python &ge; 3.10 &middot; open-source (NumPy, SciPy, pandas, Matplotlib)
+</p>
+
+</body>
+</html>
